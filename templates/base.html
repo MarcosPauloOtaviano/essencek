@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Essence K Importados{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Produtos importados selecionados — perfumes, K-beauty e muito mais com pronta entrega e encomendas mensais.{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  {% load static money %}
+  <link rel="icon" type="image/png" href="{% static 'img/brand/essence-k-favicon-official.png' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="header-top">
+    <div class="container">
+      <div class="header-top-inner">
+        <span class="header-tagline">
+          <i class="fas fa-gem"></i> Importados selecionados — Pronta entrega para todo o Brasil
+        </span>
+        <div class="header-top-links">
+          {% if user.is_authenticated %}
+            <a href="{% url 'my_orders' %}"><i class="fas fa-box"></i> Meus pedidos</a>
+            <a href="{% url 'profile' %}"><i class="fas fa-user"></i> {{ user.full_name|truncatechars:15 }}</a>
+            <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Sair</a>
+          {% else %}
+            <a href="{% url 'login' %}"><i class="fas fa-user"></i> Entrar</a>
+            <a href="{% url 'register' %}">Criar conta</a>
+          {% endif %}
+          {% if user.is_staff %}
+            <a href="{% url 'dashboard:home' %}" class="admin-link"><i class="fas fa-cog"></i> Painel Admin</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-main">
+    <div class="container">
+      <div class="header-main-inner">
+        <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navList">
+          <span></span><span></span><span></span>
+        </button>
+
+        <a href="{% url 'home' %}" class="logo">
+          {% if store_settings and store_settings.display_logo_url %}
+            <img src="{{ store_settings.display_logo_url }}" alt="Essence K Importados" class="brand-logo brand-logo-header">
+          {% else %}
+            <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados" class="brand-logo brand-logo-header">
+          {% endif %}
+        </a>
+
+        <form action="{% url 'products:list' %}" method="get" class="search-form">
+          <input type="text" name="q" placeholder="O que você está buscando?"
+                 value="{{ request.GET.q }}" class="search-input">
+          <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+        </form>
+
+        <div class="header-actions">
+          {% if user.is_staff %}
+          <a href="{% url 'dashboard:home' %}" class="header-admin-btn" aria-label="Abrir painel administrativo">
+            <i class="fas fa-sliders-h"></i>
+            <span>Painel</span>
+          </a>
+          {% endif %}
+          {% if user.is_authenticated %}
+          <a href="{% url 'profile' %}" class="cart-btn" aria-label="Minha conta">
+            <i class="fas fa-user"></i>
+          </a>
+          {% else %}
+          <a href="{% url 'login' %}" class="cart-btn" aria-label="Entrar">
+            <i class="fas fa-user"></i>
+          </a>
+          {% endif %}
+          <a href="{% url 'cart:detail' %}" class="cart-btn">
+            <i class="fas fa-shopping-bag"></i>
+            {% if cart_count > 0 %}
+              <span class="cart-badge">{{ cart_count }}</span>
+            {% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="main-nav">
+    <div class="container">
+      <ul class="nav-list" id="navList">
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'products:list' %}">Todos os produtos</a></li>
+        <li><a href="{% url 'products:list' %}?category=perfumes">Perfumes</a></li>
+        <li><a href="{% url 'products:list' %}?category=beleza-coreana">K-Beauty</a></li>
+        <li><a href="{% url 'products:list' %}?category=eletronicos">Eletrônicos</a></li>
+        <li><a href="{% url 'products:list' %}?category=decanter">Decanter</a></li>
+        <li><a href="{% url 'products:list' %}?on_sale=1" class="nav-sale">Promoções</a></li>
+        {% if user.is_authenticated %}
+          {% if user.is_staff %}
+          <li class="mobile-nav-account mobile-nav-admin">
+            <a href="{% url 'dashboard:home' %}"><i class="fas fa-sliders-h"></i> Painel Admin</a>
+          </li>
+          {% endif %}
+          <li class="mobile-nav-account"><a href="{% url 'my_orders' %}"><i class="fas fa-box"></i> Meus pedidos</a></li>
+          <li class="mobile-nav-account"><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Meu perfil</a></li>
+          <li class="mobile-nav-account"><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+        {% else %}
+          <li class="mobile-nav-account"><a href="{% url 'login' %}"><i class="fas fa-user"></i> Entrar</a></li>
+          <li class="mobile-nav-account"><a href="{% url 'register' %}"><i class="fas fa-user-plus"></i> Criar conta</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+</header>
+
+{% if current_exchange_rate %}
+<section class="exchange-rate-panel" aria-label="Câmbio de referência">
+  <div class="container exchange-rate-inner">
+    <div>
+      <span class="exchange-label">Câmbio de referência</span>
+      <strong>US$ 1 = {{ current_exchange_rate.rate|rate_brl }}</strong>
+    </div>
+    <span class="exchange-note">
+      Produtos e pagamentos em Reais (R$). Conversão exibida apenas como referência para compras no Paraguai
+      {% if current_exchange_rate_updated_label %} · atualizado em {{ current_exchange_rate_updated_label }}{% endif %}
+    </span>
+  </div>
+</section>
+{% endif %}
+
+<!-- Messages -->
+{% if messages %}
+<div class="messages-wrapper">
+  <div class="container">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible">
+        {{ message }}
+        <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Main content -->
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <div class="footer-main">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="{% static 'img/brand/essence-k-logo-official.png' %}" alt="Essence K Importados" class="footer-logo-img">
+          <p>Importados selecionados com cuidado. Perfumes, K-beauty e skincare com pronta entrega para todo o Brasil.</p>
+          <div class="footer-social">
+            <a href="https://www.instagram.com/shopparaguai/" target="_blank" rel="noopener" aria-label="Instagram Shop Paraguai">
+              <i class="fab fa-instagram"></i>
+            </a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <h4>Comprar</h4>
+          <ul>
+            <li><a href="{% url 'products:list' %}">Todos os produtos</a></li>
+            <li><a href="{% url 'products:list' %}?on_sale=1">Promoções</a></li>
+            <li><a href="{% url 'products:list' %}?status=pre_order">Sob encomenda</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Ajuda</h4>
+          <ul>
+            <li><a href="{% url 'about' %}">Sobre</a></li>
+            <li><a href="{% url 'contact' %}">Contato</a></li>
+            <li><a href="{% url 'shipping_policy' %}">Prazos de entrega</a></li>
+            <li><a href="{% url 'returns' %}">Trocas e devoluções</a></li>
+            <li><a href="{% url 'payment_methods' %}">Formas de pagamento</a></li>
+            <li><a href="{% url 'pre_order_terms' %}">Termos de encomenda</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Conta</h4>
+          <ul>
+            {% if user.is_authenticated %}
+              <li><a href="{% url 'my_orders' %}">Meus pedidos</a></li>
+              <li><a href="{% url 'profile' %}">Meu perfil</a></li>
+              <li><a href="{% url 'logout' %}">Sair</a></li>
+            {% else %}
+              <li><a href="{% url 'login' %}">Entrar</a></li>
+              <li><a href="{% url 'register' %}">Criar conta</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container">
+      <p>&copy; {% now "Y" %} Essence K Importados. Todos os direitos reservados.</p>
+      <div class="footer-bottom-links">
+        <a href="{% url 'privacy' %}">Política de Privacidade</a>
+        <a href="{% url 'returns' %}">Trocas e Devoluções</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Floating social buttons -->
+<div class="social-float">
+  <a href="https://www.instagram.com/shopparaguai/"
+     class="float-btn instagram-float" target="_blank" rel="noopener" aria-label="Seguir no Instagram">
+    <i class="fab fa-instagram"></i>
+  </a>
+</div>
+
+{% load static %}
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

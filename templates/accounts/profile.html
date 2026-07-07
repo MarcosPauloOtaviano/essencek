@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block title %}Meu Perfil{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Meu Perfil</h1>
+  </div>
+  <div class="account-layout">
+    {% include 'accounts/_sidebar.html' %}
+    <div class="account-main">
+      <div class="account-card">
+        <h2>Dados pessoais</h2>
+        <form method="post" class="profile-form">
+          {% csrf_token %}
+          <div class="form-row">
+            {% for field in form %}
+            <div class="form-group {% if field.name == 'email' or field.name == 'full_name' %}full{% endif %}">
+              <label>{{ field.label }}</label>
+              {% render_field field class="form-control" %}
+              {% if field.errors %}<span class="field-error">{{ field.errors.0 }}</span>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

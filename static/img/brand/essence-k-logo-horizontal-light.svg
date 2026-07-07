@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" role="img" aria-labelledby="ek-title-light">
+  <title id="ek-title-light">Essence K Importados</title>
+  <defs>
+    <linearGradient id="gold-k-l" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ddc08a"/>
+      <stop offset="50%" stop-color="#e8cfa0"/>
+      <stop offset="100%" stop-color="#c9a96e"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10 10)">
+    <!-- Perfume bottle icon -->
+    <g transform="translate(0 0)">
+      <rect x="30" y="2" width="20" height="8" rx="2" fill="#aaa" stroke="#999" stroke-width="1"/>
+      <rect x="35" y="8" width="10" height="6" rx="1" fill="#bbb" stroke="#aaa" stroke-width="0.8"/>
+      <path d="M28 5 C24 3, 22 6, 24 9" stroke="#ccc" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <rect x="22" y="14" width="36" height="62" rx="6" fill="none" stroke="#ddd" stroke-width="2.2"/>
+      <rect x="26" y="18" width="28" height="54" rx="4" fill="rgba(255,255,255,0.08)"/>
+      <line x1="30" y1="28" x2="44" y2="28" stroke="#ccc" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="30" y1="38" x2="42" y2="38" stroke="#ccc" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="30" y1="48" x2="44" y2="48" stroke="#ccc" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M46 26 L46 56 M46 41 L58 26 M46 41 L59 58" stroke="url(#gold-k-l)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <path d="M60 18 L62 14 L64 18 L62 22 Z" fill="url(#gold-k-l)" opacity="0.6"/>
+    </g>
+    <text x="82" y="52" font-family="'Cormorant Garamond','Playfair Display',Georgia,serif" font-size="48" font-weight="600" fill="#f0ece6" letter-spacing="0.5">Essence</text>
+    <text x="328" y="52" font-family="'Cormorant Garamond','Playfair Display',Georgia,serif" font-size="52" font-weight="700" fill="#e8b4b4">K</text>
+    <text x="82" y="82" font-family="'Inter','Jost',Arial,sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.6)" letter-spacing="6">IMPORTADOS</text>
+    <line x1="220" y1="78" x2="350" y2="78" stroke="#e8b4b4" stroke-width="0.8" opacity="0.4"/>
+  </g>
+</svg>

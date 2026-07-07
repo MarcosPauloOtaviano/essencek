@@ -1,0 +1,34 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load widget_tweaks %}
+{% block title %}Configurações{% endblock %}
+{% block content %}
+<div class="dash-page-header"><h1>Configurações da loja</h1></div>
+<div class="dash-card">
+  <form method="post" enctype="multipart/form-data" class="dash-form">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group"><label>{{ form.store_name.label }}</label>{% render_field form.store_name class="dash-input" %}</div>
+      <div class="form-group"><label>{{ form.whatsapp.label }}</label>{% render_field form.whatsapp class="dash-input" placeholder="5511999999999" %}<small class="field-note">Formato: código do país + DDD + número (sem espaços)</small></div>
+      <div class="form-group"><label>{{ form.instagram.label }}</label>{% render_field form.instagram class="dash-input" placeholder="shopparaguai" %}</div>
+      <div class="form-group"><label>{{ form.email.label }}</label>{% render_field form.email class="dash-input" %}</div>
+      <div class="form-group"><label>{{ form.cep_origem.label }}</label>{% render_field form.cep_origem class="dash-input" %}</div>
+      <div class="form-group full"><label>{{ form.home_headline.label }}</label>{% render_field form.home_headline class="dash-input" %}</div>
+      <div class="form-group full"><label>{{ form.home_subheadline.label }}</label>{% render_field form.home_subheadline class="dash-textarea" %}</div>
+      <div class="form-group full"><label>{{ form.about_text.label }}</label>{% render_field form.about_text class="dash-textarea" %}</div>
+      <div class="form-group"><label>{{ form.payment_gateway.label }}</label>{% render_field form.payment_gateway class="dash-input" %}</div>
+      <div class="form-group">
+        <label>{{ form.logo.label }}</label>
+        {% if store.display_logo_url %}<img src="{{ store.display_logo_url }}" alt="Logo" height="50" class="mb-1"><br>{% endif %}
+        {% render_field form.logo class="dash-input" %}
+      </div>
+      <div class="form-group">
+        <label class="toggle-label">{% render_field form.order_mode_active %} {{ form.order_mode_active.label }}</label>
+      </div>
+      <div class="form-group">
+        <label class="toggle-label">{% render_field form.shipping_active %} {{ form.shipping_active.label }}</label>
+      </div>
+    </div>
+    <button type="submit" class="btn-dash btn-dash-primary"><i class="fas fa-save"></i> Salvar configurações</button>
+  </form>
+</div>
+{% endblock %}

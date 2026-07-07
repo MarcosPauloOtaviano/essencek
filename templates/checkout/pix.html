@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load money %}
+{% block title %}Pagar com Pix{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="pix-page">
+    <h1><i class="fas fa-qrcode"></i> Pagamento via Pix</h1>
+    <p>
+      Pedido <strong>{{ order.order_number }}</strong> —
+      Total: <strong>{{ order.total|brl }}</strong>
+      {% if order.display_total_usd %}<span class="text-muted">≈ {{ order.display_total_usd|usd }}</span>{% endif %}
+    </p>
+    <div class="pix-card">
+      {% if payment_is_simulated %}
+      <div class="payment-sandbox-notice">
+        <i class="fas fa-vial"></i>
+        <p>🧪 Modo Sandbox — Pix de teste via Mercado Pago. Nenhum valor real será cobrado.</p>
+      </div>
+      {% elif payment.gateway_status == 'configuration_error' %}
+      <div class="payment-sandbox-notice">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Pagamento real ainda não está configurado. Verifique as credenciais do gateway no ambiente do servidor.</p>
+      </div>
+      {% endif %}
+      {% if payment.pix_code %}
+        {% if payment.pix_qr_code %}
+          <img src="data:image/png;base64,{{ payment.pix_qr_code }}" alt="QR Code Pix" class="pix-qr">
+        {% endif %}
+        <div class="pix-copy-paste">
+          <label>Pix copia e cola:</label>
+          <div class="pix-code-box">
+            <input type="text" value="{{ payment.pix_code }}" id="pixCode" readonly class="pix-code-input">
+            <button onclick="copyPix()" class="btn btn-secondary btn-sm">Copiar</button>
+          </div>
+        </div>
+        <div class="pix-instructions">
+          <h4>Como pagar:</h4>
+          <ol>
+            <li>Abra o aplicativo do seu banco</li>
+            <li>Acesse a área Pix e escolha "Pagar com QR Code" ou "Pix Copia e Cola"</li>
+            <li>Confirme os dados e finalize o pagamento</li>
+            <li>{% if payment_is_simulated %}Em modo teste, o pedido não será marcado como pago automaticamente{% else %}O pedido será processado automaticamente após confirmação do gateway{% endif %}</li>
+          </ol>
+        </div>
+      {% elif payment.payment_link %}
+        <div class="pix-instructions">
+          <p>Clique no botão abaixo para abrir o Mercado Pago e escolher Pix como forma de pagamento.</p>
+          <a href="{{ payment.payment_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-large btn-block">
+            <i class="fas fa-external-link-alt"></i> Pagar com Pix via Mercado Pago
+          </a>
+        </div>
+      {% else %}
+        <div class="pix-qr-placeholder">
+          <i class="fas fa-qrcode"></i>
+          <p>{% if payment_is_simulated %}QR Code simulado indisponível{% else %}QR Code disponível após integração do gateway{% endif %}</p>
+        </div>
+      {% endif %}
+    </div>
+    <div class="success-actions">
+      <a href="{% url 'my_orders' %}" class="btn btn-outline">Acompanhar pedido</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function copyPix() {
+  const input = document.getElementById('pixCode');
+  input.select(); input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(() => alert('Código Pix copiado!'));
+}
+</script>
+{% endblock %}

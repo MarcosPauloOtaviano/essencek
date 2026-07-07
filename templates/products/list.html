@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">{{ page_title }}</h1>
+    <nav class="breadcrumb" aria-label="Trilha de navegação">
+      <a href="{% url 'home' %}">Home</a>
+      {% for crumb in breadcrumb_items %}
+        <span class="breadcrumb-separator">/</span>
+        {% if crumb.url and not forloop.last %}
+          <a href="{{ crumb.url }}">{{ crumb.label }}</a>
+        {% else %}
+          <span>{{ crumb.label }}</span>
+        {% endif %}
+      {% endfor %}
+    </nav>
+  </div>
+
+  <div class="catalog-layout">
+    <!-- Sidebar Filters -->
+    <aside class="catalog-sidebar">
+      <form method="get" class="filter-form" id="filterForm">
+        <div class="filter-section">
+          <h3 class="filter-title">Buscar</h3>
+          <div class="search-field">
+            <input type="text" name="q" value="{{ query }}" placeholder="Nome ou marca..." class="filter-input">
+            <button type="submit" class="filter-search-btn"><i class="fas fa-search"></i></button>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h3 class="filter-title">Categorias</h3>
+          <ul class="filter-list filter-tree">
+            <li>
+              <a href="{{ all_categories_url }}"
+                 class="filter-link {% if not selected_category %}active{% endif %}">
+                <i class="fas fa-th-large"></i> Todas as categorias
+              </a>
+            </li>
+            {% for cat in filter_tree %}
+            <li class="filter-accordion {% if cat.is_open %}open{% endif %}">
+              <a href="{{ cat.url }}"
+                 class="filter-link filter-link-parent {% if selected_category == cat.slug %}active{% endif %}"
+                 aria-expanded="{% if cat.is_open %}true{% else %}false{% endif %}">
+                <span>{{ cat.name }}</span>
+                {% if cat.has_children %}
+                  <i class="fas fa-chevron-down filter-chevron"></i>
+                {% endif %}
+              </a>
+
+              {% if cat.has_children %}
+              <div class="filter-accordion-body {% if cat.is_open %}is-open{% endif %}">
+                {% if cat.subcategories %}
+                <div class="filter-sub-section">
+                  <span class="filter-sub-label">Subcategorias</span>
+                  <ul class="filter-sublist">
+                    {% for sub in cat.subcategories %}
+                    <li>
+                      <a href="{{ sub.url }}"
+                         class="filter-link filter-link-child {% if sub.is_active %}active{% endif %}">
+                        {{ sub.name }}
+                      </a>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+                {% endif %}
+
+                {% if cat.brands %}
+                <div class="filter-sub-section">
+                  <span class="filter-sub-label">Marcas</span>
+                  <ul class="filter-sublist">
+                    {% for brand in cat.brands %}
+                    <li>
+                      <a href="{{ brand.url }}"
+                         class="filter-link filter-link-child {% if brand.is_active %}active{% endif %}">
+                        {{ brand.name }}
+                      </a>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+                {% endif %}
+
+                {% if cat.volumes %}
+                <div class="filter-sub-section">
+                  <span class="filter-sub-label">Volumes</span>
+                  <ul class="filter-sublist filter-volume-grid">
+                    {% for vol in cat.volumes %}
+                    <li>
+                      <a href="{{ vol.url }}"
+                         class="filter-link filter-link-child {% if vol.is_active %}active{% endif %}">
+                        {{ vol.label }}
+                      </a>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+                {% endif %}
+              </div>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="filter-section">
+          <h3 class="filter-title">Disponibilidade</h3>
+          <ul class="filter-list">
+            <li>
+              <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}&{% endif %}"
+                 class="filter-link {% if not selected_status %}active{% endif %}">Todos</a>
+            </li>
+            {% for val, label in status_choices %}
+            <li>
+              <a href="?status={{ val }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+                 class="filter-link {% if selected_status == val %}active{% endif %}">{{ label }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="filter-section">
+          <h3 class="filter-title">Filtros rápidos</h3>
+          <ul class="filter-list">
+            <li>
+              <a href="?on_sale=1{% if selected_category %}&category={{ selected_category }}{% endif %}"
+                 class="filter-link"><i class="fas fa-tag"></i> Promoções</a>
+            </li>
+            <li>
+              <a href="?featured=1{% if selected_category %}&category={{ selected_category }}{% endif %}"
+                 class="filter-link"><i class="fas fa-star"></i> Destaques</a>
+            </li>
+          </ul>
+        </div>
+
+        {% if selected_category or selected_brand or selected_volume or selected_status or query %}
+        <div class="filter-section">
+          <a href="{% url 'products:list' %}" class="filter-clear-btn">
+            <i class="fas fa-times"></i> Limpar todos os filtros
+          </a>
+        </div>
+        {% endif %}
+      </form>
+    </aside>
+
+    <!-- Product Grid -->
+    <div class="catalog-main">
+      <div class="catalog-toolbar">
+        <span class="results-count">{{ products.paginator.count }} produto{{ products.paginator.count|pluralize:"s" }} encontrado{{ products.paginator.count|pluralize:"s" }}</span>
+      </div>
+
+      {% if products %}
+        <div class="products-grid">
+          {% for product in products %}
+            {% include 'products/_card.html' %}
+          {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if products.has_other_pages %}
+        <div class="pagination">
+          {% if products.has_previous %}
+            <a href="?page={{ products.previous_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}" class="page-btn">&laquo;</a>
+          {% endif %}
+          {% for num in products.paginator.page_range %}
+            {% if products.number == num %}
+              <span class="page-btn active">{{ num }}</span>
+            {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+              <a href="?page={{ num }}{% if pagination_query %}&{{ pagination_query }}{% endif %}" class="page-btn">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if products.has_next %}
+            <a href="?page={{ products.next_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}" class="page-btn">&raquo;</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="empty-state">
+          <i class="fas fa-search"></i>
+          <h2>Nenhum produto encontrado</h2>
+          <p>Tente outros filtros ou entre em contato pela página de atendimento.</p>
+          <a href="{% url 'products:list' %}" class="btn btn-primary">Ver todos</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.filter-accordion .filter-link-parent').forEach(function(link){
+  var chevron = link.querySelector('.filter-chevron');
+  if(!chevron) return;
+  chevron.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    var acc = link.closest('.filter-accordion');
+    var body = acc.querySelector('.filter-accordion-body');
+    acc.classList.toggle('open');
+    body.classList.toggle('is-open');
+    link.setAttribute('aria-expanded', acc.classList.contains('open'));
+  });
+});
+</script>
+{% endblock %}

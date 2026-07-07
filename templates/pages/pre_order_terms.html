@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Termos de Encomenda{% endblock %}
+{% block content %}
+<div class="container"><div class="page-header"><h1 class="page-title">Termos de Encomenda</h1></div>
+<div class="content-page prose">
+<h2>O que é uma encomenda?</h2>
+<p>Encomendas são produtos solicitados especialmente para serem trazidos na próxima viagem mensal da Essence K Importados.</p>
+<h2>Disponibilidade</h2>
+<p>A disponibilidade dos produtos está sujeita ao estoque no local de compra. Em caso de indisponibilidade, a cliente será avisada e o valor pago (se houver) será integralmente devolvido.</p>
+<h2>Pagamento</h2>
+<p>O pagamento pode ser solicitado total ou parcialmente antes da viagem, conforme combinado. O restante é pago antes do envio.</p>
+<h2>Prazo</h2>
+<p>O prazo de entrega da encomenda depende da data da próxima viagem. A data limite para solicitações é divulgada na página <a href="{% url 'next_trip' %}">Próxima Viagem</a>.</p>
+<h2>Cancelamento</h2>
+<p>Cancelamentos devem ser solicitados antes da data da viagem. Após a viagem, não é possível cancelar encomendas já adquiridas.</p>
+</div></div>
+{% endblock %}

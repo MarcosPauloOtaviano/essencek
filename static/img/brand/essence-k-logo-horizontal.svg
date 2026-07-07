@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" role="img" aria-labelledby="ek-title">
+  <title id="ek-title">Essence K Importados</title>
+  <defs>
+    <linearGradient id="gold-k" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c9a96e"/>
+      <stop offset="50%" stop-color="#d4b87a"/>
+      <stop offset="100%" stop-color="#b8944f"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10 10)">
+    <!-- Perfume bottle icon -->
+    <g transform="translate(0 0)">
+      <!-- Bottle cap -->
+      <rect x="30" y="2" width="20" height="8" rx="2" fill="#555" stroke="#444" stroke-width="1"/>
+      <rect x="35" y="8" width="10" height="6" rx="1" fill="#777" stroke="#555" stroke-width="0.8"/>
+      <!-- Spray nozzle -->
+      <path d="M28 5 C24 3, 22 6, 24 9" stroke="#888" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Bottle body -->
+      <rect x="22" y="14" width="36" height="62" rx="6" fill="none" stroke="#444" stroke-width="2.2"/>
+      <!-- Bottle inner highlight -->
+      <rect x="26" y="18" width="28" height="54" rx="4" fill="#f9f5f0" opacity="0.4"/>
+      <!-- Decorative lines on bottle -->
+      <line x1="30" y1="28" x2="44" y2="28" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="30" y1="38" x2="42" y2="38" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="30" y1="48" x2="44" y2="48" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+      <!-- K integrated into bottle (gold) -->
+      <path d="M46 26 L46 56 M46 41 L58 26 M46 41 L59 58" stroke="url(#gold-k)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <!-- Small diamond decorations -->
+      <path d="M60 18 L62 14 L64 18 L62 22 Z" fill="url(#gold-k)" opacity="0.6"/>
+    </g>
+    <!-- Text: Essence -->
+    <text x="82" y="52" font-family="'Cormorant Garamond','Playfair Display',Georgia,serif" font-size="48" font-weight="600" fill="#444444" letter-spacing="0.5">Essence</text>
+    <!-- Text: K (in rose/pink) -->
+    <text x="328" y="52" font-family="'Cormorant Garamond','Playfair Display',Georgia,serif" font-size="52" font-weight="700" fill="#d4a0a0">K</text>
+    <!-- Text: IMPORTADOS -->
+    <text x="82" y="82" font-family="'Inter','Jost',Arial,sans-serif" font-size="13" font-weight="400" fill="#999999" letter-spacing="6">IMPORTADOS</text>
+    <!-- Decorative line -->
+    <line x1="220" y1="78" x2="350" y2="78" stroke="#d4a0a0" stroke-width="0.8" opacity="0.5"/>
+  </g>
+</svg>

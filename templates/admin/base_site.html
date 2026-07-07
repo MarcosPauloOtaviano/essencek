@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | Essence K Admin{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  #header {
+    background: #111111;
+    color: #fff9f4;
+  }
+
+  #branding {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+  }
+
+  .admin-branding-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .admin-branding-logo img {
+    width: 178px;
+    max-height: 56px;
+    object-fit: contain;
+  }
+
+  .admin-branding-logo span {
+    color: #f8c8dc;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 767px) {
+    .admin-branding-logo img {
+      width: 144px;
+      max-height: 48px;
+    }
+
+    .admin-branding-logo span {
+      display: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block branding %}
+<div class="admin-branding-logo">
+  <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados">
+  <span>Admin</span>
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

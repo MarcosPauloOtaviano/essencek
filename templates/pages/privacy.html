@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Política de Privacidade{% endblock %}
+{% block content %}
+<div class="container"><div class="page-header"><h1 class="page-title">Política de Privacidade</h1></div>
+<div class="content-page prose">
+<h2>1. Dados coletados</h2>
+<p>Coletamos nome completo, CPF, e-mail, telefone e endereço, utilizados exclusivamente para processar seus pedidos, validar o cadastro e comunicar sobre o status de entrega.</p>
+<h2>2. Uso dos dados</h2>
+<p>Seus dados não são compartilhados com terceiros, exceto transportadoras para fins de entrega e gateways de pagamento para processamento seguro da transação.</p>
+<h2>3. Segurança</h2>
+<p>Utilizamos criptografia e boas práticas de segurança para proteger suas informações. Senhas são armazenadas de forma criptografada e nunca são expostas.</p>
+<h2>4. Seus direitos (LGPD)</h2>
+<p>Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento pelos canais informados na página de contato.</p>
+<h2>5. Contato</h2>
+<p>Dúvidas sobre privacidade: <a href="{% url 'contact' %}">fale conosco</a>.</p>
+</div></div>
+{% endblock %}

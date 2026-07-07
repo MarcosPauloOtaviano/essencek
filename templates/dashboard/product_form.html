@@ -1,0 +1,532 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load widget_tweaks money %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>{{ title }}</h1>
+  <a href="{% url 'dashboard:products' %}" class="btn-dash btn-dash-ghost">
+    <i class="fas fa-arrow-left"></i> Voltar
+  </a>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="dash-form">
+  {% csrf_token %}
+  <div class="dash-form-layout">
+    <!-- Main fields -->
+    <div class="dash-form-main">
+      <div class="dash-card">
+        <h3><i class="fas fa-barcode"></i> Identificação do produto</h3>
+        <p class="field-note" style="margin-bottom:12px">Escaneie o código de barras ou digite nome, marca ou termo do produto para buscar no cadastro e nos catálogos configurados.</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código, nome ou marca</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" class="dash-input" id="productLookupInput" placeholder="7891234567890, Good Girl, serum...">
+              <button type="button" class="btn-dash btn-dash-secondary" id="gtinSearchBtn" onclick="gtinLookup()" style="white-space:nowrap">
+                <i class="fas fa-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button type="button" class="btn-dash btn-dash-ghost" id="gtinCameraBtn" onclick="startGtinScanner()" style="white-space:nowrap">
+              <i class="fas fa-camera"></i> Escanear câmera
+            </button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>GTIN / EAN salvo no produto</label>
+            {% render_field form.gtin class="dash-input" id="gtinInput" placeholder="7891234567890" %}
+            {% if form.gtin.errors %}<span class="field-error">{{ form.gtin.errors.0 }}</span>{% endif %}
+          </div>
+        </div>
+        <div id="gtinScannerArea" style="display:none;margin-top:12px">
+          <video id="gtinVideo" style="width:100%;max-width:400px;border-radius:8px;background:#000" autoplay playsinline></video>
+          <canvas id="gtinCanvas" style="display:none"></canvas>
+          <div style="margin-top:8px">
+            <button type="button" class="btn-dash btn-dash-ghost" onclick="stopGtinScanner()">
+              <i class="fas fa-times"></i> Fechar câmera
+            </button>
+          </div>
+        </div>
+        <div id="gtinResult" style="margin-top:8px"></div>
+      </div>
+
+      <div class="dash-card">
+        <h3>Informações básicas</h3>
+        <div class="form-row">
+          <div class="form-group full">
+            <label>Nome do produto *</label>
+            {% render_field form.name class="dash-input" %}
+            {% if form.name.errors %}<span class="field-error">{{ form.name.errors.0 }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>Marca</label>
+            {% render_field form.brand class="dash-input" %}
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            {% render_field form.category class="dash-select" %}
+          </div>
+          <div class="form-group full">
+            <label>Descrição curta</label>
+            {% render_field form.short_description class="dash-input" %}
+          </div>
+          <div class="form-group full">
+            <label>Descrição completa</label>
+            {% render_field form.description class="dash-textarea" %}
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <h3>Preços em reais</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Preço de venda em reais *</label>
+            {% render_field form.price class="dash-input" placeholder="199.90" %}
+            {% if form.price.errors %}<span class="field-error">{{ form.price.errors.0 }}</span>{% endif %}
+            <small class="field-note">Este é o preço oficial exibido ao cliente e cobrado no pagamento.</small>
+          </div>
+          <div class="form-group">
+            <label>Preço promocional em reais</label>
+            {% render_field form.sale_price class="dash-input" placeholder="179.90" %}
+            {% if form.sale_price.errors %}<span class="field-error">{{ form.sale_price.errors.0 }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>Preço de custo em reais <small>(interno)</small></label>
+            {% render_field form.cost_price class="dash-input" placeholder="120.00" %}
+            {% if form.cost_price.errors %}<span class="field-error">{{ form.cost_price.errors.0 }}</span>{% endif %}
+            <small class="field-note">Visível apenas no painel. Nunca exibido ao cliente.</small>
+          </div>
+          {% if product and product.display_price_usd %}
+          <div class="form-group full">
+            <div class="dash-info-note">
+              Cotação atual: {% if current_exchange_rate %}US$ 1 = {{ current_exchange_rate.rate|rate_brl }}{% else %}sem cotação ativa{% endif %}.
+              Referência estimada no câmbio: {{ product.display_current_price_usd|usd }}.
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <h3>Dimensões para frete</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Peso (kg)</label>
+            {% render_field form.weight class="dash-input" %}
+          </div>
+          <div class="form-group">
+            <label>Altura (cm)</label>
+            {% render_field form.height class="dash-input" %}
+          </div>
+          <div class="form-group">
+            <label>Largura (cm)</label>
+            {% render_field form.width class="dash-input" %}
+          </div>
+          <div class="form-group">
+            <label>Comprimento (cm)</label>
+            {% render_field form.length class="dash-input" %}
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <h3>Observações internas</h3>
+        {% render_field form.internal_notes class="dash-textarea" rows="3" %}
+        <small class="field-note">Nunca exibido ao cliente.</small>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="dash-form-sidebar">
+      <div class="dash-card">
+        <h3>Status e visibilidade</h3>
+        <div class="form-group">
+          <label>Status público</label>
+          {% render_field form.status class="dash-select" %}
+        </div>
+        <div class="form-group">
+          <label>Estoque real</label>
+          {% render_field form.stock class="dash-input" %}
+        </div>
+        <div class="toggle-group">
+          <label class="toggle-label">
+            {% render_field form.is_active %}
+            Produto ativo
+          </label>
+          <label class="toggle-label">
+            {% render_field form.is_featured %}
+            Destaque na home
+          </label>
+          <label class="toggle-label">
+            {% render_field form.is_on_sale %}
+            Em promoção
+          </label>
+          <label class="toggle-label">
+            {% render_field form.is_pre_order %}
+            Sob encomenda
+          </label>
+        </div>
+      </div>
+
+      <!-- GTIN captured image -->
+      <div class="dash-card" id="capturedImageCard" style="display:none">
+        <h3><i class="fas fa-magic"></i> Foto encontrada automaticamente</h3>
+        <div style="text-align:center;padding:8px 0">
+          <img id="capturedImagePreview" src="" alt="Preview"
+               style="max-width:100%;max-height:280px;border-radius:8px;border:2px solid #4caf50">
+        </div>
+        <p class="field-note" style="text-align:center;margin-top:4px">
+          <i class="fas fa-check-circle" style="color:#4caf50"></i>
+          Essa foto será salva automaticamente ao clicar em Salvar.
+        </p>
+        <input type="hidden" name="captured_image_url" id="capturedImageUrl" value="">
+        <div style="text-align:center;margin-top:8px">
+          <button type="button" class="btn-dash btn-dash-ghost" onclick="clearCapturedImage()" style="font-size:0.85rem">
+            <i class="fas fa-times"></i> Remover foto automática
+          </button>
+        </div>
+      </div>
+
+      <!-- Image search -->
+      {% if product %}
+      <div class="dash-card">
+        <h3><i class="fas fa-images"></i> Buscar foto real</h3>
+        <p class="field-note" style="margin-bottom:8px">Busque imagens nas bases de dados de produtos usando GTIN, nome ou marca.</p>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="text" class="dash-input" id="imageSearchInput" placeholder="GTIN, nome ou marca..."
+                 value="{{ product.gtin|default:product.name }}">
+          <button type="button" class="btn-dash btn-dash-secondary" id="imageSearchBtn" onclick="searchImages()" style="white-space:nowrap">
+            <i class="fas fa-search"></i> Buscar
+          </button>
+        </div>
+        <div id="imageSearchResults"></div>
+      </div>
+      {% endif %}
+
+      <!-- Images -->
+      <div class="dash-card">
+        <h3>Fotos do produto</h3>
+        {% if product %}
+          <div class="product-images-grid" id="existingImages">
+            {% for img in product.images.all %}
+            <div class="product-image-item" id="img-{{ img.pk }}">
+              <img src="{{ img.display_url }}" alt="">
+              <div class="image-item-actions">
+                {% if not img.is_main %}
+                <button type="button" class="img-btn img-btn-main"
+                        onclick="setMain({{ img.pk }})" title="Definir como principal">
+                  <i class="fas fa-star"></i>
+                </button>
+                {% else %}
+                <span class="img-btn img-btn-active" title="Foto principal"><i class="fas fa-star"></i></span>
+                {% endif %}
+                <button type="button"
+                        class="img-btn img-btn-del"
+                        onclick="deleteImage({{ img.pk }})"
+                        title="Remover">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="upload-area" id="uploadArea">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <p>Toque para escolher fotos do celular</p>
+          <small>Galeria ou câmera — até 12 fotos, 15 MB cada</small>
+          {% render_field form.images %}
+        </div>
+        {% if form.images.errors %}<span class="field-error">{{ form.images.errors.0 }}</span>{% endif %}
+        <div id="imagePreview" class="image-preview-grid"></div>
+      </div>
+
+      <div class="dash-card-actions">
+        <button type="submit" class="btn-dash btn-dash-primary btn-large w-full">
+          <i class="fas fa-save"></i> Salvar produto
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Image preview
+document.getElementById('imageInput')?.addEventListener('change', function() {
+  const preview = document.getElementById('imagePreview');
+  preview.innerHTML = '';
+  [...this.files].forEach(file => {
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    const url = URL.createObjectURL(file);
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    const label = document.createElement('span');
+    label.textContent = file.name;
+    div.append(img, label);
+    img.addEventListener('error', () => {
+      div.classList.add('preview-file-only');
+      div.replaceChildren();
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-image';
+      const fallbackLabel = document.createElement('span');
+      fallbackLabel.textContent = file.name;
+      div.append(icon, fallbackLabel);
+    });
+    preview.appendChild(div);
+  });
+});
+
+// Drag and drop
+const uploadArea = document.getElementById('uploadArea');
+uploadArea?.addEventListener('click', () => document.getElementById('imageInput').click());
+uploadArea?.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+uploadArea?.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+uploadArea?.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('drag-over');
+  const input = document.getElementById('imageInput');
+  input.files = e.dataTransfer.files;
+  input.dispatchEvent(new Event('change'));
+});
+
+function setMain(imgId) {
+  fetch(`/painel/produtos/imagem/${imgId}/principal/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+  }).then(() => location.reload());
+}
+
+function deleteImage(imgId) {
+  if (!confirm('Remover esta foto?')) return;
+  fetch(`/painel/produtos/imagem/${imgId}/excluir/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+  }).then(response => {
+    if (response.ok) location.reload();
+    else alert('Não foi possível remover a foto.');
+  });
+}
+
+// --- GTIN Lookup ---
+function gtinLookup() {
+  const lookupInput = document.getElementById('productLookupInput');
+  const gtinInput = document.getElementById('gtinInput');
+  const rawValue = (lookupInput.value || gtinInput.value || '').trim();
+  const numericValue = rawValue.replace(/\D/g, '');
+  const code = numericValue.length === rawValue.replace(/[\s-]/g, '').length ? numericValue : rawValue;
+  if (!code) { alert('Digite o código, nome, marca ou termo do produto.'); return; }
+  if (numericValue.length === rawValue.replace(/[\s-]/g, '').length) {
+    lookupInput.value = numericValue;
+    gtinInput.value = numericValue;
+  }
+  const result = document.getElementById('gtinResult');
+  const btn = document.getElementById('gtinSearchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+  result.innerHTML = '';
+  fetch(`/painel/api/gtin/?code=${encodeURIComponent(code)}`)
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+      if (data.found) {
+        if (data.gtin) gtinInput.value = data.gtin;
+        if (data.matches && data.matches.length > 1) {
+          const items = data.matches.map(item => {
+            const editLink = item.edit_url ? `<a href="${item.edit_url}">abrir</a>` : '';
+            return `<li><strong>${esc(item.name)}</strong> <small>${esc(item.brand || '')}</small> ${editLink}</li>`;
+          }).join('');
+          result.innerHTML = `<div class="dash-info-note" style="color:#2e7d32"><i class="fas fa-list"></i> Encontrei ${data.matches.length} opções. A primeira foi usada como sugestão:<ul style="margin:8px 0 0 18px">${items}</ul></div>`;
+        }
+        if (data.existing) {
+          const editLink = data.edit_url ? ` <a href="${data.edit_url}">Abrir cadastro existente</a>` : '';
+          const variantText = data.variant_name ? ` (${esc(data.variant_name)})` : '';
+          if (!data.matches) {
+            result.innerHTML = `<div class="dash-info-note" style="color:#2e7d32"><i class="fas fa-check-circle"></i> Este item já está cadastrado em: <strong>${esc(data.name)}${variantText}</strong>.${editLink}</div>`;
+          }
+          return;
+        }
+        result.innerHTML = result.innerHTML || '<div class="dash-info-note" style="color:green"><i class="fas fa-check-circle"></i> Produto encontrado! Campos preenchidos automaticamente.</div>';
+        const nameField = document.getElementById('id_name');
+        const brandField = document.getElementById('id_brand');
+        const descField = document.getElementById('id_description');
+        const categoryField = document.getElementById('id_category');
+        if (nameField && !nameField.value) nameField.value = data.name;
+        if (brandField && !brandField.value) brandField.value = data.brand;
+        if (descField && !descField.value) descField.value = data.description;
+        if (categoryField && data.category_id && !categoryField.value) categoryField.value = data.category_id;
+        if (data.image_url) setCapturedImage(data.image_url);
+        highlightRequiredFields();
+      } else {
+        result.innerHTML = `<div class="dash-info-note" style="color:#c78da0"><i class="fas fa-info-circle"></i> ${data.message || 'Produto não encontrado. Preencha manualmente mantendo o GTIN.'}</div>`;
+      }
+    })
+    .catch(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+      result.innerHTML = '<div class="dash-info-note" style="color:red"><i class="fas fa-exclamation-circle"></i> Erro na consulta. Tente novamente.</div>';
+    });
+}
+
+// --- Text escaping ---
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// --- Captured Image from GTIN ---
+function setCapturedImage(url) {
+  const card = document.getElementById('capturedImageCard');
+  const preview = document.getElementById('capturedImagePreview');
+  const hidden = document.getElementById('capturedImageUrl');
+  preview.src = url;
+  hidden.value = url;
+  card.style.display = 'block';
+}
+
+function clearCapturedImage() {
+  document.getElementById('capturedImageCard').style.display = 'none';
+  document.getElementById('capturedImagePreview').src = '';
+  document.getElementById('capturedImageUrl').value = '';
+}
+
+// --- Image Search ---
+function searchImages() {
+  const input = document.getElementById('imageSearchInput');
+  const query = (input.value || '').trim();
+  if (!query) { alert('Digite um termo para buscar fotos.'); return; }
+  const btn = document.getElementById('imageSearchBtn');
+  const results = document.getElementById('imageSearchResults');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  results.innerHTML = '<p class="field-note">Buscando fotos nos catálogos...</p>';
+  fetch(`/painel/api/image-search/?q=${encodeURIComponent(query)}`)
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+      if (!data.images || data.images.length === 0) {
+        results.innerHTML = '<p class="field-note" style="color:#c78da0"><i class="fas fa-info-circle"></i> Nenhuma foto encontrada. Tente outro termo.</p>';
+        return;
+      }
+      let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">';
+      data.images.forEach(img => {
+        html += `<div style="text-align:center;cursor:pointer;border:2px solid transparent;border-radius:8px;padding:4px;transition:border-color .2s"
+                      class="image-search-option"
+                      onclick="selectSearchImage(this,'${img.url.replace(/'/g, "\\'")}')">
+          <img src="${esc(img.url)}" alt="${esc(img.label)}"
+               style="width:100%;height:120px;object-fit:contain;border-radius:4px;background:#f5f5f5"
+               onerror="this.parentElement.style.display='none'">
+          <small style="display:block;margin-top:4px;font-size:0.7rem;color:#888">${esc(img.source)}</small>
+        </div>`;
+      });
+      html += '</div>';
+      results.innerHTML = html;
+    })
+    .catch(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+      results.innerHTML = '<p class="field-note" style="color:red"><i class="fas fa-exclamation-circle"></i> Erro na busca.</p>';
+    });
+}
+
+function selectSearchImage(el, url) {
+  {% if product %}
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const productId = {{ product.pk }};
+  el.style.borderColor = '#4caf50';
+  el.innerHTML += '<p style="margin:4px 0 0;color:#4caf50;font-size:0.75rem"><i class="fas fa-spinner fa-spin"></i> Baixando...</p>';
+  fetch(`/painel/produtos/${productId}/imagem-url/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `image_url=${encodeURIComponent(url)}`,
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        el.querySelector('p:last-child').innerHTML = `<span style="color:red">${esc(data.error || 'Erro')}</span>`;
+      }
+    })
+    .catch(() => {
+      el.querySelector('p:last-child').innerHTML = '<span style="color:red">Erro ao baixar</span>';
+    });
+  {% endif %}
+}
+
+// --- GTIN Camera Scanner ---
+let gtinStream = null;
+let gtinScanInterval = null;
+
+function startGtinScanner() {
+  const area = document.getElementById('gtinScannerArea');
+  const video = document.getElementById('gtinVideo');
+  area.style.display = 'block';
+  if (!('BarcodeDetector' in window)) {
+    area.innerHTML = '<div class="dash-info-note" style="color:#c78da0"><i class="fas fa-info-circle"></i> Scanner de câmera não suportado neste navegador. Use Chrome 83+ ou Edge. Você pode digitar o código manualmente.</div>';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      gtinStream = stream;
+      video.srcObject = stream;
+      const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+      gtinScanInterval = setInterval(() => {
+        if (video.readyState < 2) return;
+        detector.detect(video).then(barcodes => {
+          if (barcodes.length > 0) {
+            document.getElementById('productLookupInput').value = barcodes[0].rawValue;
+            document.getElementById('gtinInput').value = barcodes[0].rawValue.replace(/\D/g, '');
+            stopGtinScanner();
+            gtinLookup();
+          }
+        }).catch(() => {});
+      }, 500);
+    })
+    .catch(() => {
+      area.innerHTML = '<div class="dash-info-note" style="color:red"><i class="fas fa-exclamation-circle"></i> Não foi possível acessar a câmera. Verifique as permissões.</div>';
+    });
+}
+
+function stopGtinScanner() {
+  if (gtinScanInterval) { clearInterval(gtinScanInterval); gtinScanInterval = null; }
+  if (gtinStream) { gtinStream.getTracks().forEach(t => t.stop()); gtinStream = null; }
+  const area = document.getElementById('gtinScannerArea');
+  area.style.display = 'none';
+}
+
+function highlightRequiredFields() {
+  const fields = ['id_price', 'id_weight', 'id_height', 'id_width', 'id_length'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.border = '2px solid #d4789b';
+      el.style.boxShadow = '0 0 0 3px rgba(212,120,155,0.2)';
+      el.addEventListener('input', function handler() {
+        el.style.border = '';
+        el.style.boxShadow = '';
+        el.removeEventListener('input', handler);
+      });
+    }
+  });
+  const priceField = document.getElementById('id_price');
+  if (priceField) {
+    priceField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    priceField.focus();
+  }
+}
+</script>
+{% endblock %}

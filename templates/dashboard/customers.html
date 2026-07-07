@@ -1,0 +1,35 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="dash-page-header"><h1>Clientes</h1></div>
+<div class="dash-filters">
+  <form method="get" class="dash-filter-form">
+    <input type="text" name="q" value="{{ q }}" placeholder="Nome, e-mail, CPF ou telefone..." class="dash-input">
+    <button type="submit" class="btn-dash">Buscar</button>
+  </form>
+</div>
+<div class="dash-card">
+  <table class="dash-table">
+    <thead><tr><th>Nome</th><th>E-mail</th><th>CPF</th><th>Telefone</th><th>Cidade</th><th>Cadastro</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for c in customers %}
+      <tr>
+        <td><strong>{{ c.full_name|default:c.username }}</strong></td>
+        <td>{{ c.email }}</td>
+        <td>{{ c.cpf|default:"—" }}</td>
+        <td>{{ c.whatsapp|default:"—" }}</td>
+        <td>{{ c.city|default:"—" }}{% if c.state %}/{{ c.state }}{% endif %}</td>
+        <td>{{ c.date_joined|date:"d/m/Y" }}</td>
+        <td>
+          <a href="{% url 'admin:accounts_user_change' c.pk %}" class="btn-dash btn-dash-sm" title="Editar no admin">
+            <i class="fas fa-edit"></i>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="dash-empty">Nenhum cliente encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

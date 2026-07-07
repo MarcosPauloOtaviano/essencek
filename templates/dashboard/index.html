@@ -1,0 +1,165 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>Dashboard</h1>
+  <span class="dash-date">{{ now|date:"d/m/Y" }}</span>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi-card kpi-revenue">
+    <div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Faturamento do mês</span>
+      <span class="kpi-value">R$ {{ monthly_revenue|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-profit">
+    <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Lucro bruto estimado</span>
+      <span class="kpi-value">R$ {{ gross_profit|floatformat:2 }}</span>
+      <span class="kpi-note">Estimado — não inclui taxas e despesas</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-pending">
+    <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Aguardando pagamento</span>
+      <span class="kpi-value">{{ awaiting_payment }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-paid">
+    <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Pedidos pagos</span>
+      <span class="kpi-value">{{ paid_orders }}</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon"><i class="fas fa-box"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Produtos ativos</span>
+      <span class="kpi-value">{{ active_products }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-alert">
+    <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Produtos esgotados</span>
+      <span class="kpi-value">{{ out_of_stock }}</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon"><i class="fas fa-plane"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Sob encomenda</span>
+      <span class="kpi-value">{{ pre_order_count }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-alert">
+    <div class="kpi-icon"><i class="fas fa-battery-quarter"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Estoque baixo (≤3)</span>
+      <span class="kpi-value">{{ low_stock }}</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon"><i class="fas fa-warehouse"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Investido em estoque</span>
+      <span class="kpi-value">R$ {{ stock_value|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-revenue">
+    <div class="kpi-icon"><i class="fas fa-tags"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Potencial de venda</span>
+      <span class="kpi-value">R$ {{ potential_value|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon"><i class="fas fa-clipboard-list"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Encomendas abertas</span>
+      <span class="kpi-value">{{ open_pre_orders }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Charts & Top Products -->
+<div class="dash-charts-row">
+  <div class="dash-chart-card">
+    <h3>Vendas dos últimos 6 meses</h3>
+    <canvas id="revenueChart" height="120"></canvas>
+  </div>
+  <div class="dash-chart-card">
+    <h3>Produtos mais vendidos</h3>
+    {% if top_products %}
+    <table class="dash-table">
+      <thead><tr><th>Produto</th><th>Qtd vendida</th></tr></thead>
+      <tbody>
+        {% for p in top_products %}
+        <tr><td>{{ p.product_name }}</td><td>{{ p.total_sold }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="dash-empty">Sem dados de vendas ainda.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+  <h3>Ações rápidas</h3>
+  <div class="quick-actions-grid">
+    <a href="{% url 'dashboard:product_add' %}" class="quick-action-btn">
+      <i class="fas fa-plus"></i> Novo produto
+    </a>
+    <a href="{% url 'dashboard:orders' %}" class="quick-action-btn">
+      <i class="fas fa-shopping-bag"></i> Ver pedidos
+    </a>
+    <a href="{% url 'dashboard:pre_orders' %}" class="quick-action-btn">
+      <i class="fas fa-plane"></i> Encomendas
+    </a>
+    <a href="{% url 'dashboard:next_trip' %}" class="quick-action-btn">
+      <i class="fas fa-plane-departure"></i> Próxima viagem
+    </a>
+    <a href="{% url 'dashboard:reports' %}" class="quick-action-btn">
+      <i class="fas fa-chart-bar"></i> Relatórios
+    </a>
+    <a href="{% url 'dashboard:settings' %}" class="quick-action-btn">
+      <i class="fas fa-cog"></i> Configurações
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const labels = {{ chart_labels|safe }};
+const revenue = {{ chart_revenue|safe }};
+if (labels.length > 0) {
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Faturamento (R$)',
+        data: revenue,
+        backgroundColor: '#B8957A',
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+</script>
+{% endblock %}

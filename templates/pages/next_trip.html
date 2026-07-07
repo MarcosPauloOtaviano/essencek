@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Próxima Viagem{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title"><i class="fas fa-plane-departure"></i> Próxima Viagem</h1>
+    <nav class="breadcrumb"><a href="{% url 'home' %}">Home</a> / <span>Próxima Viagem</span></nav>
+  </div>
+
+  {% if next_trip and next_trip.is_active %}
+  <div class="trip-info-card">
+    <div class="trip-dates">
+      <div class="trip-date-item">
+        <span class="trip-date-label">Data da viagem</span>
+        <span class="trip-date-value">{{ next_trip.trip_date|date:"d/m/Y" }}</span>
+      </div>
+      <div class="trip-divider">→</div>
+      <div class="trip-date-item urgent">
+        <span class="trip-date-label">Encomendar até</span>
+        <span class="trip-date-value">{{ next_trip.order_deadline|date:"d/m/Y" }}</span>
+      </div>
+    </div>
+    {% if next_trip.message %}
+    <div class="trip-message">{{ next_trip.message }}</div>
+    {% endif %}
+    <div class="trip-cta">
+      <p>Quer encomendar algo na próxima viagem? Veja os produtos disponíveis ou fale com a loja pelos canais de atendimento.</p>
+      <a href="{% url 'products:list' %}?status=pre_order" class="btn btn-primary btn-large">
+        <i class="fas fa-shopping-bag"></i> Ver produtos sob encomenda
+      </a>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="fas fa-plane"></i>
+    <h2>Nenhuma viagem programada no momento</h2>
+    <p>Entre em contato para saber da próxima data.</p>
+    <a href="{% url 'contact' %}" class="btn btn-primary">Fale conosco</a>
+  </div>
+  {% endif %}
+
+  {% if pre_order_products %}
+  <section class="section">
+    <h2 class="section-title">Produtos disponíveis para encomenda</h2>
+    <div class="products-grid">
+      {% for product in pre_order_products %}
+        {% include 'products/_card.html' %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

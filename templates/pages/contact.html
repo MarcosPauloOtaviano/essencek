@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Contato{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Contato</h1>
+    <nav class="breadcrumb"><a href="{% url 'home' %}">Home</a> / <span>Contato</span></nav>
+  </div>
+  <div class="contact-page">
+    <div class="contact-options">
+      <div class="contact-card">
+        <i class="fab fa-instagram contact-icon instagram-color"></i>
+        <h3>Instagram</h3>
+        <p>@shopparaguai</p>
+        <a href="https://www.instagram.com/shopparaguai/" class="btn btn-secondary" target="_blank" rel="noopener">Ver no Instagram</a>
+      </div>
+      {% if store and store.email %}
+      <div class="contact-card">
+        <i class="fas fa-envelope contact-icon"></i>
+        <h3>E-mail</h3>
+        <p>{{ store.email }}</p>
+        <a href="mailto:{{ store.email }}" class="btn btn-secondary">Enviar e-mail</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

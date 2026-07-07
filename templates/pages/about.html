@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Sobre{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Sobre a Essence K Importados</h1>
+    <nav class="breadcrumb"><a href="{% url 'home' %}">Home</a> / <span>Sobre</span></nav>
+  </div>
+  <div class="content-page">
+    <section class="about-section">
+      <h2>Quem somos</h2>
+      <p>A Essence K Importados é uma loja especializada em produtos importados selecionados: perfumes internacionais, beleza coreana e eletrônicos. Atuamos com duas modalidades: <strong>pronta entrega</strong> e <strong>encomendas mensais</strong>.</p>
+    </section>
+    <section class="about-section">
+      <h2>Como funciona a pronta entrega</h2>
+      <p>Os produtos de pronta entrega estão disponíveis em nosso estoque e são enviados para todo o Brasil em até 2 dias úteis após a confirmação do pagamento, via Correios ou transportadora parceira.</p>
+    </section>
+    <section class="about-section">
+      <h2>Como funciona a encomenda mensal</h2>
+      <p>Realizamos viagens mensais para trazer produtos especiais. Você pode reservar qualquer item marcado como "sob encomenda" até a data limite de cada viagem. Após confirmação da disponibilidade, você recebe o link de pagamento. O produto é entregue após o retorno da viagem.</p>
+    </section>
+    <section class="about-section">
+      <h2>Envio</h2>
+      <p>Enviamos para qualquer cidade do Brasil. O prazo varia conforme a região e o serviço de entrega escolhido. O código de rastreio é disponibilizado assim que o pedido é despachado.</p>
+    </section>
+    <section class="about-section">
+      <h2>Pagamento</h2>
+      <p>Aceitamos pagamento via <strong>Pix</strong>, <strong>cartão de crédito</strong> e <strong>link de pagamento</strong>, quando disponível. Todos os pagamentos são processados em ambiente seguro.</p>
+    </section>
+    <section class="about-section">
+      <h2>Contato</h2>
+      <p>Atendemos pelos canais oficiais da loja. Nossa equipe está disponível para tirar dúvidas, ajudar na escolha de produtos e confirmar encomendas.</p>
+      <a href="{% url 'contact' %}" class="btn btn-primary">Fale conosco</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

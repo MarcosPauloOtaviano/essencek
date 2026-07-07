@@ -1,0 +1,13 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Confirmar exclusão{% endblock %}
+{% block content %}
+<div class="dash-page-header"><h1>Excluir produto</h1></div>
+<div class="dash-card">
+  <p>Tem certeza que deseja excluir o produto <strong>"{{ product.name }}"</strong>? Esta ação não pode ser desfeita.</p>
+  <form method="post" style="display:inline">
+    {% csrf_token %}
+    <button type="submit" class="btn-dash btn-dash-danger">Sim, excluir</button>
+  </form>
+  <a href="{% url 'dashboard:products' %}" class="btn-dash btn-dash-ghost">Cancelar</a>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load money %}
+{% block title %}Meus Pedidos{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Meus Pedidos</h1>
+  </div>
+  <div class="account-layout">
+    {% include 'accounts/_sidebar.html' %}
+    <div class="account-main">
+      {% if orders %}
+        <div class="orders-list">
+          {% for order in orders %}
+          <div class="order-card">
+            <div class="order-card-header">
+              <div>
+                <span class="order-number">{{ order.order_number }}</span>
+                <span class="order-date">{{ order.created_at|date:"d/m/Y H:i" }}</span>
+              </div>
+              <span class="order-status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
+            </div>
+            <div class="order-card-items">
+              {% for item in order.items.all %}
+              <div class="order-item-row">
+                <span class="order-item-product"><img src="{{ item.display_image_url }}" alt="{{ item.product_name }}" class="order-item-thumb">{{ item.product_name }}{% if item.display_variant_label %} · {{ item.display_variant_label }}{% endif %} × {{ item.quantity }}</span>
+                <span class="summary-money">
+                  <strong>{{ item.subtotal|brl }}</strong>
+                  {% if item.display_subtotal_usd %}<small>≈ {{ item.display_subtotal_usd|usd }}</small>{% endif %}
+                </span>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="order-card-footer">
+              <span class="order-total">
+                Total:
+                <strong>{{ order.total|brl }}</strong>
+                {% if order.display_total_usd %}<small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}
+              </span>
+              <div class="order-actions">
+                <a href="{% url 'order_detail' order.order_number %}" class="btn btn-secondary btn-sm">Ver detalhes</a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class="fas fa-box-open"></i>
+          <h2>Nenhum pedido ainda</h2>
+          <p>Quando você fizer um pedido, ele aparecerá aqui.</p>
+          <a href="{% url 'products:list' %}" class="btn btn-primary">Explorar produtos</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

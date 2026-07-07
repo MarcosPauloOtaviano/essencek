@@ -1,0 +1,61 @@
+{% load humanize static money %}
+<div class="product-card">
+  <a href="{{ product.get_absolute_url }}" class="product-card-link">
+    <div class="product-card-image">
+      <img src="{{ product.display_image_url }}" alt="{{ product.name }}" loading="lazy">
+      <!-- Badges -->
+      <div class="product-badges">
+        {% if product.is_on_sale and product.discount_percent > 0 %}
+          <span class="badge badge-sale">-{{ product.discount_percent }}%</span>
+        {% endif %}
+        {% if product.is_featured %}
+          <span class="badge badge-featured">Destaque</span>
+        {% endif %}
+      </div>
+      <!-- Status -->
+      <span class="product-status {{ product.get_status_display_class }}">
+        {{ product.get_status_display }}
+      </span>
+    </div>
+    <div class="product-card-body">
+      {% if product.display_brand %}
+        <span class="product-brand">{{ product.display_brand }}</span>
+      {% elif product.brand %}
+        <span class="product-brand">{{ product.brand }}</span>
+      {% endif %}
+      <h3 class="product-name">{{ product.name }}</h3>
+      {% if product.short_description %}
+        <p class="product-short-desc">{{ product.short_description|truncatechars:80 }}</p>
+      {% endif %}
+      <div class="product-price">
+        {% if product.is_on_sale and product.sale_price %}
+          <span class="price-original">{{ product.price|brl }}</span>
+          <span class="price-sale">{{ product.sale_price|brl }}</span>
+          {% if product.display_sale_price_usd %}
+            <span class="price-brl">≈ {{ product.display_sale_price_usd|usd }} no câmbio do dia</span>
+          {% endif %}
+        {% else %}
+          <span class="price-current">{{ product.price|brl }}</span>
+          {% if product.display_price_usd %}
+            <span class="price-brl">≈ {{ product.display_price_usd|usd }} no câmbio do dia</span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </a>
+  <div class="product-card-actions">
+    {% if product.status == 'out_of_stock' %}
+      <button class="btn btn-disabled" disabled>Esgotado</button>
+    {% elif product.is_pre_order %}
+      <a href="{{ product.get_absolute_url }}" class="btn btn-preorder">Encomendar</a>
+    {% else %}
+      <form action="{% url 'cart:add' product.pk %}" method="post" class="add-to-cart-form">
+        {% csrf_token %}
+        <input type="hidden" name="quantity" value="1">
+        <button type="submit" class="btn btn-primary btn-add-cart">
+          <i class="fas fa-shopping-bag"></i> Adicionar
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>

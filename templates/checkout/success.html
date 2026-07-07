@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load money %}
+{% block title %}Pedido Confirmado{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="success-page">
+    <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+    <h1>Pedido recebido!</h1>
+    <p class="success-subtitle">Obrigada por comprar na Essence K Importados.</p>
+    <div class="order-confirmation-card">
+      <div class="order-number">Pedido <strong>{{ order.order_number }}</strong></div>
+      <div class="order-items-summary">
+        {% for item in order.items.all %}
+        <div class="confirmation-item">
+          <span class="order-item-product">
+            <img src="{{ item.display_image_url }}" alt="{{ item.product_name }}" class="order-item-thumb">
+            {{ item.product_name }}{% if item.display_variant_label %} · {{ item.display_variant_label }}{% endif %} × {{ item.quantity }}
+          </span>
+          <span class="summary-money">
+            <strong>{{ item.subtotal|brl }}</strong>
+            {% if item.display_subtotal_usd %}<small>≈ {{ item.display_subtotal_usd|usd }}</small>{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="confirmation-total">
+        <span>Total</span>
+        <span class="summary-money">
+          <strong>{{ order.total|brl }}</strong>
+          {% if order.display_total_usd %}<small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}
+        </span>
+      </div>
+      <div class="confirmation-payment">
+        Forma de pagamento: <strong>{{ order.get_payment_method_display }}</strong>
+      </div>
+    </div>
+
+    {% if order.payment_method == 'pix' %}
+    <div class="next-step-card">
+      <h3><i class="fas fa-qrcode"></i> Próximo passo: pagamento via Pix</h3>
+      <p>Acesse o link abaixo para obter o QR code ou chave Pix e confirmar seu pagamento.</p>
+      <a href="{% url 'payment_pix' order.order_number %}" class="btn btn-primary">Pagar com Pix</a>
+    </div>
+    {% elif order.payment_method == 'credit_card' %}
+    <div class="next-step-card">
+      <h3><i class="fas fa-credit-card"></i> Próximo passo: pagamento com cartão</h3>
+      <a href="{% url 'payment_link' order.order_number %}" class="btn btn-primary">Ir para pagamento</a>
+    </div>
+    {% endif %}
+
+    <div class="success-actions">
+      <a href="{% url 'my_orders' %}" class="btn btn-outline">Ver meus pedidos</a>
+      <a href="{% url 'products:list' %}" class="btn btn-ghost">Continuar comprando</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

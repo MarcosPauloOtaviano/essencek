@@ -1,0 +1,7 @@
+exclude_dirs:
+  - venv
+  - node_modules
+  - staticfiles
+  - media
+skips:
+  - B101

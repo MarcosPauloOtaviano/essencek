@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load money %}
+{% block title %}Pedido {{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Pedido {{ order.order_number }}</h1>
+    <nav class="breadcrumb"><a href="{% url 'my_orders' %}">Meus pedidos</a> / <span>{{ order.order_number }}</span></nav>
+  </div>
+  <div class="account-layout">
+    {% include 'accounts/_sidebar.html' %}
+    <div class="account-main">
+      <div class="order-detail-card">
+        <div class="order-detail-header">
+          <div>
+            <p><strong>Data:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
+            <p><strong>Pagamento:</strong> {{ order.get_payment_method_display }}</p>
+          </div>
+          <span class="order-status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
+        </div>
+
+        <h3>Itens do pedido</h3>
+        <table class="order-items-table">
+          <thead><tr><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Preço</th><th>Subtotal</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for item in order.items.all %}
+            <tr>
+              <td><span class="order-item-product"><img src="{{ item.display_image_url }}" alt="{{ item.product_name }}" class="order-item-thumb">{{ item.product_name }}</span>{% if item.display_variant_label %}<br><small>{{ item.display_variant_label }}</small>{% endif %}{% if item.product_brand %} <small>({{ item.product_brand }})</small>{% endif %}</td>
+              <td>{% if item.is_pre_order %}<span class="badge badge-pre-order">Encomenda</span>{% else %}<span class="badge badge-available">Pronta entrega</span>{% endif %}</td>
+              <td>{{ item.quantity }}</td>
+              <td><strong>{{ item.unit_price|brl }}</strong>{% if item.display_unit_price_usd %}<br><small>≈ {{ item.display_unit_price_usd|usd }}</small>{% endif %}</td>
+              <td><strong>{{ item.subtotal|brl }}</strong>{% if item.display_subtotal_usd %}<br><small>≈ {{ item.display_subtotal_usd|usd }}</small>{% endif %}</td>
+              <td>{{ item.get_item_status_display }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="order-totals">
+          <div class="order-total-row"><span>Subtotal</span><span><strong>{{ order.subtotal|brl }}</strong>{% if order.display_subtotal_usd %}<br><small>≈ {{ order.display_subtotal_usd|usd }}</small>{% endif %}</span></div>
+          <div class="order-total-row"><span>Frete</span><span>{{ order.shipping_cost|brl }}</span></div>
+          <div class="order-total-row order-total-final"><span>Total</span><span><strong>{{ order.total|brl }}</strong>{% if order.display_total_usd %}<br><small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}</span></div>
+        </div>
+
+        <!-- Payment section -->
+        <div class="payment-section-card">
+          <h3><i class="fas fa-credit-card"></i> Pagamento</h3>
+          <div class="payment-info-grid">
+            <p><strong>Status:</strong>
+              {% if order.payment_status == 'confirmed' %}
+                <span class="badge badge-available">Pagamento confirmado</span>
+              {% elif order.payment_status == 'pending' or order.payment_status == '' %}
+                <span class="badge badge-pre-order">Aguardando pagamento</span>
+              {% else %}
+                <span class="badge">{{ order.payment_status }}</span>
+              {% endif %}
+            </p>
+            <p><strong>Forma escolhida:</strong> {{ order.get_payment_method_display }}</p>
+            <p><strong>Total:</strong> {{ order.total|brl }}{% if order.display_total_usd %} <small class="text-muted">≈ {{ order.display_total_usd|usd }}</small>{% endif %}</p>
+            {% if order.exchange_rate %}<p><strong>Cotação:</strong> US$ 1 = R$ {{ order.exchange_rate }}</p>{% endif %}
+            <p><strong>Data do pedido:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
+          </div>
+
+          {% if order.can_retry_payment %}
+          <div class="payment-pending-notice">
+            <i class="fas fa-info-circle"></i>
+            <p>Seu pagamento ainda está pendente. Você pode continuar o pagamento ou escolher outra forma de pagamento sem refazer o pedido.</p>
+          </div>
+          <div class="payment-retry-actions">
+            <a href="{% url 'retry_payment' order.order_number %}" class="btn btn-primary">
+              <i class="fas fa-redo"></i> Continuar pagamento
+            </a>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('changeMethodForm').style.display = document.getElementById('changeMethodForm').style.display === 'none' ? 'block' : 'none'">
+              <i class="fas fa-exchange-alt"></i> Alterar forma de pagamento
+            </button>
+          </div>
+          <form id="changeMethodForm" method="post" action="{% url 'change_payment_method' order.order_number %}" style="display:none" class="change-method-form">
+            {% csrf_token %}
+            <label for="payment_method"><strong>Escolha a nova forma de pagamento:</strong></label>
+            <div class="payment-method-options">
+              {% for value, label in payment_choices %}
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="{{ value }}" {% if order.payment_method == value %}checked{% endif %}>
+                <span>
+                  {% if value == 'pix' %}<i class="fas fa-qrcode"></i>{% else %}<i class="fas fa-credit-card"></i>{% endif %}
+                  {{ label }}
+                </span>
+              </label>
+              {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Confirmar e pagar</button>
+          </form>
+          {% elif order.payment_status == 'confirmed' %}
+          <div class="payment-confirmed-notice">
+            <i class="fas fa-check-circle"></i>
+            <p>Pagamento confirmado. Seu pedido está sendo preparado.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if order.tracking_code %}
+        <div class="tracking-card">
+          <h3><i class="fas fa-shipping-fast"></i> Rastreamento</h3>
+          <p><strong>Transportadora:</strong> {{ order.carrier }}</p>
+          <p><strong>Código:</strong> <code>{{ order.tracking_code }}</code></p>
+          {% if order.tracking_url %}
+          <a href="{{ order.tracking_url }}" target="_blank" rel="noopener" class="btn btn-secondary">
+            <i class="fas fa-external-link-alt"></i> Rastrear encomenda
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="order-address">
+          <h3><i class="fas fa-map-marker-alt"></i> Endereço de entrega</h3>
+          <p>{{ order.address }}, {{ order.address_number }}{% if order.address_complement %} — {{ order.address_complement }}{% endif %}</p>
+          <p>{{ order.neighborhood }} — {{ order.city }}/{{ order.state }} — CEP {{ order.cep }}</p>
+        </div>
+
+        <div class="order-actions">
+          <a href="{% url 'my_orders' %}" class="btn btn-outline">Voltar aos pedidos</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

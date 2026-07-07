@@ -1,0 +1,29 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Categorias{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>Categorias</h1>
+  <a href="{% url 'dashboard:category_add' %}" class="btn-dash btn-dash-primary"><i class="fas fa-plus"></i> Nova categoria</a>
+</div>
+<div class="dash-card">
+  <table class="dash-table">
+    <thead><tr><th>Nome</th><th>Slug</th><th>Produtos</th><th>Ativa</th><th>Ordem</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for cat in categories %}
+      <tr>
+        <td><strong>{{ cat.name }}</strong></td>
+        <td><code>{{ cat.slug }}</code></td>
+        <td>{{ cat.products.count }}</td>
+        <td>{% if cat.is_active %}<span class="badge-active">Sim</span>{% else %}<span class="badge-inactive">Não</span>{% endif %}</td>
+        <td>{{ cat.order }}</td>
+        <td>
+          <a href="{% url 'dashboard:category_edit' cat.pk %}" class="btn-dash btn-dash-sm"><i class="fas fa-edit"></i></a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="dash-empty">Nenhuma categoria.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

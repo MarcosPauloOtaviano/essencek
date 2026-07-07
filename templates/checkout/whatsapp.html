@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Pedido criado{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="success-page">
+    <div class="success-icon"><i class="fas fa-check"></i></div>
+    <h1>Pedido criado</h1>
+    <p>Seu pedido <strong>{{ order.order_number }}</strong> foi criado. Acompanhe os detalhes na área Meus pedidos.</p>
+    <div class="success-actions">
+      <a href="{% url 'my_orders' %}" class="btn btn-outline">Ver meus pedidos</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

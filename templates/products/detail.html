@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+{% load static money %}
+
+{% block title %}{{ product.name }}{% endblock %}
+{% block meta_description %}{{ product.short_description }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a> /
+    <a href="{% url 'products:list' %}">Produtos</a> /
+    {% if product.category %}<a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a> / {% endif %}
+    <span>{{ product.name }}</span>
+  </nav>
+
+  <div class="product-detail-layout">
+    <!-- Gallery -->
+    <div class="product-gallery">
+      <div class="gallery-main" id="galleryMain">
+        <img src="{{ product.display_image_url }}" alt="{{ product.name }}" id="mainImage">
+        {% if product.is_on_sale and product.discount_percent > 0 %}
+          <span class="gallery-badge badge-sale">-{{ product.discount_percent }}%</span>
+        {% endif %}
+      </div>
+      {% if images|length > 1 %}
+      <div class="gallery-thumbs">
+        {% for img in images %}
+          <img src="{{ img.display_url }}" alt="{{ img.alt_text|default:product.name }}"
+               class="gallery-thumb {% if img.is_main %}active{% endif %}"
+               data-image-url="{{ img.display_url }}"
+               onclick="setMainImage(this.dataset.imageUrl, this)">
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="product-info">
+      {% if product.display_brand %}<p class="product-detail-brand">{{ product.display_brand }}</p>{% elif product.brand %}<p class="product-detail-brand">{{ product.brand }}</p>{% endif %}
+      <h1 class="product-detail-name">{{ product.name }}</h1>
+      {% if product.category %}
+        <span class="product-detail-category">{{ product.category.name }}</span>
+      {% endif %}
+
+      <!-- Status Badge -->
+      <div class="product-detail-status">
+        <span class="status-badge {{ product.get_status_display_class }}">
+          {% if product.status == 'available' %}<i class="fas fa-check-circle"></i>
+          {% elif product.status == 'low_stock' %}<i class="fas fa-exclamation-circle"></i>
+          {% elif product.status == 'pre_order' %}<i class="fas fa-plane"></i>
+          {% else %}<i class="fas fa-times-circle"></i>{% endif %}
+          {{ product.get_status_display }}
+        </span>
+      </div>
+
+      <!-- Price -->
+      <div class="product-detail-price">
+        {% if variants and first_variant %}
+          <span class="price-now" id="variantPriceBrl">{{ first_variant.price_brl|brl }}</span>
+          {% if first_variant.current_price_usd %}
+            <span class="price-brl" id="variantPriceUsd">≈ {{ first_variant.current_price_usd|usd }} no câmbio do dia</span>
+          {% endif %}
+          {% if first_variant.promotional_price %}
+            <span class="price-save">Preço promocional para {{ first_variant.name }}</span>
+          {% endif %}
+          {% if current_exchange_rate %}
+            <span class="price-rate-note">Preço cobrado em reais. Referência: US$ 1 = {{ current_exchange_rate.rate|rate_brl }}</span>
+          {% endif %}
+        {% elif product.is_on_sale and product.sale_price %}
+          <span class="price-was">De {{ product.price|brl }}</span>
+          <span class="price-now">{{ product.sale_price|brl }}</span>
+          <span class="price-save">Você economiza {{ product.discount_amount|brl }}</span>
+          {% if product.display_sale_price_usd %}
+            <span class="price-brl">≈ {{ product.display_sale_price_usd|usd }} no câmbio do dia</span>
+          {% endif %}
+        {% else %}
+          <span class="price-now">{{ product.price|brl }}</span>
+          {% if product.display_price_usd %}
+            <span class="price-brl">≈ {{ product.display_price_usd|usd }} no câmbio do dia</span>
+          {% endif %}
+        {% endif %}
+        {% if current_exchange_rate and not variants %}
+          <span class="price-rate-note">Preço cobrado em reais. Referência: US$ 1 = {{ current_exchange_rate.rate|rate_brl }}</span>
+        {% endif %}
+      </div>
+
+      {% if product.short_description %}
+        <p class="product-short-desc">{{ product.short_description }}</p>
+      {% endif %}
+
+      <!-- Actions -->
+      <div class="product-detail-actions">
+        {% if product.status == 'out_of_stock' %}
+          <div class="out-of-stock-notice">
+            <i class="fas fa-times-circle"></i>
+            <p>Produto esgotado. <a href="{% url 'contact' %}">Entre em contato</a> para saber da próxima reposição.</p>
+          </div>
+        {% elif product.is_pre_order %}
+          <div class="pre-order-notice">
+            <i class="fas fa-plane"></i>
+            <p>Produto sob encomenda — disponível na próxima viagem, sujeito à confirmação.</p>
+          </div>
+          <form action="{% url 'cart:add' product.pk %}" method="post" class="add-to-cart-form">
+            {% csrf_token %}
+            {% if variants %}
+            <div class="variant-selector">
+              <label>Escolha o volume:</label>
+              <div class="variant-options">
+                {% for variant in variants %}
+                <label class="variant-option {% if variant.stock <= 0 %}variant-option-disabled{% endif %}">
+                  <input type="radio" name="variant_id" value="{{ variant.pk }}"
+                         data-brl="{{ variant.price_brl|brl }}"
+                         data-usd="{% if variant.current_price_usd %}{{ variant.current_price_usd|usd }}{% endif %}"
+                         data-stock="{{ variant.stock }}"
+                         {% if forloop.first %}checked{% endif %}
+                         {% if variant.stock <= 0 %}disabled{% endif %}
+                         onchange="selectVariant(this)">
+                  <span>{{ variant.name }}</span>
+                  <strong>{{ variant.price_brl|brl }}</strong>
+                  {% if variant.current_price_usd %}<small>≈ {{ variant.current_price_usd|usd }} · {{ variant.stock }} un.</small>{% else %}<small>{{ variant.stock }} un.</small>{% endif %}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+            <div class="quantity-selector">
+              <label>Quantidade:</label>
+              <div class="qty-control">
+                <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+                <input type="number" name="quantity" id="qty" value="1" min="1" max="{% if first_variant %}{{ first_variant.stock }}{% else %}10{% endif %}" class="qty-input">
+                <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-preorder btn-large">
+                <i class="fas fa-plane"></i> Encomendar na próxima viagem
+              </button>
+            </div>
+          </form>
+        {% else %}
+          <form action="{% url 'cart:add' product.pk %}" method="post" class="add-to-cart-form">
+            {% csrf_token %}
+            {% if variants %}
+            <div class="variant-selector">
+              <label>Escolha o volume:</label>
+              <div class="variant-options">
+                {% for variant in variants %}
+                <label class="variant-option {% if variant.stock <= 0 %}variant-option-disabled{% endif %}">
+                  <input type="radio" name="variant_id" value="{{ variant.pk }}"
+                         data-brl="{{ variant.price_brl|brl }}"
+                         data-usd="{% if variant.current_price_usd %}{{ variant.current_price_usd|usd }}{% endif %}"
+                         data-stock="{{ variant.stock }}"
+                         {% if forloop.first %}checked{% endif %}
+                         {% if variant.stock <= 0 %}disabled{% endif %}
+                         onchange="selectVariant(this)">
+                  <span>{{ variant.name }}</span>
+                  <strong>{{ variant.price_brl|brl }}</strong>
+                  {% if variant.current_price_usd %}<small>≈ {{ variant.current_price_usd|usd }} · {{ variant.stock }} un.</small>{% else %}<small>{{ variant.stock }} un.</small>{% endif %}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+            <div class="quantity-selector">
+              <label>Quantidade:</label>
+              <div class="qty-control">
+                <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+                <input type="number" name="quantity" id="qty" value="1" min="1" max="{% if first_variant %}{{ first_variant.stock }}{% else %}{{ product.stock|default:99 }}{% endif %}" class="qty-input">
+                <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-shopping-bag"></i> Adicionar ao carrinho
+              </button>
+              <button type="submit" form="buyNowForm" class="btn btn-buy-now btn-large">
+                Comprar agora
+              </button>
+            </div>
+          </form>
+          <form id="buyNowForm" action="{% url 'cart:add' product.pk %}" method="post" style="display:none">
+            {% csrf_token %}
+            <input type="hidden" name="quantity" value="1">
+            <input type="hidden" name="buy_now" value="1">
+            {% if first_variant %}<input type="hidden" name="variant_id" id="buyNowVariantId" value="{{ first_variant.pk }}">{% endif %}
+          </form>
+        {% endif %}
+
+      </div>
+
+      <!-- Shipping Calculator -->
+      <div class="shipping-calculator">
+        <h4><i class="fas fa-truck"></i> Calcular frete</h4>
+        <div class="cep-form">
+          <input type="text" id="cepInput" placeholder="00000-000" maxlength="9" class="cep-input">
+          <button onclick="calcShipping()" class="btn btn-secondary">Calcular</button>
+        </div>
+        <div id="shippingResult" class="shipping-result"></div>
+      </div>
+
+      <!-- Delivery notices -->
+      <div class="product-notices">
+        {% if product.is_pre_order %}
+          <div class="notice notice-info">
+            <i class="fas fa-info-circle"></i>
+            Produtos sob encomenda dependem da próxima viagem e confirmação de disponibilidade.
+          </div>
+        {% else %}
+          <div class="notice notice-success">
+            <i class="fas fa-check-circle"></i>
+            Pronta entrega — enviado em até 2 dias úteis após confirmação do pagamento.
+          </div>
+        {% endif %}
+        <div class="notice notice-default">
+          <i class="fas fa-lock"></i>
+          Pagamento 100% seguro via Pix ou cartão de crédito.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Description Tabs -->
+  <div class="product-tabs">
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="showTab('description', this)">Descrição</button>
+      {% if product.is_pre_order %}
+        <button class="tab-btn" onclick="showTab('preorder', this)">Sobre encomendas</button>
+      {% endif %}
+    </div>
+    <div class="tab-content">
+      <div id="tab-description" class="tab-panel active">
+        {% if product.description %}
+          <div class="prose">{{ product.description|linebreaks }}</div>
+        {% else %}
+          <p class="text-muted">Descrição não disponível.</p>
+        {% endif %}
+      </div>
+      {% if product.is_pre_order %}
+      <div id="tab-preorder" class="tab-panel">
+        <h3>Como funciona a encomenda?</h3>
+        <ol>
+          <li>Adicione o produto ao carrinho e finalize o pedido.</li>
+          <li>Nossa equipe confirmará a disponibilidade e o prazo.</li>
+          <li>Após confirmação, você receberá o link de pagamento.</li>
+          <li>O produto será trazido na próxima viagem mensal.</li>
+          <li>Após chegada, será embalado e enviado para você.</li>
+        </ol>
+        <p><strong>Prazo estimado:</strong> depende da data da próxima viagem. <a href="{% url 'next_trip' %}">Ver próxima viagem.</a></p>
+        <p><i class="fas fa-phone"></i> Dúvidas? <a href="{% url 'contact' %}">Fale conosco pelos canais de atendimento.</a></p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Related Products -->
+  {% if related %}
+  <section class="related-products">
+    <h2 class="section-title">Produtos relacionados</h2>
+    <div class="products-grid">
+      {% for p in related %}
+        {% with product=p %}{% include 'products/_card.html' %}{% endwith %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setMainImage(url, thumb) {
+  document.getElementById('mainImage').src = url;
+  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+  thumb.classList.add('active');
+}
+
+function changeQty(delta) {
+  const input = document.getElementById('qty');
+  const max = parseInt(input.max || '99');
+  const newVal = Math.min(max, Math.max(1, parseInt(input.value || 1) + delta));
+  input.value = newVal;
+}
+
+function selectVariant(input) {
+  const priceBrl = document.getElementById('variantPriceBrl');
+  const priceUsd = document.getElementById('variantPriceUsd');
+  const qty = document.getElementById('qty');
+  const buyNowVariant = document.getElementById('buyNowVariantId');
+  if (priceBrl) priceBrl.textContent = input.dataset.brl;
+  if (priceUsd) priceUsd.textContent = input.dataset.usd ? `≈ ${input.dataset.usd} no câmbio do dia` : '';
+  if (qty) {
+    qty.max = input.dataset.stock || '99';
+    qty.value = Math.min(parseInt(qty.value || '1'), parseInt(qty.max || '99'));
+  }
+  if (buyNowVariant) buyNowVariant.value = input.value;
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function calcShipping() {
+  const cep = document.getElementById('cepInput').value.replace(/\D/g,'');
+  const result = document.getElementById('shippingResult');
+  if (cep.length !== 8) { result.innerHTML = '<p class="error">CEP inválido.</p>'; return; }
+  result.innerHTML = '<p>Calculando...</p>';
+  fetch(`/carrinho/calcular-frete/?cep=${cep}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { result.innerHTML = `<p class="error">${data.error}</p>`; return; }
+      let html = '<div class="shipping-options">';
+      data.options.forEach(opt => {
+        html += `<div class="shipping-option">
+          <span class="ship-label">${opt.label} — ${opt.carrier}</span>
+          <span class="ship-price">R$ ${opt.price.toFixed(2).replace('.', ',')}</span>
+          <span class="ship-days">${opt.days} dias úteis</span>
+        </div>`;
+      });
+      html += `</div><small>${data.note}</small>`;
+      result.innerHTML = html;
+    })
+    .catch(() => result.innerHTML = '<p class="error">Erro ao calcular frete.</p>');
+}
+
+// Format CEP input
+document.getElementById('cepInput')?.addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '');
+  if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+  this.value = v;
+});
+</script>
+{% endblock %}

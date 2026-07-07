@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Essence K</title>
+  <desc id="desc">Monograma premium Essence K com frasco abstrato, brilho delicado e paleta blush, marfim e preto.</desc>
+  <rect width="96" height="96" rx="24" fill="#fff9f4"/>
+  <path d="M48 13c14.9 16.1 27 31.7 27 49.1 0 16-11.2 25.9-27 25.9S21 78.1 21 62.1C21 44.7 33.1 29.1 48 13Z" fill="#f8c8dc" opacity=".32"/>
+  <path d="M31 33.5c0-8.8 7-15.5 17-15.5s17 6.7 17 15.5v27.8C65 71.6 58.2 78 48 78s-17-6.4-17-16.7V33.5Z" fill="#fff9f4" stroke="#111111" stroke-width="2.4"/>
+  <path d="M40 36h13.5M40 48h11.5M40 60h13.5" stroke="#111111" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M58 35v27M58.5 49.2 70 36M58.5 49.2 71 62" stroke="#f8c8dc" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M42 23h12" stroke="#111111" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M72.2 20.8 74 16l1.8 4.8 4.8 1.8-4.8 1.8-1.8 4.8-1.8-4.8-4.8-1.8 4.8-1.8Z" fill="#111111"/>
+  <circle cx="25" cy="27" r="2.1" fill="#f8c8dc"/>
+</svg>

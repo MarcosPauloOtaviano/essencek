@@ -1,0 +1,129 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Relatórios{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>Relatórios</h1>
+  <span class="dash-date">{{ now|date:"MMMM/Y" }}</span>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card kpi-revenue">
+    <div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Faturamento do mês</span>
+      <span class="kpi-value">R$ {{ revenue_month|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-profit">
+    <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Lucro bruto estimado</span>
+      <span class="kpi-value">R$ {{ gross_profit|floatformat:2 }}</span>
+      <span class="kpi-note">Não inclui taxas, frete e despesas operacionais</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon"><i class="fas fa-receipt"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Ticket médio</span>
+      <span class="kpi-value">R$ {{ avg_ticket|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon"><i class="fas fa-warehouse"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Investido em estoque</span>
+      <span class="kpi-value">R$ {{ stock_value|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-revenue">
+    <div class="kpi-icon"><i class="fas fa-tags"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Potencial de venda do estoque</span>
+      <span class="kpi-value">R$ {{ potential_value|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-pending">
+    <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Pedidos pendentes</span>
+      <span class="kpi-value">{{ pending_orders }}</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon"><i class="fas fa-plane"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Encomendas abertas</span>
+      <span class="kpi-value">{{ open_pre_orders }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="dash-charts-row">
+  <div class="dash-chart-card">
+    <h3>Vendas por categoria</h3>
+    <canvas id="categoryChart" height="200"></canvas>
+  </div>
+  <div class="dash-chart-card">
+    <h3>Produtos mais vendidos</h3>
+    <table class="dash-table">
+      <thead><tr><th>Produto</th><th>Qtd</th><th>Receita</th></tr></thead>
+      <tbody>
+        {% for p in top_products %}
+        <tr>
+          <td>{{ p.product_name }}</td>
+          <td>{{ p.qty }}</td>
+          <td>R$ {{ p.revenue|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="dash-empty">Sem dados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="dash-card">
+  <h3>Produtos com maior margem estimada</h3>
+  <small class="field-note">Margem bruta estimada — não inclui taxas operacionais.</small>
+  <table class="dash-table mt-1">
+    <thead><tr><th>Produto</th><th>Preço venda</th><th>Custo</th><th>Lucro unit.</th><th>Margem %</th></tr></thead>
+    <tbody>
+      {% for p in products_margin %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td>R$ {{ p.price|floatformat:2 }}</td>
+        <td>R$ {{ p.cost_price|floatformat:2 }}</td>
+        <td>R$ {{ p.gross_profit|floatformat:2 }}</td>
+        <td>
+          <div class="margin-bar">
+            <div class="margin-fill" style="width:{{ p.margin_percent|floatformat:0 }}%"></div>
+            <span>{{ p.margin_percent|floatformat:1 }}%</span>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="dash-empty">Cadastre o preço de custo nos produtos para ver as margens.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const catLabels = {{ chart_cat_labels|safe }};
+const catData = {{ chart_cat_data|safe }};
+if (catLabels.length > 0) {
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{ data: catData, backgroundColor: ['#B8957A','#E8CFC3','#C9A88E','#2B1A14','#D71920','#8B6454'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+}
+</script>
+{% endblock %}

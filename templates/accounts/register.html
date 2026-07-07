@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load widget_tweaks static %}
+{% block title %}Criar conta{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="{% static 'img/brand/essence-k-logo-official.png' %}" alt="Essence K Importados" class="auth-logo-img">
+    </div>
+    <h1 class="auth-title">Criar conta</h1>
+    <p class="auth-subtitle">Rápido, gratuito e seguro</p>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next_url }}">
+      <div class="form-group">
+        <label>{{ form.full_name.label }}</label>
+        {% render_field form.full_name class="form-control" %}
+        {% if form.full_name.errors %}<span class="field-error">{{ form.full_name.errors.0 }}</span>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>{{ form.email.label }}</label>
+        {% render_field form.email class="form-control" %}
+        {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>{{ form.cpf.label }}</label>
+        {% render_field form.cpf class="form-control" %}
+        {% if form.cpf.errors %}<span class="field-error">{{ form.cpf.errors.0 }}</span>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>{{ form.whatsapp.label }}</label>
+        {% render_field form.whatsapp class="form-control" %}
+        {% if form.whatsapp.errors %}<span class="field-error">{{ form.whatsapp.errors.0 }}</span>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>{{ form.password1.label }}</label>
+        {% render_field form.password1 class="form-control" %}
+        {% if form.password1.errors %}<span class="field-error">{{ form.password1.errors.0 }}</span>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>{{ form.password2.label }}</label>
+        {% render_field form.password2 class="form-control" %}
+        {% if form.password2.errors %}<span class="field-error">{{ form.password2.errors.0 }}</span>{% endif %}
+      </div>
+      <p class="lgpd-notice"><i class="fas fa-lock"></i> Seus dados são usados apenas para processar seus pedidos. <a href="{% url 'privacy' %}">Política de Privacidade</a>.</p>
+      <button type="submit" class="btn btn-primary btn-block btn-large">Criar conta</button>
+    </form>
+    <div class="auth-links">
+      <p>Já tem conta? <a href="{% url 'login' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Entrar</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

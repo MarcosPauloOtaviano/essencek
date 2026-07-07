@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Trocas e Devoluções{% endblock %}
+{% block content %}
+<div class="container"><div class="page-header"><h1 class="page-title">Trocas e Devoluções</h1></div>
+<div class="content-page prose">
+<h2>Prazo</h2>
+<p>Você tem até 7 dias corridos após o recebimento para solicitar troca ou devolução, conforme o Código de Defesa do Consumidor.</p>
+<h2>Condições</h2>
+<p>O produto deve estar sem uso, na embalagem original, acompanhado da nota de compra. Não aceitamos devoluções de produtos abertos (perfumes, cosméticos utilizados).</p>
+<h2>Como solicitar</h2>
+<p>Entre em contato pelos canais oficiais da loja informando o número do pedido e o motivo. Nossa equipe irá orientar o processo.</p>
+<h2>Reembolso</h2>
+<p>Após análise e aprovação, o reembolso é realizado pelo mesmo meio de pagamento utilizado, em até 10 dias úteis.</p>
+<a href="{% url 'contact' %}" class="btn btn-primary">Solicitar troca</a>
+</div></div>
+{% endblock %}

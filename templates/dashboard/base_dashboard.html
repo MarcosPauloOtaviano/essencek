@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Painel{% endblock %} | Essence K Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  {% load static %}
+  <link rel="icon" type="image/png" href="{% static 'img/brand/essence-k-favicon-official.png' %}">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+<body class="dashboard-body">
+
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="dash-sidebar" id="dashSidebar">
+    <div class="dash-brand">
+      <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados" class="dash-brand-logo">
+      <span class="dash-sub">Painel Admin</span>
+    </div>
+    <nav class="dash-nav">
+      <a href="{% url 'dashboard:home' %}" class="dash-nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+      <a href="{% url 'dashboard:products' %}" class="dash-nav-item {% if 'product' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-box"></i> Produtos
+      </a>
+      <a href="{% url 'dashboard:categories' %}" class="dash-nav-item {% if 'categor' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-tags"></i> Categorias
+      </a>
+      <a href="{% url 'dashboard:orders' %}" class="dash-nav-item {% if 'order' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-shopping-bag"></i> Pedidos
+      </a>
+      <a href="{% url 'dashboard:pre_orders' %}" class="dash-nav-item {% if 'pre_order' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-plane"></i> Encomendas
+      </a>
+      <a href="{% url 'dashboard:customers' %}" class="dash-nav-item {% if 'customer' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-users"></i> Clientes
+      </a>
+      <a href="{% url 'dashboard:next_trip' %}" class="dash-nav-item {% if 'next_trip' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-plane-departure"></i> Próxima Viagem
+      </a>
+      <a href="{% url 'dashboard:reports' %}" class="dash-nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-chart-bar"></i> Relatórios
+      </a>
+      <a href="{% url 'dashboard:settings' %}" class="dash-nav-item {% if 'setting' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-cog"></i> Configurações
+      </a>
+      <div class="dash-divider"></div>
+      <a href="{% url 'home' %}" class="dash-nav-item" target="_blank" rel="noopener">
+        <i class="fas fa-external-link-alt"></i> Ver loja
+      </a>
+      <a href="{% url 'logout' %}" class="dash-nav-item">
+        <i class="fas fa-sign-out-alt"></i> Sair
+      </a>
+    </nav>
+  </aside>
+  <button class="dash-sidebar-overlay" id="dashSidebarOverlay" type="button" aria-label="Fechar menu do painel" hidden></button>
+
+  <!-- Main -->
+  <div class="dash-main">
+    <header class="dash-header">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-controls="dashSidebar" aria-expanded="false">
+        <i class="fas fa-bars"></i>
+        <span>Menu</span>
+      </button>
+      <div class="dash-header-right">
+        <span class="dash-user"><i class="fas fa-user-shield"></i> {{ request.user.full_name|default:request.user.username }}</span>
+      </div>
+    </header>
+
+    {% if messages %}
+    <div class="dash-messages">
+      {% for message in messages %}
+      <div class="dash-alert dash-alert-{{ message.tags }}">
+        {{ message }}
+        <button onclick="this.parentElement.remove()">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dash-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+{% load static %}
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

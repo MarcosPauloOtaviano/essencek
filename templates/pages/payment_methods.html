@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Formas de Pagamento{% endblock %}
+{% block content %}
+<div class="container"><div class="page-header"><h1 class="page-title">Formas de Pagamento</h1></div>
+<div class="content-page">
+  <div class="payment-methods-grid">
+    <div class="payment-method-card">
+      <i class="fas fa-qrcode"></i>
+      <h3>Pix</h3>
+      <p>Aprovação imediata. Pague com o QR Code ou chave Pix copia e cola. Disponível 24h.</p>
+    </div>
+    <div class="payment-method-card">
+      <i class="fas fa-credit-card"></i>
+      <h3>Cartão de Crédito</h3>
+      <p>Parcelamento em até 12x. Processamento seguro via gateway de pagamento certificado.</p>
+    </div>
+    <div class="payment-method-card">
+      <i class="fas fa-link"></i>
+      <h3>Link de pagamento</h3>
+      <p>Quando disponível, a loja pode gerar um link seguro para concluir a compra.</p>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

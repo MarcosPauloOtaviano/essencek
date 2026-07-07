@@ -1,0 +1,46 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load money %}
+{% block title %}Pedidos{% endblock %}
+{% block content %}
+<div class="dash-page-header"><h1>Pedidos</h1></div>
+<div class="dash-filters">
+  <form method="get" class="dash-filter-form">
+    <input type="text" name="q" value="{{ q }}" placeholder="Número, nome ou telefone..." class="dash-input">
+    <select name="status" class="dash-select">
+      <option value="">Todos os status</option>
+      {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-dash">Filtrar</button>
+    <a href="{% url 'dashboard:orders' %}" class="btn-dash btn-dash-ghost">Limpar</a>
+  </form>
+</div>
+<div class="dash-card">
+  <table class="dash-table">
+    <thead>
+      <tr><th>Pedido</th><th>Cliente</th><th>Telefone</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Data</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td><strong>{{ order.order_number }}</strong></td>
+        <td>{{ order.customer_name }}</td>
+        <td>{{ order.customer_whatsapp }}</td>
+        <td><strong>{{ order.total|brl }}</strong>{% if order.display_total_usd %}<br><small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}</td>
+        <td>{{ order.get_payment_method_display }}</td>
+        <td><span class="status-dot status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+        <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
+        <td>
+          <a href="{% url 'dashboard:order_detail' order.pk %}" class="btn-dash btn-dash-sm">
+            <i class="fas fa-eye"></i> Ver
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="dash-empty">Nenhum pedido encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

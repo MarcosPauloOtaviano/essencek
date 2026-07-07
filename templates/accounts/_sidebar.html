@@ -1,0 +1,7 @@
+<aside class="account-sidebar">
+  <ul class="account-nav">
+    <li><a href="{% url 'my_orders' %}" {% if request.resolver_match.url_name == 'my_orders' %}class="active"{% endif %}><i class="fas fa-box"></i> Meus pedidos</a></li>
+    <li><a href="{% url 'profile' %}" {% if request.resolver_match.url_name == 'profile' %}class="active"{% endif %}><i class="fas fa-user"></i> Meu perfil</a></li>
+    <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+  </ul>
+</aside>

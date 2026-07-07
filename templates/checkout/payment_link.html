@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load money %}
+{% block title %}Pagamento{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="pix-page">
+    <h1><i class="fas fa-credit-card"></i> Pagamento com Cartão</h1>
+    <p>
+      Pedido <strong>{{ order.order_number }}</strong> —
+      Total: <strong>{{ order.total|brl }}</strong>
+      {% if order.display_total_usd %}<span class="text-muted">≈ {{ order.display_total_usd|usd }}</span>{% endif %}
+    </p>
+    <div class="pix-card">
+      <div class="payment-sandbox-notice">
+        <i class="fas fa-info-circle"></i>
+        <p>{% if payment.gateway_status == 'configuration_error' %}Pagamento real ainda não está configurado. Verifique as credenciais do gateway no ambiente do servidor.{% elif payment_is_simulated %}🧪 Modo Sandbox — pagamento de teste via Mercado Pago. Nenhum valor real será cobrado.{% else %}Você será redirecionada para o ambiente seguro do gateway de pagamento.{% endif %}</p>
+      </div>
+      {% if payment.payment_link %}
+        <a href="{{ payment.payment_link }}" class="btn btn-primary btn-large" target="_blank" rel="noopener">Ir para pagamento seguro</a>
+      {% endif %}
+      <p class="text-muted">Após o pagamento, você receberá a confirmação por e-mail e o status do pedido será atualizado.</p>
+    </div>
+    <div class="success-actions">
+      <a href="{% url 'my_orders' %}" class="btn btn-outline">Ver meus pedidos</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

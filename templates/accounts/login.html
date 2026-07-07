@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load widget_tweaks static %}
+{% block title %}Entrar{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="{% static 'img/brand/essence-k-logo-official.png' %}" alt="Essence K Importados" class="auth-logo-img">
+    </div>
+    <h1 class="auth-title">Bem-vinda de volta</h1>
+    <p class="auth-subtitle">Entre na sua conta para continuar</p>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next_url }}">
+      <div class="form-group">
+        <label>E-mail</label>
+        {% render_field form.username class="form-control" %}
+        {% if form.username.errors %}<span class="field-error">{{ form.username.errors.0 }}</span>{% endif %}
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        {% render_field form.password class="form-control" %}
+        {% if form.password.errors %}<span class="field-error">{{ form.password.errors.0 }}</span>{% endif %}
+      </div>
+      {% if form.non_field_errors %}
+        <div class="alert alert-error">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+      <button type="submit" class="btn btn-primary btn-block btn-large">Entrar</button>
+    </form>
+    <div class="auth-links">
+      <p>Não tem conta? <a href="{% url 'register' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Criar conta grátis</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
