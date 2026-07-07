@@ -63,9 +63,9 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 # Payment production
 PAYMENT_SANDBOX = config('PAYMENT_SANDBOX', default=False, cast=bool)
 PAYMENT_GATEWAY = config('PAYMENT_GATEWAY', default='mercadopago')
-MP_ACCESS_TOKEN = config('MP_ACCESS_TOKEN')
-MP_PUBLIC_KEY = config('MP_PUBLIC_KEY')
-MP_WEBHOOK_SECRET = config('MP_WEBHOOK_SECRET')
+MP_ACCESS_TOKEN = config('MP_ACCESS_TOKEN', default='')
+MP_PUBLIC_KEY = config('MP_PUBLIC_KEY', default='')
+MP_WEBHOOK_SECRET = config('MP_WEBHOOK_SECRET', default='')
 MP_USE_SANDBOX_LINK = config('MP_USE_SANDBOX_LINK', default=False, cast=bool)
 MP_MAX_INSTALLMENTS = config('MP_MAX_INSTALLMENTS', default=12, cast=int)
 
