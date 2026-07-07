@@ -12,7 +12,7 @@ echo "Repo:   $REPO_PATH"
 echo "App:    $APP_PATH"
 echo "Public: $PUBLIC_PATH"
 
-mkdir -p "$APP_PATH" "$STATIC_PUBLIC_PATH" "$MEDIA_PUBLIC_PATH" "$APP_PATH/tmp" "$APP_PATH/logs"
+mkdir -p "$APP_PATH" "$STATIC_PUBLIC_PATH" "$MEDIA_PUBLIC_PATH" "$APP_PATH/tmp" "$APP_PATH/logs" "$APP_PATH/public"
 
 SYNC_EXCLUDES=(
   --exclude='.git/'
@@ -47,7 +47,7 @@ else
     -exec cp -R {} "$APP_PATH"/ \;
 fi
 
-mkdir -p "$APP_PATH/tmp" "$APP_PATH/logs"
+mkdir -p "$APP_PATH/tmp" "$APP_PATH/logs" "$APP_PATH/public"
 
 if [ ! -f "$APP_PATH/.env" ]; then
   echo "AVISO: $APP_PATH/.env nao existe."
