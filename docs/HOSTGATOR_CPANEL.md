@@ -77,8 +77,8 @@ DB_PORT=3306
 
 FERNET_KEY=GERE-COM-COMANDO-ABAIXO
 
-STATIC_ROOT=/home/mar04335/essencek_app/staticfiles
-MEDIA_ROOT=/home/mar04335/public_html/media
+STATIC_ROOT=/home1/mar04335/essencek_app/staticfiles
+MEDIA_ROOT=/home1/mar04335/public_html/media
 
 PAYMENT_GATEWAY=mercadopago
 PAYMENT_SANDBOX=False
