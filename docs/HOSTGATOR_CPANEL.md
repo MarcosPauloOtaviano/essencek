@@ -13,8 +13,8 @@ Acesse `https://essencekimportados.com/cpanel` ou o link direto fornecido pela H
 ## 2. Criar banco MySQL
 
 1. Abra **MySQL Databases** no cPanel
-2. Crie um banco: `seuusuario_essencek`
-3. Crie um usuario MySQL: `seuusuario_essencek` com senha forte
+2. Crie um banco: `mar04335_essencek`
+3. Crie um usuario MySQL: `mar04335_essencek` com senha forte
 4. Associe o usuario ao banco com **ALL PRIVILEGES**
 5. Anote: banco, usuario e senha
 
@@ -48,7 +48,7 @@ Acesse `https://essencekimportados.com/cpanel` ou o link direto fornecido pela H
 Acesse via SSH:
 
 ```bash
-ssh usuario@essencekimportados.com
+ssh mar04335@essencekimportados.com
 ```
 
 Crie o arquivo `.env`:
@@ -69,16 +69,16 @@ CSRF_TRUSTED_ORIGINS=https://essencekimportados.com,https://www.essencekimportad
 SITE_URL=https://essencekimportados.com
 
 DB_ENGINE=django.db.backends.mysql
-DB_NAME=seuusuario_essencek
-DB_USER=seuusuario_essencek
+DB_NAME=mar04335_essencek
+DB_USER=mar04335_essencek
 DB_PASSWORD=senha-forte-do-banco
 DB_HOST=localhost
 DB_PORT=3306
 
 FERNET_KEY=GERE-COM-COMANDO-ABAIXO
 
-STATIC_ROOT=/home/seuusuario/essencek_app/staticfiles
-MEDIA_ROOT=/home/seuusuario/public_html/media
+STATIC_ROOT=/home/mar04335/essencek_app/staticfiles
+MEDIA_ROOT=/home/mar04335/public_html/media
 
 PAYMENT_GATEWAY=mercadopago
 PAYMENT_SANDBOX=False
