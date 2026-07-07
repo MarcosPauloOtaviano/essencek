@@ -1,77 +1,188 @@
-# Deploy na HostGator com cPanel + GitHub
+# Deploy na HostGator com cPanel — essencekimportados.com
 
-Este projeto esta preparado para deploy via cPanel Git Version Control.
+## Pre-requisitos
 
-## Caminhos usados
+- Plano HostGator com cPanel e acesso SSH
+- Dominio `essencekimportados.com` apontado para a HostGator
+- Python 3.11+ disponivel no cPanel (Setup Python App)
 
-- Repositorio clonado pelo cPanel: escolha `~/repositories/essencek`
-- Aplicacao Python/Django: `~/essencek_app`
-- Arquivos publicos: `~/public_html`
-- Static files: `~/public_html/static`
-- Uploads/media: `~/public_html/media`
+## 1. Acessar o cPanel
 
-## cPanel Python App
+Acesse `https://essencekimportados.com/cpanel` ou o link direto fornecido pela HostGator.
 
-Use estes valores na tela **Setup Python App**:
+## 2. Criar banco MySQL
 
-- Python: 3.11, se disponivel
-- Application root: `essencek_app`
-- Application URL: dominio principal, sem subpasta
-- Startup file: `passenger_wsgi.py`
-- Entry point: `application`
+1. Abra **MySQL Databases** no cPanel
+2. Crie um banco: `mar04335_essencek`
+3. Crie um usuario MySQL: `mar04335_essencek` com senha forte
+4. Associe o usuario ao banco com **ALL PRIVILEGES**
+5. Anote: banco, usuario e senha
 
-Depois de criar o app, crie um arquivo `.env` dentro de `~/essencek_app`.
+## 3. Criar Python App
 
-## Variaveis essenciais no .env de producao
+1. No cPanel, abra **Setup Python App**
+2. Clique em **Create Application**
+3. Preencha:
+   - Python version: **3.11** (ou a mais recente disponivel)
+   - Application root: `essencek_app`
+   - Application URL: dominio principal (sem subpasta)
+   - Application startup file: `passenger_wsgi.py`
+   - Application Entry point: `application`
+4. Clique em **Create**
+5. Anote o comando para ativar o virtualenv (ex: `source /home/usuario/virtualenv/essencek_app/3.11/bin/activate`)
+
+## 4. Conectar repositorio Git
+
+1. No cPanel, abra **Git Version Control**
+2. Clique **Create**
+3. Preencha:
+   - Clone URL: `https://github.com/MarcosPauloOtaviano/essencek.git`
+   - Repository Path: `repositories/essencek`
+   - Repository Name: `essencek`
+4. Apos clonar, clique em **Manage** > **Pull or Deploy** > **Deploy HEAD Commit**
+
+**Na primeira execucao** o script apenas copiara os arquivos e pedira para criar o `.env`.
+
+## 5. Criar .env de producao
+
+Acesse via SSH:
+
+```bash
+ssh mar04335@essencekimportados.com
+```
+
+Crie o arquivo `.env`:
+
+```bash
+cd ~/essencek_app
+nano .env
+```
+
+Cole o conteudo abaixo (substituindo os valores):
 
 ```env
 DJANGO_SETTINGS_MODULE=paraguashopping.settings.production
-SECRET_KEY=troque-por-uma-chave-forte-com-50-ou-mais-caracteres
+SECRET_KEY=GERE-UMA-CHAVE-FORTE-COM-50-CARACTERES-OU-MAIS
 DEBUG=False
-ALLOWED_HOSTS=seudominio.com.br,www.seudominio.com.br
-CSRF_TRUSTED_ORIGINS=https://seudominio.com.br,https://www.seudominio.com.br
-SITE_URL=https://seudominio.com.br
+ALLOWED_HOSTS=essencekimportados.com,www.essencekimportados.com
+CSRF_TRUSTED_ORIGINS=https://essencekimportados.com,https://www.essencekimportados.com
+SITE_URL=https://essencekimportados.com
 
 DB_ENGINE=django.db.backends.mysql
-DB_NAME=usuario_cpanel_essencek
-DB_USER=usuario_cpanel_essencek
+DB_NAME=mar04335_essencek
+DB_USER=mar04335_essencek
 DB_PASSWORD=senha-forte-do-banco
 DB_HOST=localhost
 DB_PORT=3306
 
-FERNET_KEY=gere-com-python-cryptography-fernet
+FERNET_KEY=GERE-COM-COMANDO-ABAIXO
 
-STATIC_ROOT=/home/usuario_cpanel/essencek_app/staticfiles
-MEDIA_ROOT=/home/usuario_cpanel/public_html/media
+STATIC_ROOT=/home/mar04335/essencek_app/staticfiles
+MEDIA_ROOT=/home/mar04335/public_html/media
 
-PAYMENT_GATEWAY=sandbox
-PAYMENT_SANDBOX=True
-MP_ACCESS_TOKEN=
-MP_PUBLIC_KEY=
-MP_WEBHOOK_SECRET=
-MP_USE_SANDBOX_LINK=True
+PAYMENT_GATEWAY=mercadopago
+PAYMENT_SANDBOX=False
+MP_ACCESS_TOKEN=seu-access-token-producao
+MP_PUBLIC_KEY=sua-public-key-producao
+MP_WEBHOOK_SECRET=seu-webhook-secret
+MP_USE_SANDBOX_LINK=False
 MP_MAX_INSTALLMENTS=12
+
+COSMOS_API_TOKEN=
+FRENET_TOKEN=
+FRENET_SENDER_CEP=85851130
 ```
 
-Gere a `FERNET_KEY` com:
+Gere a SECRET_KEY:
 
 ```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+python3 -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
-## Deploy
+Gere a FERNET_KEY:
 
-O arquivo `.cpanel.yml` chama `scripts/cpanel_deploy.sh`.
+```bash
+python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
 
-O script:
+## 6. Rodar deploy novamente
 
-- copia o repositorio para `~/essencek_app`;
-- preserva `.env`, `media/`, banco local e arquivos sensiveis;
-- instala `requirements.txt`;
-- roda `migrate`;
-- roda `collectstatic`;
-- copia os estaticos gerados para `~/public_html/static`;
-- cria `~/public_html/media`;
-- reinicia o app via `tmp/restart.txt`.
+Volte ao cPanel > **Git Version Control** > **Manage** > **Deploy HEAD Commit**
 
-Se o `.env` ainda nao existir, o script apenas copia os arquivos e pede para criar o `.env`; depois rode **Deploy HEAD Commit** novamente.
+O script `cpanel_deploy.sh` vai:
+- Copiar arquivos para `~/essencek_app`
+- Instalar dependencias
+- Rodar `migrate`
+- Rodar `collectstatic`
+- Copiar estaticos para `~/public_html/static`
+- Reiniciar o app
+
+## 7. Criar superusuario
+
+Via SSH:
+
+```bash
+cd ~/essencek_app
+source ~/virtualenv/essencek_app/3.11/bin/activate
+export DJANGO_SETTINGS_MODULE=paraguashopping.settings.production
+python manage.py createsuperuser
+```
+
+## 8. Configurar SSL/HTTPS
+
+No cPanel:
+1. Abra **SSL/TLS Status**
+2. Selecione `essencekimportados.com` e `www.essencekimportados.com`
+3. Clique em **Run AutoSSL** (Let's Encrypt gratuito)
+
+## 9. Configurar dominio
+
+Se o dominio ainda nao aponta para a HostGator:
+1. No registro do dominio, aponte os nameservers para os da HostGator
+2. Ou configure os registros DNS:
+   - `A` apontando para o IP do servidor HostGator
+   - `CNAME` de `www` para `essencekimportados.com`
+
+## 10. Verificar
+
+Acesse `https://essencekimportados.com` — o site deve carregar.
+
+Se der erro 500, verifique os logs:
+
+```bash
+cat ~/essencek_app/logs/error.log
+cat ~/logs/essencekimportados.com/error.log
+```
+
+## Atualizacoes futuras
+
+1. Faca `git push` para o GitHub
+2. No cPanel > Git Version Control > Pull or Deploy > **Update from Remote** > **Deploy HEAD Commit**
+
+Ou via SSH:
+
+```bash
+cd ~/repositories/essencek
+git pull origin main
+bash scripts/cpanel_deploy.sh
+```
+
+## Estrutura no servidor
+
+```
+~/
+  repositories/essencek/    # clone do Git (cPanel gerencia)
+  essencek_app/             # app Django (copia de trabalho)
+    .env                    # variaveis de producao
+    passenger_wsgi.py       # entry point Passenger
+    manage.py
+    paraguashopping/
+    ...
+    staticfiles/            # collectstatic output
+    tmp/restart.txt         # restart Passenger
+    logs/
+  public_html/
+    static/                 # arquivos estaticos publicos
+    media/                  # uploads de imagens
+  virtualenv/essencek_app/  # virtualenv criado pelo cPanel
+```
