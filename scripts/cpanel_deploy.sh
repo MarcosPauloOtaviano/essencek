@@ -47,6 +47,8 @@ else
     -exec cp -R {} "$APP_PATH"/ \;
 fi
 
+mkdir -p "$APP_PATH/tmp" "$APP_PATH/logs"
+
 if [ ! -f "$APP_PATH/.env" ]; then
   echo "AVISO: $APP_PATH/.env nao existe."
   echo "Arquivos copiados. Crie o .env de producao no cPanel e rode Deploy HEAD Commit novamente."
