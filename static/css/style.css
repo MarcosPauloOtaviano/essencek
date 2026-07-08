@@ -586,6 +586,7 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
 }
 .float-btn:hover { transform: scale(1.1); color: white; }
 .instagram-float { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.whatsapp-float { background: #25D366; }
 
 /* ─── PAGE HEADER ────────────────────────────────────────────── */
 .page-header { padding: 28px 0 18px; border-bottom: 1px solid var(--border-light); margin-bottom: 28px; }
@@ -1064,3 +1065,51 @@ select.form-control { cursor: pointer; }
 .trip-banner-inner { display: flex; align-items: center; gap: 20px; justify-content: center; flex-wrap: wrap; }
 .trip-icon { font-size: 22px; color: var(--red-promo); }
 .trip-content { font-size: 14px; }
+
+/* ─── FILTER COUNTS ───────────────────────────────────────── */
+.filter-count { font-size: 0.8em; color: var(--text-muted); margin-left: 2px; }
+
+/* ─── MOBILE FILTER DRAWER ────────────────────────────────── */
+.filter-toggle-mobile {
+  display: none;
+  position: fixed; bottom: 20px; right: 20px; z-index: 100;
+  background: var(--black); color: var(--white);
+  border: none; border-radius: 50px; padding: 12px 24px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.filter-sidebar-header { display: none; }
+.filter-close-mobile { display: none; }
+.filter-overlay { display: none; }
+
+@media (max-width: 768px) {
+  .filter-toggle-mobile { display: flex; align-items: center; gap: 8px; }
+  .catalog-sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 85vw; max-width: 360px;
+    z-index: 1001; transform: translateX(-100%); transition: transform 0.3s ease;
+    overflow-y: auto; border-radius: 0; border: none;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+  }
+  .catalog-sidebar.is-open { transform: translateX(0); }
+  .filter-sidebar-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid var(--border-light);
+  }
+  .filter-sidebar-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
+  .filter-close-mobile {
+    display: block; background: none; border: none;
+    font-size: 20px; cursor: pointer; color: var(--text-secondary);
+  }
+  .filter-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4); z-index: 1000;
+  }
+  .filter-overlay.is-open { display: block; }
+}
+
+/* ─── CART VARIANT DISPLAY ────────────────────────────────── */
+.cart-product-variant {
+  display: block; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text-secondary);
+  margin-top: 2px; font-weight: 500;
+}

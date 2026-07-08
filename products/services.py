@@ -1,26 +1,8 @@
+from django.db.models import Count, Q
 from django.urls import reverse
 from urllib.parse import urlencode
 
 from .models import Brand, Product, Category
-
-
-LOGICAL_CATEGORY_BRAND_SLUGS = {
-    'perfumes': [
-        'carolina-herrera', 'chanel', 'dior', 'jean-paul-gaultier',
-        'lancome', 'lattafa', 'paco-rabanne', 'yves-saint-laurent',
-    ],
-    'decanter': [
-        'carolina-herrera', 'chanel', 'dior', 'jean-paul-gaultier',
-        'lancome', 'lattafa', 'paco-rabanne', 'yves-saint-laurent',
-    ],
-    'beleza-coreana': ['beauty-of-joseon', 'cosrx', 'laneige'],
-    'eletronicos': ['anker', 'apple', 'samsung'],
-}
-
-LOGICAL_CATEGORY_VOLUMES = {
-    'perfumes': [30, 50, 60, 75, 80, 100, 125, 150, 200],
-    'decanter': [2, 3, 5, 7, 10],
-}
 
 
 def catalog_url(**params):
@@ -29,7 +11,7 @@ def catalog_url(**params):
     return f'{reverse("products:list")}?{qs}' if qs else reverse('products:list')
 
 
-def build_filter_tree(all_categories, category_slug, brand_slug, selected_volume_ml, query):
+def build_filter_tree(all_categories, category_slug, brand_slug, perfume_type, query):
     categories_by_parent = {}
     for cat in all_categories:
         categories_by_parent.setdefault(cat.parent_id, []).append(cat)
@@ -50,32 +32,19 @@ def build_filter_tree(all_categories, category_slug, brand_slug, selected_volume
         category_ids = [parent.pk, *[sub.pk for sub in subcategories]]
         scoped_products = Product.objects.filter(is_active=True, category_id__in=category_ids)
 
-        logical_brand_slugs = LOGICAL_CATEGORY_BRAND_SLUGS.get(parent.slug)
-        if logical_brand_slugs:
-            brand_order = {slug: i for i, slug in enumerate(logical_brand_slugs)}
-            category_brands = sorted(
-                Brand.objects.filter(slug__in=logical_brand_slugs, is_active=True),
-                key=lambda b: brand_order.get(b.slug, 999),
-            )
-        else:
-            brand_ids = (
-                scoped_products.filter(brand_fk__isnull=False)
-                .values_list('brand_fk', flat=True).distinct()
-            )
-            category_brands = Brand.objects.filter(pk__in=brand_ids, is_active=True).order_by('name')
-
-        logical_volumes = LOGICAL_CATEGORY_VOLUMES.get(parent.slug)
-        if logical_volumes:
-            volume_values = logical_volumes
-        else:
-            volume_values = (
-                scoped_products.filter(variants__is_active=True, variants__volume_ml__isnull=False)
-                .values_list('variants__volume_ml', flat=True)
-                .distinct().order_by('variants__volume_ml')
-            )
+        brand_counts = (
+            scoped_products
+            .filter(brand_fk__isnull=False, brand_fk__is_active=True)
+            .values('brand_fk__pk', 'brand_fk__name', 'brand_fk__slug')
+            .annotate(count=Count('pk'))
+            .order_by('brand_fk__name')
+        )
 
         is_open = active_root_slug == parent.slug
         scope_slug = active_category.slug if is_open and active_category else parent.slug
+
+        is_perfume_category = parent.slug in ('perfumes', 'decanter')
+
         node = {
             'name': parent.name,
             'slug': parent.slug,
@@ -93,43 +62,65 @@ def build_filter_tree(all_categories, category_slug, brand_slug, selected_volume
             ],
             'brands': [
                 {
-                    'name': b.name,
-                    'slug': b.slug,
-                    'is_active': brand_slug == b.slug and is_open,
+                    'name': bc['brand_fk__name'],
+                    'slug': bc['brand_fk__slug'],
+                    'count': bc['count'],
+                    'is_active': brand_slug == bc['brand_fk__slug'] and is_open,
                     'url': catalog_url(
                         category=scope_slug,
-                        brand=b.slug,
-                        volume=selected_volume_ml if is_open and selected_volume_ml else '',
+                        brand=bc['brand_fk__slug'],
+                        perfume_type=perfume_type if is_open and perfume_type else '',
                         q=query,
                     ),
                 }
-                for b in category_brands
+                for bc in brand_counts
             ],
-            'volumes': [
-                {
-                    'label': f'{vol}ml',
-                    'value': vol,
-                    'is_active': selected_volume_ml == vol and is_open,
+            'is_perfume': is_perfume_category,
+            'perfume_types': [],
+        }
+
+        if is_perfume_category:
+            traditional_count = scoped_products.filter(is_fractioned=False).count()
+            fractioned_count = scoped_products.filter(is_fractioned=True).count()
+            types = []
+            if traditional_count > 0:
+                types.append({
+                    'label': 'Tradicional / lacrado',
+                    'value': 'tradicional',
+                    'count': traditional_count,
+                    'is_active': perfume_type == 'tradicional' and is_open,
                     'url': catalog_url(
                         category=scope_slug,
                         brand=brand_slug if is_open else '',
-                        volume=vol,
+                        perfume_type='tradicional',
                         q=query,
                     ),
-                }
-                for vol in volume_values if vol
-            ],
-        }
-        node['has_children'] = bool(node['subcategories'] or node['brands'] or node['volumes'])
+                })
+            if fractioned_count > 0:
+                types.append({
+                    'label': 'Fracionado / decanter',
+                    'value': 'fracionado',
+                    'count': fractioned_count,
+                    'is_active': perfume_type == 'fracionado' and is_open,
+                    'url': catalog_url(
+                        category=scope_slug,
+                        brand=brand_slug if is_open else '',
+                        perfume_type='fracionado',
+                        q=query,
+                    ),
+                })
+            node['perfume_types'] = types
+
+        node['has_children'] = bool(node['subcategories'] or node['brands'] or node['perfume_types'])
         tree.append(node)
 
     return tree, active_category, active_root_slug
 
 
-def build_breadcrumbs(active_category, active_brand_name, selected_volume_label, category_slug, brand_slug):
+def build_breadcrumbs(active_category, active_brand_name, perfume_type_label, category_slug, brand_slug):
     items = [{'label': 'Produtos', 'url': reverse('products:list')}]
     if active_category:
-        has_deeper = bool(active_brand_name or selected_volume_label)
+        has_deeper = bool(active_brand_name or perfume_type_label)
         if active_category.parent:
             items.append({
                 'label': active_category.parent.name,
@@ -145,9 +136,9 @@ def build_breadcrumbs(active_category, active_brand_name, selected_volume_label,
     if active_brand_name:
         items.append({
             'label': active_brand_name,
-            'url': catalog_url(category=category_slug, brand=brand_slug) if selected_volume_label else '',
+            'url': catalog_url(category=category_slug, brand=brand_slug) if perfume_type_label else '',
         })
-    if selected_volume_label:
-        items.append({'label': selected_volume_label, 'url': ''})
+    if perfume_type_label:
+        items.append({'label': perfume_type_label, 'url': ''})
 
     return items

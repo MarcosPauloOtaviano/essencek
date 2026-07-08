@@ -52,7 +52,7 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = [
-            'name', 'brand', 'brand_fk', 'category', 'short_description', 'description',
+            'name', 'brand_fk', 'category', 'short_description', 'description',
             'price', 'sale_price', 'cost_price',
             'price_usd', 'sale_price_usd', 'cost_price_usd',
             'stock', 'status', 'is_active', 'is_featured', 'is_on_sale', 'is_pre_order',
@@ -122,6 +122,16 @@ class ProductForm(forms.ModelForm):
 
     def clean_gtin(self):
         return clean_gtin_field(self.cleaned_data.get('gtin'))
+
+    def save(self, commit=True):
+        product = super().save(commit=False)
+        if product.brand_fk:
+            product.brand = product.brand_fk.name
+        if commit:
+            product.save()
+            self.save_m2m()
+        return product
+
 
 class CategoryForm(forms.ModelForm):
     class Meta:

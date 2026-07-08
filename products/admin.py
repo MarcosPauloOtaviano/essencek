@@ -40,19 +40,24 @@ class ProductImageInline(admin.TabularInline):
     fields = ['image', 'alt_text', 'is_main', 'order']
 
 
+class ProductVariantInline(admin.TabularInline):
+    model = ProductVariant
+    extra = 1
+    fields = ['name', 'volume_ml', 'price', 'promotional_price', 'cost_price', 'stock', 'sku', 'gtin', 'is_active', 'order']
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    form = ProductForm
-    list_display = ['name', 'brand', 'category', 'price', 'sale_price',
+    list_display = ['name', 'display_brand', 'category', 'price', 'sale_price',
                     'stock', 'status', 'gtin', 'is_active', 'is_featured', 'is_on_sale']
     list_editable = ['is_active', 'is_featured', 'is_on_sale', 'status', 'stock']
-    list_filter = ['category', 'status', 'is_active', 'is_featured', 'is_on_sale', 'is_pre_order']
+    list_filter = ['category', 'brand_fk', 'status', 'is_active', 'is_featured', 'is_on_sale', 'is_pre_order', 'is_fractioned']
     search_fields = ['name', 'brand', 'brand_fk__name', 'description', 'gtin', 'variants__gtin']
     prepopulated_fields = {'slug': ('name',)}
-    inlines = [ProductImageInline]
+    inlines = [ProductImageInline, ProductVariantInline]
     fieldsets = (
         ('Informações básicas', {
-            'fields': ('name', 'slug', 'brand', 'brand_fk', 'category', 'short_description', 'description')
+            'fields': ('name', 'slug', 'brand_fk', 'category', 'short_description', 'description')
         }),
         ('Preços em reais', {
             'fields': ('price', 'sale_price', 'cost_price')

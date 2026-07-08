@@ -44,7 +44,11 @@
                 <div>
                   <a href="{{ item.product.get_absolute_url }}" class="cart-product-name">{{ item.product.name }}</a>
                   {% if item.product.display_brand %}<span class="cart-product-brand">{{ item.product.display_brand }}</span>{% endif %}
-                  {% if item.variant %}<span class="cart-product-brand">Variação: {{ item.variant.name }}</span>{% endif %}
+                  {% if item.variant %}
+                    <span class="cart-product-variant">
+                      {% if item.variant.volume_ml %}Volume: {{ item.variant.volume_ml }}ml{% else %}{{ item.variant.name }}{% endif %}
+                    </span>
+                  {% endif %}
                   <span class="cart-status-badge {{ item.product.get_status_display_class }}">{{ item.product.get_status_display }}</span>
                 </div>
               </div>

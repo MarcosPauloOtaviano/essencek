@@ -264,3 +264,32 @@ body.dashboard-menu-open { overflow: hidden; }
   .dash-form .form-group label { font-size: 12px; }
   .upload-area { padding: 20px 12px; }
 }
+
+/* ─── Variant form rows ────────────────────────────────────── */
+.variant-form-row {
+  background: var(--d-bg);
+  border: 1px solid var(--d-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.variant-form-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: var(--d-text);
+}
+.variant-form-row .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.btn-dash-danger {
+  color: #c0392b;
+  border-color: #c0392b;
+}
+.btn-dash-danger:hover {
+  background: #c0392b;
+  color: #fff;
+}

@@ -20,9 +20,21 @@
     </nav>
   </div>
 
+  <!-- Mobile filter toggle -->
+  <button class="filter-toggle-mobile" id="filterToggle" aria-label="Abrir filtros">
+    <i class="fas fa-sliders-h"></i> Filtros
+  </button>
+
   <div class="catalog-layout">
     <!-- Sidebar Filters -->
-    <aside class="catalog-sidebar">
+    <aside class="catalog-sidebar" id="catalogSidebar">
+      <div class="filter-sidebar-header">
+        <h3>Filtros</h3>
+        <button class="filter-close-mobile" id="filterClose" aria-label="Fechar filtros">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
       <form method="get" class="filter-form" id="filterForm">
         <div class="filter-section">
           <h3 class="filter-title">Buscar</h3>
@@ -70,15 +82,15 @@
                 </div>
                 {% endif %}
 
-                {% if cat.brands %}
+                {% if cat.perfume_types %}
                 <div class="filter-sub-section">
-                  <span class="filter-sub-label">Marcas</span>
+                  <span class="filter-sub-label">Tipo</span>
                   <ul class="filter-sublist">
-                    {% for brand in cat.brands %}
+                    {% for pt in cat.perfume_types %}
                     <li>
-                      <a href="{{ brand.url }}"
-                         class="filter-link filter-link-child {% if brand.is_active %}active{% endif %}">
-                        {{ brand.name }}
+                      <a href="{{ pt.url }}"
+                         class="filter-link filter-link-child {% if pt.is_active %}active{% endif %}">
+                        {{ pt.label }} <span class="filter-count">({{ pt.count }})</span>
                       </a>
                     </li>
                     {% endfor %}
@@ -86,15 +98,15 @@
                 </div>
                 {% endif %}
 
-                {% if cat.volumes %}
+                {% if cat.brands %}
                 <div class="filter-sub-section">
-                  <span class="filter-sub-label">Volumes</span>
-                  <ul class="filter-sublist filter-volume-grid">
-                    {% for vol in cat.volumes %}
+                  <span class="filter-sub-label">Marca</span>
+                  <ul class="filter-sublist">
+                    {% for brand in cat.brands %}
                     <li>
-                      <a href="{{ vol.url }}"
-                         class="filter-link filter-link-child {% if vol.is_active %}active{% endif %}">
-                        {{ vol.label }}
+                      <a href="{{ brand.url }}"
+                         class="filter-link filter-link-child {% if brand.is_active %}active{% endif %}">
+                        {{ brand.name }} <span class="filter-count">({{ brand.count }})</span>
                       </a>
                     </li>
                     {% endfor %}
@@ -137,7 +149,7 @@
           </ul>
         </div>
 
-        {% if selected_category or selected_brand or selected_volume or selected_status or query %}
+        {% if selected_category or selected_brand or selected_perfume_type or selected_status or query %}
         <div class="filter-section">
           <a href="{% url 'products:list' %}" class="filter-clear-btn">
             <i class="fas fa-times"></i> Limpar todos os filtros
@@ -146,6 +158,9 @@
         {% endif %}
       </form>
     </aside>
+
+    <!-- Overlay for mobile -->
+    <div class="filter-overlay" id="filterOverlay"></div>
 
     <!-- Product Grid -->
     <div class="catalog-main">
@@ -206,5 +221,24 @@ document.querySelectorAll('.filter-accordion .filter-link-parent').forEach(funct
     link.setAttribute('aria-expanded', acc.classList.contains('open'));
   });
 });
+
+// Mobile filter drawer
+var toggle = document.getElementById('filterToggle');
+var sidebar = document.getElementById('catalogSidebar');
+var overlay = document.getElementById('filterOverlay');
+var closeBtn = document.getElementById('filterClose');
+function openFilters() {
+  sidebar.classList.add('is-open');
+  overlay.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+function closeFilters() {
+  sidebar.classList.remove('is-open');
+  overlay.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+if (toggle) toggle.addEventListener('click', openFilters);
+if (overlay) overlay.addEventListener('click', closeFilters);
+if (closeBtn) closeBtn.addEventListener('click', closeFilters);
 </script>
 {% endblock %}

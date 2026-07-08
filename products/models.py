@@ -45,6 +45,7 @@ class Brand(models.Model):
     description = models.TextField('Descrição', blank=True)
     logo = models.ImageField('Logo', upload_to='brands/', blank=True, null=True)
     is_active = models.BooleanField('Ativa', default=True)
+    created_at = models.DateTimeField('Criado em', auto_now_add=True, null=True)
 
     class Meta:
         verbose_name = 'Marca'

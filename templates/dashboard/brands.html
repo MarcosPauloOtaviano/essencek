@@ -1,0 +1,36 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Marcas{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>Marcas</h1>
+  <a href="{% url 'dashboard:brand_add' %}" class="btn-dash btn-dash-primary"><i class="fas fa-plus"></i> Nova marca</a>
+</div>
+<div class="dash-card">
+  <table class="dash-table">
+    <thead><tr><th>Logo</th><th>Nome</th><th>Slug</th><th>Produtos ativos</th><th>Ativa</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for brand in brands %}
+      <tr>
+        <td>
+          {% if brand.logo %}
+            <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" style="max-height:32px;max-width:80px;object-fit:contain">
+          {% else %}
+            <span style="color:#aaa"><i class="fas fa-image"></i></span>
+          {% endif %}
+        </td>
+        <td><strong>{{ brand.name }}</strong></td>
+        <td><code>{{ brand.slug }}</code></td>
+        <td>{{ brand.product_count }}</td>
+        <td>{% if brand.is_active %}<span class="badge-active">Sim</span>{% else %}<span class="badge-inactive">Não</span>{% endif %}</td>
+        <td>
+          <a href="{% url 'dashboard:brand_edit' brand.pk %}" class="btn-dash btn-dash-sm"><i class="fas fa-edit"></i></a>
+          <a href="{% url 'dashboard:brand_delete' brand.pk %}" class="btn-dash btn-dash-sm btn-dash-danger"><i class="fas fa-ban"></i></a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="dash-empty">Nenhuma marca cadastrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

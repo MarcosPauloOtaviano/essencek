@@ -16,11 +16,11 @@ from core.forms import NextTripForm, StoreSettingsForm
 from core.models import StoreSettings, NextTrip
 from orders.models import Order, PreOrderRequest
 from orders.services import confirm_order_payment
-from products.forms import ProductForm, CategoryForm
+from products.forms import ProductForm, CategoryForm, BrandForm, ProductVariantFormSet
 from products.gtin_service import lookup_product_identifier, normalize_gtin
 from products.image_downloader import download_and_process_image
 from products.image_utils import build_web_product_image
-from products.models import Product, Category, ProductImage
+from products.models import Product, Category, ProductImage, Brand
 from .services import get_dashboard_summary, get_reports_data
 
 logger = logging.getLogger('products.gtin')
@@ -92,8 +92,11 @@ def product_list(request):
 def product_add(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
-        if form.is_valid():
+        variant_formset = ProductVariantFormSet(request.POST, prefix='variants')
+        if form.is_valid() and variant_formset.is_valid():
             product = form.save()
+            variant_formset.instance = product
+            variant_formset.save()
             images = form.cleaned_data.get('images', [])
             for i, img in enumerate(images):
                 image_file = build_web_product_image(img)
@@ -104,11 +107,19 @@ def product_add(request):
                     order=i
                 )
             _save_captured_image(request, product, has_uploaded_images=bool(images))
+            if product.variants.exists():
+                product.has_variants = True
+                product.save(update_fields=['has_variants'])
             messages.success(request, f'Produto "{product.name}" criado com sucesso!')
             return redirect('dashboard:product_edit', pk=product.pk)
     else:
         form = ProductForm()
-    return render(request, 'dashboard/product_form.html', {'form': form, 'title': 'Novo produto'})
+        variant_formset = ProductVariantFormSet(prefix='variants')
+    return render(request, 'dashboard/product_form.html', {
+        'form': form,
+        'variant_formset': variant_formset,
+        'title': 'Novo produto',
+    })
 
 
 @staff_member_required(login_url='/conta/entrar/')
@@ -116,8 +127,10 @@ def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
-        if form.is_valid():
+        variant_formset = ProductVariantFormSet(request.POST, instance=product, prefix='variants')
+        if form.is_valid() and variant_formset.is_valid():
             product = form.save()
+            variant_formset.save()
             images = form.cleaned_data.get('images', [])
             existing_count = product.images.count()
             for i, img in enumerate(images):
@@ -129,12 +142,16 @@ def product_edit(request, pk):
                     order=existing_count + i
                 )
             _save_captured_image(request, product, has_uploaded_images=bool(images))
+            product.has_variants = product.variants.exists()
+            product.save(update_fields=['has_variants'])
             messages.success(request, f'Produto "{product.name}" atualizado!')
             return redirect('dashboard:product_edit', pk=product.pk)
     else:
         form = ProductForm(instance=product)
+        variant_formset = ProductVariantFormSet(instance=product, prefix='variants')
     return render(request, 'dashboard/product_form.html', {
         'form': form,
+        'variant_formset': variant_formset,
         'product': product,
         'title': f'Editar: {product.name}',
     })
@@ -500,3 +517,45 @@ def _search_open_facts_by_name(query, http_requests):
     except Exception:
         pass
     return results
+
+
+# ── Brand CRUD ──────────────────────────────────────────────
+
+@staff_member_required(login_url='/conta/entrar/')
+def brand_list(request):
+    from django.db.models import Count
+    brands = (
+        Brand.objects.annotate(product_count=Count('products', filter=Q(products__is_active=True)))
+        .order_by('name')
+    )
+    return render(request, 'dashboard/brands.html', {'brands': brands})
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def brand_edit(request, pk=None):
+    brand = get_object_or_404(Brand, pk=pk) if pk else None
+    if request.method == 'POST':
+        form = BrandForm(request.POST, request.FILES, instance=brand)
+        if form.is_valid():
+            b = form.save()
+            messages.success(request, f'Marca "{b.name}" salva!')
+            return redirect('dashboard:brands')
+    else:
+        form = BrandForm(instance=brand)
+    return render(request, 'dashboard/brand_form.html', {
+        'form': form,
+        'brand': brand,
+        'title': 'Editar marca' if brand else 'Nova marca',
+    })
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def brand_delete(request, pk):
+    brand = get_object_or_404(Brand, pk=pk)
+    if request.method == 'POST':
+        name = brand.name
+        brand.is_active = False
+        brand.save()
+        messages.success(request, f'Marca "{name}" desativada.')
+        return redirect('dashboard:brands')
+    return render(request, 'dashboard/brand_confirm_delete.html', {'brand': brand})

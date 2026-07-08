@@ -52,7 +52,7 @@
         </td>
         <td>
           <strong>{{ product.name }}</strong>
-          {% if product.brand %}<br><small class="text-muted">{{ product.brand }}</small>{% endif %}
+          {% if product.display_brand %}<br><small class="text-muted">{{ product.display_brand }}</small>{% endif %}
         </td>
         <td>{{ product.category.name|default:"—" }}</td>
         <td>

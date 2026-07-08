@@ -63,7 +63,8 @@
           </div>
           <div class="form-group">
             <label>Marca</label>
-            {% render_field form.brand class="dash-input" %}
+            {% render_field form.brand_fk class="dash-select" %}
+            <small class="field-note"><a href="{% url 'dashboard:brand_add' %}" target="_blank">+ Nova marca</a></small>
           </div>
           <div class="form-group">
             <label>Categoria</label>
@@ -130,6 +131,96 @@
             <label>Comprimento (cm)</label>
             {% render_field form.length class="dash-input" %}
           </div>
+        </div>
+      </div>
+
+      <!-- Perfume type & Variants -->
+      <div class="dash-card" id="variantsCard">
+        <h3><i class="fas fa-flask"></i> Tipo de perfume e variações</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="toggle-label">
+              {% render_field form.is_fractioned id="id_is_fractioned" %}
+              Perfume fracionado / decanter
+            </label>
+            <small class="field-note">Marque para perfumes vendidos em diferentes volumes/ml.</small>
+          </div>
+        </div>
+
+        <div id="variantFormsetArea">
+          <h4 style="margin:16px 0 8px;font-size:0.95rem;color:#555">
+            <i class="fas fa-vials"></i> Volumes / variações
+          </h4>
+          <p class="field-note" style="margin-bottom:12px">Cada volume tem preço, estoque e status próprios.</p>
+
+          {{ variant_formset.management_form }}
+
+          <div id="variantForms">
+            {% for vform in variant_formset %}
+            <div class="variant-form-row" id="variant-{{ forloop.counter0 }}">
+              <div class="variant-form-header">
+                <strong>Variação {{ forloop.counter }}</strong>
+                {% if vform.instance.pk %}
+                  <label class="toggle-label" style="margin-left:auto;font-size:0.85rem">
+                    {{ vform.DELETE }} Remover
+                  </label>
+                {% endif %}
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome da variação *</label>
+                  {% render_field vform.name class="dash-input" placeholder="Ex: 10ml, 20ml" %}
+                  {% if vform.name.errors %}<span class="field-error">{{ vform.name.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                  <label>Volume (ml)</label>
+                  {% render_field vform.volume_ml class="dash-input" placeholder="10" %}
+                </div>
+                <div class="form-group">
+                  <label>Preço em reais *</label>
+                  {% render_field vform.price class="dash-input" placeholder="89.90" %}
+                  {% if vform.price.errors %}<span class="field-error">{{ vform.price.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                  <label>Preço promocional</label>
+                  {% render_field vform.promotional_price class="dash-input" placeholder="79.90" %}
+                </div>
+                <div class="form-group">
+                  <label>Preço de custo <small>(interno)</small></label>
+                  {% render_field vform.cost_price class="dash-input" placeholder="40.00" %}
+                </div>
+                <div class="form-group">
+                  <label>Estoque</label>
+                  {% render_field vform.stock class="dash-input" placeholder="0" %}
+                </div>
+                <div class="form-group">
+                  <label>SKU</label>
+                  {% render_field vform.sku class="dash-input" %}
+                </div>
+                <div class="form-group">
+                  <label>GTIN</label>
+                  {% render_field vform.gtin class="dash-input" %}
+                </div>
+                <div class="form-group">
+                  <label class="toggle-label">
+                    {% render_field vform.is_active %} Ativo
+                  </label>
+                </div>
+              </div>
+              {{ vform.id }}
+              {{ vform.order }}
+              {{ vform.color }}
+              {{ vform.size }}
+              {{ vform.price_usd }}
+              {{ vform.promotional_price_usd }}
+              {{ vform.cost_price_usd }}
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="btn-dash btn-dash-secondary" id="addVariantBtn" style="margin-top:12px">
+            <i class="fas fa-plus"></i> Adicionar variação
+          </button>
         </div>
       </div>
 
@@ -356,11 +447,9 @@ function gtinLookup() {
         }
         result.innerHTML = result.innerHTML || '<div class="dash-info-note" style="color:green"><i class="fas fa-check-circle"></i> Produto encontrado! Campos preenchidos automaticamente.</div>';
         const nameField = document.getElementById('id_name');
-        const brandField = document.getElementById('id_brand');
         const descField = document.getElementById('id_description');
         const categoryField = document.getElementById('id_category');
         if (nameField && !nameField.value) nameField.value = data.name;
-        if (brandField && !brandField.value) brandField.value = data.brand;
         if (descField && !descField.value) descField.value = data.description;
         if (categoryField && data.category_id && !categoryField.value) categoryField.value = data.category_id;
         if (data.image_url) setCapturedImage(data.image_url);
@@ -528,5 +617,69 @@ function highlightRequiredFields() {
     priceField.focus();
   }
 }
+
+// --- Variant formset ---
+(function() {
+  var totalForms = document.getElementById('id_variants-TOTAL_FORMS');
+  var addBtn = document.getElementById('addVariantBtn');
+  if (!addBtn || !totalForms) return;
+
+  addBtn.addEventListener('click', function() {
+    var idx = parseInt(totalForms.value);
+    var container = document.getElementById('variantForms');
+    var html = `
+    <div class="variant-form-row" id="variant-${idx}">
+      <div class="variant-form-header"><strong>Variação ${idx + 1}</strong></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome da variação *</label>
+          <input type="text" name="variants-${idx}-name" class="dash-input" placeholder="Ex: 10ml, 20ml">
+        </div>
+        <div class="form-group">
+          <label>Volume (ml)</label>
+          <input type="number" name="variants-${idx}-volume_ml" class="dash-input" placeholder="10">
+        </div>
+        <div class="form-group">
+          <label>Preço em reais *</label>
+          <input type="number" name="variants-${idx}-price" class="dash-input" placeholder="89.90" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Preço promocional</label>
+          <input type="number" name="variants-${idx}-promotional_price" class="dash-input" placeholder="79.90" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Preço de custo <small>(interno)</small></label>
+          <input type="number" name="variants-${idx}-cost_price" class="dash-input" placeholder="40.00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Estoque</label>
+          <input type="number" name="variants-${idx}-stock" class="dash-input" placeholder="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>SKU</label>
+          <input type="text" name="variants-${idx}-sku" class="dash-input">
+        </div>
+        <div class="form-group">
+          <label>GTIN</label>
+          <input type="text" name="variants-${idx}-gtin" class="dash-input">
+        </div>
+        <div class="form-group">
+          <label class="toggle-label">
+            <input type="checkbox" name="variants-${idx}-is_active" checked> Ativo
+          </label>
+        </div>
+      </div>
+      <input type="hidden" name="variants-${idx}-id" value="">
+      <input type="hidden" name="variants-${idx}-order" value="${idx}">
+      <input type="hidden" name="variants-${idx}-color" value="">
+      <input type="hidden" name="variants-${idx}-size" value="">
+      <input type="hidden" name="variants-${idx}-price_usd" value="">
+      <input type="hidden" name="variants-${idx}-promotional_price_usd" value="">
+      <input type="hidden" name="variants-${idx}-cost_price_usd" value="">
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+    totalForms.value = idx + 1;
+  });
+})();
 </script>
 {% endblock %}

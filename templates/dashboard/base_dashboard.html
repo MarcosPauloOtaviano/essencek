@@ -30,6 +30,9 @@
       <a href="{% url 'dashboard:categories' %}" class="dash-nav-item {% if 'categor' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-tags"></i> Categorias
       </a>
+      <a href="{% url 'dashboard:brands' %}" class="dash-nav-item {% if 'brand' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-copyright"></i> Marcas
+      </a>
       <a href="{% url 'dashboard:orders' %}" class="dash-nav-item {% if 'order' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-shopping-bag"></i> Pedidos
       </a>

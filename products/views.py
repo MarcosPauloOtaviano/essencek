@@ -21,11 +21,7 @@ def product_list(request):
     on_sale = request.GET.get('on_sale', '')
     featured = request.GET.get('featured', '')
     brand_slug = request.GET.get('brand', '')
-    volume = request.GET.get('volume', '')
-    try:
-        selected_volume_ml = int(volume) if volume else None
-    except (TypeError, ValueError):
-        selected_volume_ml = None
+    perfume_type = request.GET.get('perfume_type', '')
 
     if query:
         query_gtin = normalize_gtin(query)
@@ -48,10 +44,10 @@ def product_list(request):
             Q(brand_fk__slug=brand_slug)
             | Q(brand__iexact=brand_slug.replace('-', ' '))
         ).distinct()
-    if selected_volume_ml:
-        products = products.filter(
-            variants__volume_ml=selected_volume_ml, variants__is_active=True,
-        ).distinct()
+    if perfume_type == 'tradicional':
+        products = products.filter(is_fractioned=False)
+    elif perfume_type == 'fracionado':
+        products = products.filter(is_fractioned=True)
     if status:
         products = products.filter(status=status)
     if on_sale:
@@ -68,7 +64,7 @@ def product_list(request):
     )
 
     filter_tree, active_category, active_root_slug = build_filter_tree(
-        all_categories, category_slug, brand_slug, selected_volume_ml, query,
+        all_categories, category_slug, brand_slug, perfume_type, query,
     )
 
     active_brand = Brand.objects.filter(slug=brand_slug, is_active=True).first() if brand_slug else None
@@ -76,16 +72,20 @@ def product_list(request):
         active_brand.name if active_brand
         else (brand_slug.replace('-', ' ').title() if brand_slug else '')
     )
-    selected_volume_label = f'{selected_volume_ml}ml' if selected_volume_ml else ''
+    perfume_type_label = ''
+    if perfume_type == 'tradicional':
+        perfume_type_label = 'Tradicional / lacrado'
+    elif perfume_type == 'fracionado':
+        perfume_type_label = 'Fracionado / decanter'
 
     breadcrumb_items = build_breadcrumbs(
-        active_category, active_brand_name, selected_volume_label, category_slug, brand_slug,
+        active_category, active_brand_name, perfume_type_label, category_slug, brand_slug,
     )
 
     page_title_parts = [p for p in [
         active_category.name if active_category else '',
         active_brand_name,
-        selected_volume_label,
+        perfume_type_label,
     ] if p]
 
     pagination_params = request.GET.copy()
@@ -99,11 +99,11 @@ def product_list(request):
         'selected_category': category_slug,
         'selected_status': status,
         'selected_brand': brand_slug,
-        'selected_volume': volume,
+        'selected_perfume_type': perfume_type,
         'active_category': active_category,
         'active_brand_name': active_brand_name,
         'active_root_slug': active_root_slug,
-        'selected_volume_label': selected_volume_label,
+        'perfume_type_label': perfume_type_label,
         'breadcrumb_items': breadcrumb_items,
         'page_title': ' - '.join(page_title_parts) or 'Produtos',
         'all_categories_url': catalog_url(q=query),
