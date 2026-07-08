@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "env": {
+    "DJANGO_SETTINGS_MODULE": "paraguashopping.settings.vercel"
+  },
+  "functions": {
+    "paraguashopping/wsgi.py": {
+      "maxDuration": 60
+    }
+  }
+}
