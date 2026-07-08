@@ -68,3 +68,29 @@ class LoginRateLimitMiddleware:
         if forwarded:
             return forwarded.split(',')[0].strip()
         return request.META.get('REMOTE_ADDR', 'unknown')
+
+
+class GlobalRateLimitMiddleware:
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.max_requests = getattr(settings, 'GLOBAL_RATE_LIMIT_MAX', 60)
+        self.window = getattr(settings, 'GLOBAL_RATE_LIMIT_WINDOW', 60)
+
+    def __call__(self, request):
+        if request.path.startswith('/static/') or request.path.startswith('/media/'):
+            return self.get_response(request)
+
+        ip = LoginRateLimitMiddleware._client_ip(request)
+        cache_key = f'global_rl:{ip}'
+        hits = cache.get(cache_key, 0)
+
+        if hits >= self.max_requests:
+            logger.warning('Global rate limit exceeded for IP %s (%d reqs)', ip, hits)
+            return JsonResponse(
+                {'error': 'Muitas requisições. Aguarde um momento.'},
+                status=429,
+            )
+
+        cache.set(cache_key, hits + 1, self.window)
+        return self.get_response(request)
