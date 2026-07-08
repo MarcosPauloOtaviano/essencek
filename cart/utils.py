@@ -42,5 +42,7 @@ def get_cart(request):
         if not request.session.session_key:
             request.session.create()
         session_key = request.session.session_key
-        cart, _ = Cart.objects.get_or_create(session_key=session_key, user=None)
+        cart = Cart.objects.filter(session_key=session_key, user=None).order_by('-updated_at').first()
+        if cart is None:
+            cart = Cart.objects.create(session_key=session_key, user=None)
         return cart
