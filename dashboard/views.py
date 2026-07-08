@@ -46,7 +46,7 @@ def _save_captured_image(request, product, has_uploaded_images):
         product.images.exclude(is_main=True).update(is_main=False)
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def dashboard_home(request):
     now = timezone.now()
     data = get_dashboard_summary(now)
@@ -56,7 +56,7 @@ def dashboard_home(request):
     return render(request, 'dashboard/index.html', data)
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def product_list(request):
     products = (
         Product.objects.select_related('category', 'brand_fk')
@@ -88,7 +88,7 @@ def product_list(request):
     })
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def product_add(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
@@ -111,7 +111,7 @@ def product_add(request):
     return render(request, 'dashboard/product_form.html', {'form': form, 'title': 'Novo produto'})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
@@ -140,7 +140,7 @@ def product_edit(request, pk):
     })
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def product_delete(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
@@ -151,7 +151,7 @@ def product_delete(request, pk):
     return render(request, 'dashboard/product_confirm_delete.html', {'product': product})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 @require_POST
 def image_set_main(request, pk):
     img = get_object_or_404(ProductImage, pk=pk)
@@ -160,7 +160,7 @@ def image_set_main(request, pk):
     return JsonResponse({'success': True})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 @require_POST
 def image_delete(request, pk):
     img = get_object_or_404(ProductImage, pk=pk)
@@ -170,7 +170,7 @@ def image_delete(request, pk):
     return redirect('dashboard:product_edit', pk=product_pk)
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def order_list(request):
     orders = Order.objects.select_related('customer').order_by('-created_at')
     status = request.GET.get('status', '')
@@ -191,7 +191,7 @@ def order_list(request):
     })
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def order_detail(request, pk):
     order = get_object_or_404(Order, pk=pk)
     if request.method == 'POST':
@@ -234,7 +234,7 @@ def order_detail(request, pk):
     })
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def customer_list(request):
     customers = User.objects.filter(is_staff=False).order_by('-date_joined')
     q = request.GET.get('q', '')
@@ -246,13 +246,13 @@ def customer_list(request):
     return render(request, 'dashboard/customers.html', {'customers': customers, 'q': q})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def pre_order_list(request):
     pre_orders = PreOrderRequest.objects.select_related('customer', 'product', 'trip').order_by('-created_at')
     return render(request, 'dashboard/pre_orders.html', {'pre_orders': pre_orders})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def next_trip_edit(request):
     trip = NextTrip.objects.filter(is_active=True).first()
     if request.method == 'POST':
@@ -266,7 +266,7 @@ def next_trip_edit(request):
     return render(request, 'dashboard/next_trip.html', {'form': form, 'trip': trip})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def store_settings(request):
     store = StoreSettings.get_settings()
     if request.method == 'POST':
@@ -280,7 +280,7 @@ def store_settings(request):
     return render(request, 'dashboard/settings.html', {'form': form, 'store': store})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def reports_view(request):
     now = timezone.now()
     data = get_reports_data(now)
@@ -290,13 +290,13 @@ def reports_view(request):
     return render(request, 'dashboard/reports.html', data)
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def category_list(request):
     categories = Category.objects.all().order_by('order', 'name')
     return render(request, 'dashboard/categories.html', {'categories': categories})
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def category_edit(request, pk=None):
     category = get_object_or_404(Category, pk=pk) if pk else None
     if request.method == 'POST':
@@ -314,7 +314,7 @@ def category_edit(request, pk=None):
     })
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def gtin_lookup(request):
     raw_code = request.GET.get('code', '').strip()
     if not raw_code:
@@ -345,7 +345,7 @@ def gtin_lookup(request):
     })
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 @require_POST
 def image_from_url(request, pk):
     product = get_object_or_404(Product, pk=pk)
@@ -374,7 +374,7 @@ def image_from_url(request, pk):
     })
 
 
-@staff_member_required
+@staff_member_required(login_url='/conta/entrar/')
 def image_search(request):
     query = request.GET.get('q', '').strip()
     if not query or len(query) < 2:

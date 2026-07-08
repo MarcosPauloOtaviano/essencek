@@ -42,7 +42,10 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             messages.success(request, f'Bem-vinda, {user.full_name or user.username}!')
-            return redirect(_safe_next_url(request) or 'home')
+            next_url = _safe_next_url(request)
+            if not next_url and user.is_staff:
+                next_url = '/painel/'
+            return redirect(next_url or 'home')
         else:
             messages.error(request, 'E-mail ou senha incorretos.')
     else:

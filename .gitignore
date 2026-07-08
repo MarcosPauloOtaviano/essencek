@@ -1,6 +1,8 @@
 # Environment
 .env
 *.env
+.env.*
+!.env.example
 
 # Python
 __pycache__/
@@ -42,3 +44,5 @@ Thumbs.db
 .claude/
 .preview-tools/
 .deploy_keys/
+
+.vercel/
