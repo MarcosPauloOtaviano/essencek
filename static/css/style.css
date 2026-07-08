@@ -435,7 +435,7 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--black);
+  background: #d4a88c;
   color: var(--white);
   display: flex;
   align-items: center;
@@ -449,9 +449,6 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
   padding: 8px;
   transition: transform var(--transition);
 }
-.quick-nav-circle.red { background: var(--red-promo); }
-.quick-nav-circle.pink { background: #e8a0bf; }
-.quick-nav-circle.green { background: #6b8f71; }
 .quick-nav-item:hover .quick-nav-circle { transform: scale(1.08); }
 .quick-nav-label {
   font-size: 11px;

@@ -48,6 +48,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.LoginRateLimitMiddleware',
+    'core.middleware.GlobalRateLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'paraguashopping.urls'
