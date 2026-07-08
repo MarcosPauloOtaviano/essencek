@@ -67,6 +67,8 @@ SERVE_MEDIA_FILES = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+COSMOS_API_TOKEN = config('COSMOS_API_TOKEN', default='')
+
 PAYMENT_SANDBOX = True
 PAYMENT_GATEWAY = config('PAYMENT_GATEWAY', default='sandbox')
 MP_ACCESS_TOKEN = ''

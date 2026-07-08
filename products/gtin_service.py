@@ -310,7 +310,7 @@ def _cosmos_headers(token):
     return {
         'X-Cosmos-Token': token,
         'Content-Type': 'application/json',
-        'User-Agent': 'EssenceK/1.0',
+        'User-Agent': 'Cosmos-API-Request',
     }
 
 
