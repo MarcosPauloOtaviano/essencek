@@ -13,12 +13,14 @@ SECRET_KEY = config(
 )
 
 _vercel_url = os.environ.get('VERCEL_URL', '')
-SITE_URL = config('SITE_URL', default='https://essencekimportado.com')
+SITE_URL = config('SITE_URL', default='https://essencekimportados.com.br')
 
 ALLOWED_HOSTS = [
     '.vercel.app',
     'essencekimportado.com',
     'www.essencekimportado.com',
+    'essencekimportados.com.br',
+    'www.essencekimportados.com.br',
     'localhost',
     '127.0.0.1',
 ]
@@ -29,6 +31,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.vercel.app',
     'https://essencekimportado.com',
     'https://www.essencekimportado.com',
+    'https://essencekimportados.com.br',
+    'https://www.essencekimportados.com.br',
 ]
 if _vercel_url:
     CSRF_TRUSTED_ORIGINS.append(f'https://{_vercel_url}')
