@@ -606,10 +606,15 @@ def brand_edit(request, pk=None):
 @staff_member_required(login_url='/conta/entrar/')
 def brand_delete(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
+    linked_products_count = brand.products.count()
     if request.method == 'POST':
         name = brand.name
-        brand.is_active = False
-        brand.save()
-        messages.success(request, f'Marca "{name}" desativada.')
+        if linked_products_count:
+            brand.products.update(brand=name, brand_fk=None)
+        brand.delete()
+        messages.success(request, f'Marca "{name}" excluída.')
         return redirect('dashboard:brands')
-    return render(request, 'dashboard/brand_confirm_delete.html', {'brand': brand})
+    return render(request, 'dashboard/brand_confirm_delete.html', {
+        'brand': brand,
+        'linked_products_count': linked_products_count,
+    })

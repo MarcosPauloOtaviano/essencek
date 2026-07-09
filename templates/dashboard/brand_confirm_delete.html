@@ -1,16 +1,20 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% block title %}Desativar marca{% endblock %}
+{% block title %}Excluir marca{% endblock %}
 {% block content %}
 <div class="dash-page-header">
-  <h1>Desativar marca</h1>
+  <h1>Excluir marca</h1>
   <a href="{% url 'dashboard:brands' %}" class="btn-dash btn-dash-ghost"><i class="fas fa-arrow-left"></i> Voltar</a>
 </div>
 <div class="dash-card">
-  <p>Tem certeza que deseja desativar a marca <strong>{{ brand.name }}</strong>?</p>
-  <p class="field-note">A marca será desativada e deixará de aparecer nos filtros. Os produtos vinculados não serão afetados.</p>
+  <p>Tem certeza que deseja excluir a marca <strong>{{ brand.name }}</strong>?</p>
+  {% if linked_products_count %}
+    <p class="field-note">Existem {{ linked_products_count }} produto(s) usando esta marca. Eles não serão apagados: o nome da marca será preservado no produto e apenas o vínculo com a marca será removido.</p>
+  {% else %}
+    <p class="field-note">Esta marca será apagada do cadastro de marcas.</p>
+  {% endif %}
   <form method="post" style="margin-top:16px">
     {% csrf_token %}
-    <button type="submit" class="btn-dash btn-dash-danger"><i class="fas fa-ban"></i> Desativar marca</button>
+    <button type="submit" class="btn-dash btn-dash-danger"><i class="fas fa-trash"></i> Excluir marca</button>
     <a href="{% url 'dashboard:brands' %}" class="btn-dash btn-dash-ghost" style="margin-left:8px">Cancelar</a>
   </form>
 </div>

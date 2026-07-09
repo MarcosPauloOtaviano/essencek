@@ -22,9 +22,13 @@
         <td><code>{{ brand.slug }}</code></td>
         <td>{{ brand.product_count }}</td>
         <td>{% if brand.is_active %}<span class="badge-active">Sim</span>{% else %}<span class="badge-inactive">Não</span>{% endif %}</td>
-        <td>
-          <a href="{% url 'dashboard:brand_edit' brand.pk %}" class="btn-dash btn-dash-sm"><i class="fas fa-edit"></i></a>
-          <a href="{% url 'dashboard:brand_delete' brand.pk %}" class="btn-dash btn-dash-sm btn-dash-danger"><i class="fas fa-ban"></i></a>
+        <td class="dash-actions">
+          <a href="{% url 'dashboard:brand_edit' brand.pk %}" class="btn-dash btn-dash-sm" title="Editar marca" aria-label="Editar marca {{ brand.name }}">
+            <i class="fas fa-edit"></i>
+          </a>
+          <a href="{% url 'dashboard:brand_delete' brand.pk %}" class="btn-dash btn-dash-sm btn-dash-danger" title="Excluir marca" aria-label="Excluir marca {{ brand.name }}">
+            <i class="fas fa-trash"></i>
+          </a>
         </td>
       </tr>
       {% empty %}
