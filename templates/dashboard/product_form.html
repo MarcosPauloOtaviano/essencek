@@ -163,6 +163,7 @@
             <i class="fas fa-vials"></i> Volumes / variações
           </h4>
           <p class="field-note" style="margin-bottom:12px">Cada volume tem preço, estoque e status próprios.</p>
+          <p class="field-note variant-disabled-note">Essa área só é usada para decanter. Produtos lacrados, eletrônicos e beleza coreana podem ignorar estes campos.</p>
 
           {{ variant_formset.management_form }}
           {% if variant_formset.non_form_errors %}
@@ -645,9 +646,19 @@ function highlightRequiredFields() {
 
 // --- Variant formset ---
 (function() {
+  var fractionedCheckbox = document.getElementById('id_is_fractioned');
+  var variantArea = document.getElementById('variantFormsetArea');
   var totalForms = document.getElementById('id_variants-TOTAL_FORMS');
   var addBtn = document.getElementById('addVariantBtn');
-  if (!addBtn || !totalForms) return;
+  if (!addBtn || !totalForms || !variantArea || !fractionedCheckbox) return;
+
+  function syncVariantArea() {
+    var enabled = fractionedCheckbox.checked;
+    variantArea.style.display = enabled ? 'block' : 'none';
+    variantArea.querySelectorAll('input, select, textarea, button').forEach(function(el) {
+      el.disabled = !enabled;
+    });
+  }
 
   addBtn.addEventListener('click', function() {
     var idx = parseInt(totalForms.value);
@@ -705,6 +716,9 @@ function highlightRequiredFields() {
     container.insertAdjacentHTML('beforeend', html);
     totalForms.value = idx + 1;
   });
+
+  fractionedCheckbox.addEventListener('change', syncVariantArea);
+  syncVariantArea();
 })();
 </script>
 {% endblock %}

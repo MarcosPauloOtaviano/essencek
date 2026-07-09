@@ -177,6 +177,14 @@ class ProductVariantForm(forms.ModelForm):
             'price_usd', 'promotional_price_usd', 'cost_price_usd',
             'stock', 'sku', 'gtin', 'is_active', 'order',
         ]
+        widgets = {
+            'color': forms.HiddenInput(),
+            'size': forms.HiddenInput(),
+            'price_usd': forms.HiddenInput(),
+            'promotional_price_usd': forms.HiddenInput(),
+            'cost_price_usd': forms.HiddenInput(),
+            'order': forms.HiddenInput(),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

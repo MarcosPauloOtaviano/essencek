@@ -49,7 +49,7 @@ def cart_add(request, product_id):
         return _cart_error(request, 'Produto indisponível.', 'products:detail', slug=product.slug)
 
     variant_id = request.POST.get('variant_id')
-    if product.has_variants or product.variants.filter(is_active=True).exists():
+    if product.is_fractioned and product.has_variants:
         if not variant_id:
             return _cart_error(request, 'Escolha uma variação antes de adicionar ao carrinho.', 'products:detail', slug=product.slug)
         variant = get_object_or_404(ProductVariant, pk=variant_id, product=product, is_active=True)

@@ -115,7 +115,9 @@ def product_list(request):
 def product_detail(request, slug):
     product = get_object_or_404(Product.objects.select_related('category', 'brand_fk'), slug=slug, is_active=True)
     images = product.images.all()
-    variants = product.variants.filter(is_active=True).order_by('order', 'volume_ml', 'name')
+    variants = product.variants.none()
+    if product.is_fractioned and product.has_variants:
+        variants = product.variants.filter(is_active=True).order_by('order', 'volume_ml', 'name')
     first_variant = variants.first()
     related = Product.objects.filter(
         category=product.category, is_active=True

@@ -26,6 +26,10 @@ from .services import get_dashboard_summary, get_reports_data
 logger = logging.getLogger('products.gtin')
 
 
+def _post_requests_variants(post_data):
+    return str(post_data.get('is_fractioned', '')).lower() in {'1', 'true', 'on', 'yes'}
+
+
 def _collect_form_errors(form, variant_formset=None):
     errors = []
     for field_name, field_errors in form.errors.items():
@@ -111,11 +115,23 @@ def product_list(request):
 def product_add(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
-        variant_formset = ProductVariantFormSet(request.POST, prefix='variants')
-        if form.is_valid() and variant_formset.is_valid():
+        validate_variants = _post_requests_variants(request.POST)
+        variant_formset = ProductVariantFormSet(
+            request.POST if validate_variants else None,
+            prefix='variants',
+        )
+        form_valid = form.is_valid()
+        variant_formset_valid = variant_formset.is_valid() if validate_variants else True
+        if form_valid and variant_formset_valid:
             product = form.save()
-            variant_formset.instance = product
-            variant_formset.save()
+            if validate_variants:
+                variant_formset.instance = product
+                variant_formset.save()
+                product.has_variants = product.variants.exists()
+                product.save(update_fields=['has_variants'])
+            elif product.has_variants:
+                product.has_variants = False
+                product.save(update_fields=['has_variants'])
             images = form.cleaned_data.get('images', [])
             for i, img in enumerate(images):
                 image_file = build_web_product_image(img)
@@ -126,9 +142,6 @@ def product_add(request):
                     order=i
                 )
             _save_captured_image(request, product, has_uploaded_images=bool(images))
-            if product.variants.exists():
-                product.has_variants = True
-                product.save(update_fields=['has_variants'])
             messages.success(request, f'Produto "{product.name}" criado com sucesso!')
             return redirect('dashboard:product_edit', pk=product.pk)
         messages.error(request, 'Não foi possível salvar o produto. Corrija os campos destacados abaixo.')
@@ -139,7 +152,10 @@ def product_add(request):
         'form': form,
         'variant_formset': variant_formset,
         'title': 'Novo produto',
-        'form_error_summary': _collect_form_errors(form, variant_formset) if request.method == 'POST' else [],
+        'form_error_summary': _collect_form_errors(
+            form,
+            variant_formset if request.method == 'POST' and _post_requests_variants(request.POST) else None,
+        ) if request.method == 'POST' else [],
     })
 
 
@@ -148,10 +164,23 @@ def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
-        variant_formset = ProductVariantFormSet(request.POST, instance=product, prefix='variants')
-        if form.is_valid() and variant_formset.is_valid():
+        validate_variants = _post_requests_variants(request.POST)
+        variant_formset = ProductVariantFormSet(
+            request.POST if validate_variants else None,
+            instance=product,
+            prefix='variants',
+        )
+        form_valid = form.is_valid()
+        variant_formset_valid = variant_formset.is_valid() if validate_variants else True
+        if form_valid and variant_formset_valid:
             product = form.save()
-            variant_formset.save()
+            if validate_variants:
+                variant_formset.save()
+                product.has_variants = product.variants.exists()
+                product.save(update_fields=['has_variants'])
+            elif product.has_variants:
+                product.has_variants = False
+                product.save(update_fields=['has_variants'])
             images = form.cleaned_data.get('images', [])
             existing_count = product.images.count()
             for i, img in enumerate(images):
@@ -163,8 +192,6 @@ def product_edit(request, pk):
                     order=existing_count + i
                 )
             _save_captured_image(request, product, has_uploaded_images=bool(images))
-            product.has_variants = product.variants.exists()
-            product.save(update_fields=['has_variants'])
             messages.success(request, f'Produto "{product.name}" atualizado!')
             return redirect('dashboard:product_edit', pk=product.pk)
         messages.error(request, 'Não foi possível salvar o produto. Corrija os campos destacados abaixo.')
@@ -176,7 +203,10 @@ def product_edit(request, pk):
         'variant_formset': variant_formset,
         'product': product,
         'title': f'Editar: {product.name}',
-        'form_error_summary': _collect_form_errors(form, variant_formset) if request.method == 'POST' else [],
+        'form_error_summary': _collect_form_errors(
+            form,
+            variant_formset if request.method == 'POST' and _post_requests_variants(request.POST) else None,
+        ) if request.method == 'POST' else [],
     })
 
 
