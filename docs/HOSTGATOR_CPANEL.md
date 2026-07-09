@@ -1,14 +1,14 @@
-# Deploy na HostGator com cPanel — essencekimportados.com
+# Deploy na HostGator com cPanel — essencekimportados.com.br
 
 ## Pre-requisitos
 
 - Plano HostGator com cPanel e acesso SSH
-- Dominio `essencekimportados.com` apontado para a HostGator
+- Dominio `essencekimportados.com.br` apontado para a HostGator
 - Python 3.11+ disponivel no cPanel (Setup Python App)
 
 ## 1. Acessar o cPanel
 
-Acesse `https://essencekimportados.com/cpanel` ou o link direto fornecido pela HostGator.
+Acesse `https://essencekimportados.com.br/cpanel` ou o link direto fornecido pela HostGator.
 
 ## 2. Criar banco MySQL
 
@@ -48,7 +48,7 @@ Acesse `https://essencekimportados.com/cpanel` ou o link direto fornecido pela H
 Acesse via SSH:
 
 ```bash
-ssh mar04335@essencekimportados.com
+ssh mar04335@essencekimportados.com.br
 ```
 
 Crie o arquivo `.env`:
@@ -64,9 +64,9 @@ Cole o conteudo abaixo (substituindo os valores):
 DJANGO_SETTINGS_MODULE=paraguashopping.settings.production
 SECRET_KEY=GERE-UMA-CHAVE-FORTE-COM-50-CARACTERES-OU-MAIS
 DEBUG=False
-ALLOWED_HOSTS=essencekimportados.com,www.essencekimportados.com
-CSRF_TRUSTED_ORIGINS=https://essencekimportados.com,https://www.essencekimportados.com
-SITE_URL=https://essencekimportados.com
+ALLOWED_HOSTS=essencekimportados.com.br,www.essencekimportados.com.br
+CSRF_TRUSTED_ORIGINS=https://essencekimportados.com.br,https://www.essencekimportados.com.br
+SITE_URL=https://essencekimportados.com.br
 
 DB_ENGINE=django.db.backends.mysql
 DB_NAME=mar04335_essencek
@@ -132,7 +132,7 @@ python manage.py createsuperuser
 
 No cPanel:
 1. Abra **SSL/TLS Status**
-2. Selecione `essencekimportados.com` e `www.essencekimportados.com`
+2. Selecione `essencekimportados.com.br` e `www.essencekimportados.com.br`
 3. Clique em **Run AutoSSL** (Let's Encrypt gratuito)
 
 ## 9. Configurar dominio
@@ -141,17 +141,17 @@ Se o dominio ainda nao aponta para a HostGator:
 1. No registro do dominio, aponte os nameservers para os da HostGator
 2. Ou configure os registros DNS:
    - `A` apontando para o IP do servidor HostGator
-   - `CNAME` de `www` para `essencekimportados.com`
+   - `CNAME` de `www` para `essencekimportados.com.br`
 
 ## 10. Verificar
 
-Acesse `https://essencekimportados.com` — o site deve carregar.
+Acesse `https://essencekimportados.com.br` — o site deve carregar.
 
 Se der erro 500, verifique os logs:
 
 ```bash
 cat ~/essencek_app/logs/error.log
-cat ~/logs/essencekimportados.com/error.log
+cat ~/logs/essencekimportados.com.br/error.log
 ```
 
 ## Atualizacoes futuras

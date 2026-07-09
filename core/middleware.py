@@ -3,9 +3,34 @@ import time
 
 from django.conf import settings
 from django.core.cache import cache
-from django.http import JsonResponse
+from django.http import HttpResponsePermanentRedirect, JsonResponse
 
 logger = logging.getLogger('django.security')
+
+
+class PermanentPreserveRedirect(HttpResponsePermanentRedirect):
+    status_code = 308
+
+
+class CanonicalHostRedirectMiddleware:
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.canonical_host = getattr(settings, 'CANONICAL_HOST', '').lower()
+        self.redirect_hosts = {
+            host.lower()
+            for host in getattr(settings, 'CANONICAL_REDIRECT_HOSTS', [])
+            if host
+        }
+
+    def __call__(self, request):
+        if self.canonical_host and self.redirect_hosts:
+            host = request.get_host().split(':', 1)[0].lower()
+            if host in self.redirect_hosts:
+                return PermanentPreserveRedirect(
+                    f'https://{self.canonical_host}{request.get_full_path()}'
+                )
+        return self.get_response(request)
 
 
 class SecurityHeadersMiddleware:

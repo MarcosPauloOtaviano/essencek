@@ -64,9 +64,9 @@ Em producao:
 
 ```env
 DEBUG=False
-SITE_URL=https://essencekimportados.com
-ALLOWED_HOSTS=essencekimportados.com,www.essencekimportados.com
-CSRF_TRUSTED_ORIGINS=https://essencekimportados.com,https://www.essencekimportados.com
+SITE_URL=https://essencekimportados.com.br
+ALLOWED_HOSTS=essencekimportados.com.br,www.essencekimportados.com.br
+CSRF_TRUSTED_ORIGINS=https://essencekimportados.com.br,https://www.essencekimportados.com.br
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=nome_do_banco
 DB_USER=usuario_do_banco
@@ -176,13 +176,13 @@ MP_PUBLIC_KEY=APP_USR-...
 MP_WEBHOOK_SECRET=uma-chave-secreta-criada-para-validar-webhook
 MP_USE_SANDBOX_LINK=False
 MP_MAX_INSTALLMENTS=12
-SITE_URL=https://essencekimportados.com
+SITE_URL=https://essencekimportados.com.br
 ```
 
 Configure o webhook no painel do Mercado Pago:
 
 ```text
-https://essencekimportados.com/pagamento/webhook/mercadopago/
+https://essencekimportados.com.br/pagamento/webhook/mercadopago/
 ```
 
 ### Pagamento pendente e nova tentativa

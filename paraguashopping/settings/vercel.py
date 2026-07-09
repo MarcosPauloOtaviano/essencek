@@ -37,6 +37,14 @@ CSRF_TRUSTED_ORIGINS = [
 if _vercel_url:
     CSRF_TRUSTED_ORIGINS.append(f'https://{_vercel_url}')
 
+CANONICAL_HOST = 'essencekimportados.com.br'
+CANONICAL_REDIRECT_HOSTS = [
+    'www.essencekimportados.com.br',
+    'essencekimportado.com',
+    'www.essencekimportado.com',
+]
+MIDDLEWARE = ['core.middleware.CanonicalHostRedirectMiddleware', *MIDDLEWARE]
+
 _preview_source_db = Path(config('VERCEL_PREVIEW_SOURCE_DB', default=str(BASE_DIR / 'vercel_db.sqlite3')))
 _preview_runtime_db = Path(config('VERCEL_PREVIEW_RUNTIME_DB', default='/tmp/essencek_preview.sqlite3'))
 if _preview_source_db.exists() and not _preview_runtime_db.exists():
