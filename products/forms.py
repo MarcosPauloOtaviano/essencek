@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.text import slugify
 from core.utils import sanitize_text
 from .models import Product, Category, ProductImage, Brand, ProductVariant, normalize_gtin_value
 from .image_utils import (
@@ -166,6 +167,46 @@ class BrandForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['slug'].required = False
+        self.fields['logo'].widget.attrs.update({'accept': 'image/*,.heic,.heif'})
+
+    def clean_name(self):
+        return sanitize_text(self.cleaned_data.get('name') or '')
+
+    def clean_description(self):
+        return sanitize_text(self.cleaned_data.get('description') or '')
+
+    def clean_logo(self):
+        logo = self.cleaned_data.get('logo')
+        if logo:
+            validate_product_image_upload(logo)
+        return logo
+
+    def clean(self):
+        cleaned = super().clean()
+        name = cleaned.get('name')
+        if not name:
+            return cleaned
+
+        base_slug = slugify(cleaned.get('slug') or name) or 'marca'
+        slug = base_slug
+        counter = 1
+        queryset = Brand.objects.filter(slug=slug)
+        if self.instance and self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        while queryset.exists():
+            slug = f'{base_slug}-{counter}'
+            counter += 1
+            queryset = Brand.objects.filter(slug=slug)
+            if self.instance and self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+
+        cleaned['slug'] = slug
+        return cleaned
 
 
 class ProductVariantForm(forms.ModelForm):

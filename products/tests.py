@@ -11,9 +11,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 
 from accounts.models import User
-from .forms import ProductForm
+from .forms import BrandForm, ProductForm
 from .gtin_service import lookup_gtin, lookup_product_identifier, normalize_gtin
-from .models import Category, Product, ProductImage
+from .models import Brand, Category, Product, ProductImage
 
 
 def make_image_upload(name='foto.jpg', size=(900, 700), color=(160, 90, 60)):
@@ -264,3 +264,49 @@ class ProductGtinLookupTests(TestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data['gtin'], '7500435135030')
+
+
+class BrandFormTests(TestCase):
+    def test_brand_form_generates_slug_from_name(self):
+        form = BrandForm(data={
+            'name': 'Beauty of Joseon',
+            'slug': '',
+            'description': '',
+            'is_active': 'on',
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        brand = form.save()
+
+        self.assertEqual(brand.slug, 'beauty-of-joseon')
+        self.assertTrue(brand.is_active)
+
+    def test_brand_form_generates_unique_slug_for_duplicate_name(self):
+        Brand.objects.create(name='COSRX', slug='cosrx')
+
+        form = BrandForm(data={
+            'name': 'COSRX',
+            'slug': '',
+            'description': '',
+            'is_active': 'on',
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        brand = form.save()
+
+        self.assertEqual(brand.slug, 'cosrx-1')
+
+    def test_brand_form_rejects_non_image_logo(self):
+        upload = SimpleUploadedFile('logo.txt', b'nao e imagem', content_type='text/plain')
+        form = BrandForm(
+            data={
+                'name': 'Marca com logo ruim',
+                'slug': '',
+                'description': '',
+                'is_active': 'on',
+            },
+            files={'logo': upload},
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('logo', form.errors)

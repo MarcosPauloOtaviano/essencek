@@ -593,6 +593,7 @@ def brand_edit(request, pk=None):
             b = form.save()
             messages.success(request, f'Marca "{b.name}" salva!')
             return redirect('dashboard:brands')
+        messages.error(request, 'Não foi possível salvar a marca. Corrija os campos destacados abaixo.')
     else:
         form = BrandForm(instance=brand)
     return render(request, 'dashboard/brand_form.html', {
