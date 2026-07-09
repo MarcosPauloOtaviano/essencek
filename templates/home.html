@@ -211,7 +211,7 @@
 
 /* ─── RESPONSIVE BANNER ───────────────────────────────────── */
 @media (max-width: 768px) {
-  .hero-carousel { border-radius: 12px; margin: 0 8px; }
+  .hero-carousel { border-radius: 12px; width: calc(100% - 16px); margin: 0 auto; }
   .hero-slide { min-height: 480px; }
   .slide-content {
     grid-template-columns: 1fr;
@@ -230,7 +230,7 @@
 }
 
 @media (max-width: 480px) {
-  .hero-carousel { border-radius: 10px; margin: 0 6px; }
+  .hero-carousel { border-radius: 10px; width: calc(100% - 12px); margin: 0 auto; }
   .hero-slide { min-height: 400px; }
   .slide-content { padding: 20px 16px; }
   .slide-headline { font-size: 20px; }
