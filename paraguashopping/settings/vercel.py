@@ -2,6 +2,9 @@ import os
 import shutil
 from pathlib import Path
 
+import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *
 
 
@@ -45,18 +48,43 @@ CANONICAL_REDIRECT_HOSTS = [
 ]
 MIDDLEWARE = ['core.middleware.CanonicalHostRedirectMiddleware', *MIDDLEWARE]
 
-_preview_source_db = Path(config('VERCEL_PREVIEW_SOURCE_DB', default=str(BASE_DIR / 'vercel_db.sqlite3')))
-_preview_runtime_db = Path(config('VERCEL_PREVIEW_RUNTIME_DB', default='/tmp/essencek_preview.sqlite3'))
-if _preview_source_db.exists() and not _preview_runtime_db.exists():
-    _preview_runtime_db.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(_preview_source_db, _preview_runtime_db)
+_database_url = config('DATABASE_URL', default='') or config('POSTGRES_URL', default='')
+_is_vercel_environment = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV') or _vercel_url)
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': str(_preview_runtime_db),
+if _database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            _database_url,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+    DATA_PERSISTENCE_MODE = 'persistent'
+else:
+    _allow_ephemeral_sqlite = config(
+        'ALLOW_EPHEMERAL_SQLITE_ON_VERCEL',
+        default=not _is_vercel_environment,
+        cast=bool,
+    )
+    if not _allow_ephemeral_sqlite:
+        raise ImproperlyConfigured(
+            'Configure DATABASE_URL ou POSTGRES_URL com um banco persistente para a Vercel. '
+            'SQLite em /tmp apaga cadastros de produtos, marcas, categorias e pedidos em cold starts/redeploys.'
+        )
+
+    _preview_source_db = Path(config('VERCEL_PREVIEW_SOURCE_DB', default=str(BASE_DIR / 'vercel_db.sqlite3')))
+    _preview_runtime_db = Path(config('VERCEL_PREVIEW_RUNTIME_DB', default='/tmp/essencek_preview.sqlite3'))
+    if _preview_source_db.exists() and not _preview_runtime_db.exists():
+        _preview_runtime_db.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(_preview_source_db, _preview_runtime_db)
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': str(_preview_runtime_db),
+        }
+    }
+    DATA_PERSISTENCE_MODE = 'ephemeral-sqlite'
 
 _preview_source_media = BASE_DIR / 'media'
 _preview_runtime_media = Path(config('VERCEL_PREVIEW_RUNTIME_MEDIA', default='/tmp/essencek_media'))
@@ -76,6 +104,14 @@ if _preview_source_media.exists():
 
 MEDIA_ROOT = _preview_runtime_media
 SERVE_MEDIA_FILES = True
+USE_DATABASE_MEDIA_STORAGE_ON_VERCEL = config(
+    'USE_DATABASE_MEDIA_STORAGE_ON_VERCEL',
+    default=bool(_database_url),
+    cast=bool,
+)
+
+if USE_DATABASE_MEDIA_STORAGE_ON_VERCEL:
+    DEFAULT_FILE_STORAGE = 'core.storage.PersistentMediaStorage'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 

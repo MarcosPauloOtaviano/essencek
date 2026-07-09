@@ -79,3 +79,20 @@ class ExchangeRate(models.Model):
     def get_usd_brl(cls):
         from .services import get_usd_brl_rate
         return get_usd_brl_rate()
+
+
+class StoredMediaFile(models.Model):
+    name = models.CharField('Caminho do arquivo', max_length=500, unique=True)
+    content_type = models.CharField('Tipo de arquivo', max_length=120, blank=True)
+    size = models.PositiveBigIntegerField('Tamanho em bytes', default=0)
+    data = models.BinaryField('Arquivo')
+    created_at = models.DateTimeField('Criado em', auto_now_add=True)
+    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Arquivo de mídia persistente'
+        verbose_name_plural = 'Arquivos de mídia persistentes'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

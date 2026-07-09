@@ -67,6 +67,7 @@ DEBUG=False
 SITE_URL=https://essencekimportados.com.br
 ALLOWED_HOSTS=essencekimportados.com.br,www.essencekimportados.com.br
 CSRF_TRUSTED_ORIGINS=https://essencekimportados.com.br,https://www.essencekimportados.com.br
+DATABASE_URL=postgresql://usuario:senha@host:5432/banco?sslmode=require
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=nome_do_banco
 DB_USER=usuario_do_banco
@@ -77,6 +78,29 @@ PAYMENT_GATEWAY=mercadopago
 PAYMENT_SANDBOX=False
 MP_USE_SANDBOX_LINK=False
 ```
+
+## Persistencia na Vercel
+
+Em producao na Vercel, nao use SQLite em `/tmp` para dados reais. Esse filesystem e temporario: produtos, marcas, categorias, pedidos e clientes cadastrados pelo admin podem desaparecer em cold starts ou redeploys.
+
+Configure um banco persistente, de preferencia Neon Postgres pelo Vercel Marketplace:
+
+```bash
+vercel integration add neon --plan free_v3 -m region=gru1 -m auth=false
+vercel env pull .env.production.local --environment=production --yes
+```
+
+Depois rode as migracoes no banco persistente:
+
+```bash
+$env:DJANGO_SETTINGS_MODULE="paraguashopping.settings.vercel"
+# carregue DATABASE_URL/POSTGRES_URL da Vercel ou do arquivo .env.production.local
+python manage.py migrate --noinput
+```
+
+As settings da Vercel usam `DATABASE_URL` ou `POSTGRES_URL`. Se essas variaveis nao existirem em ambiente Vercel, a aplicacao bloqueia o uso silencioso de SQLite temporario.
+
+Uploads feitos pelo painel em producao tambem precisam ser persistentes. Na Vercel, `USE_DATABASE_MEDIA_STORAGE_ON_VERCEL=True` salva novos arquivos de mídia no banco persistente e evita que fotos de produtos, marcas e categorias desaparecam em cold starts.
 
 ## Precos USD / BRL
 
