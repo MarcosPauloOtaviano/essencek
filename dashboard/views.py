@@ -26,6 +26,25 @@ from .services import get_dashboard_summary, get_reports_data
 logger = logging.getLogger('products.gtin')
 
 
+def _collect_form_errors(form, variant_formset=None):
+    errors = []
+    for field_name, field_errors in form.errors.items():
+        label = form.fields.get(field_name).label if field_name in form.fields else 'Produto'
+        for error in field_errors:
+            errors.append(f'{label}: {error}')
+
+    if variant_formset is not None:
+        for error in variant_formset.non_form_errors():
+            errors.append(f'Variações: {error}')
+        for index, variant_form in enumerate(variant_formset.forms, start=1):
+            for field_name, field_errors in variant_form.errors.items():
+                label = variant_form.fields.get(field_name).label if field_name in variant_form.fields else 'Variação'
+                for error in field_errors:
+                    errors.append(f'Variação {index} - {label}: {error}')
+
+    return errors
+
+
 def _save_captured_image(request, product, has_uploaded_images):
     captured_url = request.POST.get('captured_image_url', '').strip()
     if not captured_url:
@@ -112,6 +131,7 @@ def product_add(request):
                 product.save(update_fields=['has_variants'])
             messages.success(request, f'Produto "{product.name}" criado com sucesso!')
             return redirect('dashboard:product_edit', pk=product.pk)
+        messages.error(request, 'Não foi possível salvar o produto. Corrija os campos destacados abaixo.')
     else:
         form = ProductForm()
         variant_formset = ProductVariantFormSet(prefix='variants')
@@ -119,6 +139,7 @@ def product_add(request):
         'form': form,
         'variant_formset': variant_formset,
         'title': 'Novo produto',
+        'form_error_summary': _collect_form_errors(form, variant_formset) if request.method == 'POST' else [],
     })
 
 
@@ -146,6 +167,7 @@ def product_edit(request, pk):
             product.save(update_fields=['has_variants'])
             messages.success(request, f'Produto "{product.name}" atualizado!')
             return redirect('dashboard:product_edit', pk=product.pk)
+        messages.error(request, 'Não foi possível salvar o produto. Corrija os campos destacados abaixo.')
     else:
         form = ProductForm(instance=product)
         variant_formset = ProductVariantFormSet(instance=product, prefix='variants')
@@ -154,6 +176,7 @@ def product_edit(request, pk):
         'variant_formset': variant_formset,
         'product': product,
         'title': f'Editar: {product.name}',
+        'form_error_summary': _collect_form_errors(form, variant_formset) if request.method == 'POST' else [],
     })
 
 

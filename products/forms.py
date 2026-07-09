@@ -68,12 +68,16 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['category'].required = False
         self.fields['price'].required = True
         self.fields['sale_price'].required = False
         self.fields['cost_price'].required = False
         self.fields['price_usd'].required = False
         self.fields['sale_price_usd'].required = False
         self.fields['cost_price_usd'].required = False
+        self.fields['stock'].required = False
+        for field_name in ('weight', 'height', 'width', 'length'):
+            self.fields[field_name].required = False
         self.fields['price'].label = 'Preço de venda em reais'
         self.fields['sale_price'].label = 'Preço promocional em reais'
         self.fields['cost_price'].label = 'Preço de custo em reais'
@@ -89,6 +93,13 @@ class ProductForm(forms.ModelForm):
         status = cleaned.get('status')
         is_on_sale = cleaned.get('is_on_sale')
         is_pre_order = cleaned.get('is_pre_order') or status == Product.STATUS_PRE_ORDER
+
+        if stock is None:
+            cleaned['stock'] = 0
+            stock = 0
+        for field_name in ('weight', 'height', 'width', 'length'):
+            if cleaned.get(field_name) is None:
+                cleaned[field_name] = 0
 
         if price is None or price <= 0:
             self.add_error('price', 'Informe o preço de venda em reais maior que zero.')
@@ -169,14 +180,38 @@ class ProductVariantForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['price'].required = True
-        for field_name in ('price_usd', 'promotional_price_usd', 'cost_price_usd'):
+        for field_name in (
+            'name', 'volume_ml', 'color', 'size',
+            'price', 'promotional_price', 'cost_price',
+            'price_usd', 'promotional_price_usd', 'cost_price_usd',
+            'stock', 'sku', 'gtin', 'order',
+        ):
             self.fields[field_name].required = False
 
     def clean(self):
         cleaned = super().clean()
+        delete_requested = cleaned.get('DELETE')
+        has_variant_data = any(
+            cleaned.get(field_name) not in (None, '', [])
+            for field_name in (
+                'name', 'volume_ml', 'color', 'size',
+                'price', 'promotional_price', 'cost_price',
+                'price_usd', 'promotional_price_usd', 'cost_price_usd',
+                'sku', 'gtin',
+            )
+        )
+
+        if delete_requested or (self.empty_permitted and not has_variant_data):
+            return cleaned
+
         price = cleaned.get('price')
         promotional_price = cleaned.get('promotional_price')
+        if not cleaned.get('name'):
+            self.add_error('name', 'Informe o nome da variação.')
+        if cleaned.get('stock') is None:
+            cleaned['stock'] = 0
+        if cleaned.get('order') is None:
+            cleaned['order'] = 0
         if price is None or price <= 0:
             self.add_error('price', 'Informe o preço em reais maior que zero.')
         if promotional_price and price and promotional_price >= price:

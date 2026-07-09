@@ -11,6 +11,17 @@
 
 <form method="post" enctype="multipart/form-data" class="dash-form">
   {% csrf_token %}
+  {% if form_error_summary %}
+  <div class="dash-card dash-form-errors">
+    <h3><i class="fas fa-exclamation-circle"></i> Não foi possível salvar</h3>
+    <p>Corrija os itens abaixo e tente novamente.</p>
+    <ul>
+      {% for error in form_error_summary %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
   <div class="dash-form-layout">
     <!-- Main fields -->
     <div class="dash-form-main">
@@ -154,10 +165,24 @@
           <p class="field-note" style="margin-bottom:12px">Cada volume tem preço, estoque e status próprios.</p>
 
           {{ variant_formset.management_form }}
+          {% if variant_formset.non_form_errors %}
+            <div class="dash-info-note dash-error-note">
+              {% for error in variant_formset.non_form_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
 
           <div id="variantForms">
             {% for vform in variant_formset %}
             <div class="variant-form-row" id="variant-{{ forloop.counter0 }}">
+              {% if vform.non_field_errors %}
+                <div class="dash-info-note dash-error-note">
+                  {% for error in vform.non_field_errors %}
+                    <p>{{ error }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
               <div class="variant-form-header">
                 <strong>Variação {{ forloop.counter }}</strong>
                 {% if vform.instance.pk %}
