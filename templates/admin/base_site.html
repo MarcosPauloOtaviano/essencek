@@ -27,6 +27,9 @@
     width: 178px;
     max-height: 56px;
     object-fit: contain;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
   }
 
   .admin-branding-logo span {
@@ -52,7 +55,7 @@
 
 {% block branding %}
 <div class="admin-branding-logo">
-  <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados">
+  <img src="{% static 'img/brand/essence-k-logo-horizontal-light.svg' %}" alt="Essence K Importados">
   <span>Admin</span>
 </div>
 {% endblock %}

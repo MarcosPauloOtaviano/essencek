@@ -49,11 +49,7 @@
         </button>
 
         <a href="{% url 'home' %}" class="logo">
-          {% if store_settings and store_settings.display_logo_url %}
-            <img src="{{ store_settings.display_logo_url }}" alt="Essence K Importados" class="brand-logo brand-logo-header">
-          {% else %}
-            <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados" class="brand-logo brand-logo-header">
-          {% endif %}
+          <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="brand-logo brand-logo-header">
         </a>
 
         <form action="{% url 'products:list' %}" method="get" class="search-form">
@@ -157,7 +153,7 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <img src="{% static 'img/brand/essence-k-logo-official.png' %}" alt="Essence K Importados" class="footer-logo-img">
+          <img src="{% static 'img/brand/essence-k-logo-horizontal-light.svg' %}" alt="Essence K Importados" class="footer-logo-img">
           <p>Importados selecionados com cuidado. Perfumes, K-beauty e skincare com pronta entrega para todo o Brasil.</p>
           <div class="footer-social">
             <a href="https://www.instagram.com/shopparaguai/" target="_blank" rel="noopener" aria-label="Instagram Shop Paraguai">

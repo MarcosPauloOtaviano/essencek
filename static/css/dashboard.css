@@ -31,7 +31,8 @@ body.dashboard-menu-open { overflow: hidden; }
 .dash-sidebar { width: 240px; flex-shrink: 0; background: var(--d-sidebar); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; transition: width 0.25s; }
 .dash-sidebar-overlay { display: none; }
 .dash-brand { padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.dash-brand-logo { width: 188px; max-width: 100%; height: auto; display: block; margin-bottom: 4px; }
+.dash-brand-logo { width: 188px; max-width: 100%; height: auto; display: block; margin-bottom: 4px; background: transparent; border: 0; box-shadow: none; }
+.settings-logo-preview { width: 220px; max-width: 100%; height: auto; display: block; background: transparent; border: 0; box-shadow: none; }
 .dash-logo { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; font-weight: 700; color: #FFF9F5; display: block; }
 .dash-logo span { color: #f8c8dc; }
 .dash-sub { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase; display: block; margin-top: 3px; }

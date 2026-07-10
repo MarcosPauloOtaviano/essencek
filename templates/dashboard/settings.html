@@ -1,5 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% load widget_tweaks %}
+{% load widget_tweaks static %}
 {% block title %}Configurações{% endblock %}
 {% block content %}
 <div class="dash-page-header"><h1>Configurações da loja</h1></div>
@@ -18,7 +18,7 @@
       <div class="form-group"><label>{{ form.payment_gateway.label }}</label>{% render_field form.payment_gateway class="dash-input" %}</div>
       <div class="form-group">
         <label>{{ form.logo.label }}</label>
-        {% if store.display_logo_url %}<img src="{{ store.display_logo_url }}" alt="Logo" height="50" class="mb-1"><br>{% endif %}
+        <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Logo Essence K Importados" class="settings-logo-preview mb-1"><br>
         {% render_field form.logo class="dash-input" %}
       </div>
       <div class="form-group">

@@ -115,10 +115,11 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
 }
 
 .logo { flex-shrink: 0; display: flex; align-items: center; }
-.brand-logo { display: block; width: auto; height: auto; }
+.brand-logo { display: block; width: auto; height: auto; background: transparent; border: 0; box-shadow: none; }
 .brand-logo-header {
-  width: clamp(155px, 18vw, 205px);
-  max-height: 64px;
+  width: auto;
+  height: clamp(44px, 5vw, 58px);
+  max-width: min(240px, 38vw);
   object-fit: contain;
 }
 .logo-text {
@@ -542,7 +543,7 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
 .site-footer { background: var(--black); color: rgba(255,255,255,0.7); margin-top: auto; }
 .footer-main { padding: 48px 0 32px; }
 .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
-.footer-logo-img { width: 175px; max-width: 100%; height: auto; margin-bottom: 12px; }
+.footer-logo-img { width: 175px; max-width: 100%; height: auto; margin-bottom: 12px; background: transparent; border: 0; box-shadow: none; }
 .footer-logo { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 12px; letter-spacing: 2px; text-transform: uppercase; }
 .footer-logo span { color: var(--red-promo); }
 .footer-brand p { font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
@@ -808,7 +809,7 @@ select.form-control { cursor: pointer; }
 .auth-page { min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
 .auth-card { background: var(--white); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 40px; width: 100%; max-width: 440px; box-shadow: 0 8px 32px var(--shadow-md); }
 .auth-logo { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--black); text-align: center; margin-bottom: 20px; display: flex; justify-content: center; letter-spacing: 2px; text-transform: uppercase; }
-.auth-logo-img { width: min(245px, 100%); height: auto; }
+.auth-logo-img { width: min(245px, 100%); height: auto; background: transparent; border: 0; box-shadow: none; }
 .auth-logo span { color: var(--red-promo); }
 .auth-title { font-size: 28px; text-align: center; margin-bottom: 4px; }
 .auth-subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
@@ -947,7 +948,7 @@ select.form-control { cursor: pointer; }
   .header-main { padding: 8px 0; }
   .header-main-inner { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
   .logo { min-width: 0; }
-  .brand-logo-header { width: 150px; max-height: 48px; }
+  .brand-logo-header { width: auto; height: 46px; max-width: 150px; }
 
   /* Mobile: hamburger left, logo center, icons right */
   .nav-toggle { display: block; order: -1; }
@@ -1006,7 +1007,7 @@ select.form-control { cursor: pointer; }
 @media (max-width: 480px) {
   .products-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .container { padding: 0 12px; }
-  .brand-logo-header { width: 132px; }
+  .brand-logo-header { width: auto; height: 40px; max-width: 132px; }
   .header-admin-btn { padding: 6px 8px; }
   .header-admin-btn span { display: inline; font-size: 11px; }
   .product-card-body { padding: 10px 12px; }
