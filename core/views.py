@@ -1,6 +1,11 @@
+from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.utils.crypto import constant_time_compare
+from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView
 from products.models import Product, Category
+from .services import update_all_exchange_rates_from_api
 from .models import ExchangeRate, NextTrip, StoreSettings
 
 
@@ -66,3 +71,26 @@ def pre_order_terms(request):
 
 def payment_methods(request):
     return render(request, 'pages/payment_methods.html')
+
+
+@require_GET
+def update_exchange_rates_cron(request):
+    expected_secret = getattr(settings, 'CRON_SECRET', '')
+    authorization = request.headers.get('Authorization', '')
+    expected_header = f'Bearer {expected_secret}'
+    if not expected_secret or not constant_time_compare(authorization, expected_header):
+        return JsonResponse({'ok': False, 'error': 'Nao autorizado.'}, status=401)
+
+    rates = update_all_exchange_rates_from_api()
+    return JsonResponse({
+        'ok': True,
+        'updated': [
+            {
+                'pair': f'{rate.currency_from}-{rate.currency_to}',
+                'rate': str(rate.rate),
+                'source': rate.source,
+                'updated_at': rate.updated_at.isoformat(),
+            }
+            for rate in rates
+        ],
+    })

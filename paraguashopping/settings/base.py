@@ -126,8 +126,15 @@ ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif']
 
 # Exchange rate
 EXCHANGE_RATE_API_URL = config('EXCHANGE_RATE_API_URL', default='https://economia.awesomeapi.com.br/json/last/USD-BRL')
+EXCHANGE_RATE_API_BASE_URL = config('EXCHANGE_RATE_API_BASE_URL', default='https://economia.awesomeapi.com.br/json/last/{pairs}')
 EXCHANGE_RATE_CACHE_SECONDS = config('EXCHANGE_RATE_CACHE_SECONDS', default=3600, cast=int)
 EXCHANGE_RATE_DEFAULT_USD_BRL = config('EXCHANGE_RATE_DEFAULT_USD_BRL', default='5.50')
+EXCHANGE_RATE_PAIRS = [
+    pair.strip().upper()
+    for pair in config('EXCHANGE_RATE_PAIRS', default='USD-BRL').split(',')
+    if pair.strip()
+]
+CRON_SECRET = config('CRON_SECRET', default='')
 
 # GTIN / barcode catalog lookup
 COSMOS_API_TOKEN = config('COSMOS_API_TOKEN', default='')

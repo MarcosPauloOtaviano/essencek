@@ -113,6 +113,14 @@ O sistema suporta precos em dolares americanos (USD) como moeda primaria. A conv
 
 Fallback: se nao houver cotacao ativa, o sistema usa R$ 5,50 por padrao.
 
+Em producao na Vercel, a cotacao e atualizada automaticamente todos os dias pela rota protegida `/cron/update-exchange-rate/`, configurada em `vercel.json`. A Vercel chama essa rota via Cron Job e envia `Authorization: Bearer $CRON_SECRET`; por isso `CRON_SECRET` precisa existir nas variaveis de ambiente da Vercel.
+
+As moedas atualizadas sao definidas em `EXCHANGE_RATE_PAIRS`. O padrao e `USD-BRL`, mas a lista aceita mais pares separados por virgula quando o site passar a exibir outras moedas, por exemplo:
+
+```env
+EXCHANGE_RATE_PAIRS=USD-BRL,EUR-BRL,PYG-BRL
+```
+
 Comandos uteis:
 
 ```bash

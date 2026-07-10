@@ -6,321 +6,41 @@
 
 {% block extra_css %}
 <style>
-/* ─── HERO BANNER CAROUSEL ──────────────────────────────────── */
-.hero-carousel {
+/* ─── HERO BANNER ───────────────────────────────────────────── */
+.hero-brand-banner {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: 16px;
-  margin: 0 auto;
+  border-radius: 14px;
+  margin: 0 auto 12px;
   max-width: 1280px;
+  background: #000;
+  box-shadow: 0 10px 30px rgba(17,17,17,0.12);
 }
-.hero-carousel-track {
-  display: flex;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-.hero-slide {
-  min-width: 100%;
-  position: relative;
-  display: flex;
-  min-height: 420px;
-  overflow: hidden;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #d5dbe3 0%, #c2cada 35%, #b8c4d4 60%, #a8b8cc 100%);
-}
-
-/* ─── SLIDE CONTENT LAYOUT ─────────────────────────────────── */
-.slide-content {
-  display: flex;
-  width: 100%;
-  position: relative;
-  z-index: 2;
-  padding: 40px 48px;
-  gap: 24px;
-}
-
-/* Left side */
-.slide-left {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 14px;
-  flex: 1;
-  max-width: 640px;
-}
-.slide-logo {
-  max-width: 220px;
-  height: auto;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.12));
-}
-.slide-headline {
-  font-family: 'Playfair Display', 'Cormorant Garamond', serif;
-  font-size: 28px;
-  font-weight: 600;
-  color: #2c3e50;
-  line-height: 1.2;
-}
-.slide-subtitle {
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  color: #5a6a7a;
-  letter-spacing: 0.3px;
-  line-height: 1.6;
-}
-.slide-promo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 4px;
-  padding: 14px 18px;
-  background: rgba(255,255,255,0.55);
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.7);
-  backdrop-filter: blur(6px);
-}
-.slide-promo-icon {
-  width: 48px;
-  height: 48px;
-  background: rgba(44,62,80,0.08);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: #4a6079;
-  flex-shrink: 0;
-}
-.slide-promo-text { flex: 1; }
-.slide-promo-text strong {
+.hero-brand-banner img {
   display: block;
-  color: #2c3e50;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-.slide-promo-text span {
-  color: #6b7c8d;
-  font-size: 12px;
-}
-.slide-coupon {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
-  border: 1.5px solid #4a6079;
-  border-radius: 999px;
-  color: #2c3e50;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  background: rgba(255,255,255,0.5);
-  white-space: nowrap;
-  text-decoration: none;
-  transition: all 0.2s;
-  margin-top: 6px;
-}
-.slide-coupon:hover {
-  background: #2c3e50;
-  color: #fff;
-  border-color: #2c3e50;
-}
-
-/* Right side - products */
-.slide-right {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-.products-showcase {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-}
-.product-podium {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.podium-product-img {
-  width: 140px;
-  height: 180px;
+  width: 100%;
+  height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.15));
-  transition: transform 0.3s;
-}
-.podium-product-img:hover {
-  transform: scale(1.05);
-}
-
-/* ─── CAROUSEL NAV ─────────────────────────────────────────── */
-.carousel-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s;
-  color: #3a4a5a;
-  font-size: 18px;
-}
-.carousel-arrow:hover {
-  background: rgba(255,255,255,0.85);
-  color: #1a2a3a;
-}
-.carousel-arrow-left { left: 16px; }
-.carousel-arrow-right { right: 16px; }
-
-.carousel-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px 0 4px;
-}
-.carousel-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ccc;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s;
-  padding: 0;
-}
-.carousel-dot.active {
-  background: #4a6079;
-  width: 24px;
-  border-radius: 4px;
 }
 
 /* ─── RESPONSIVE BANNER ───────────────────────────────────── */
 @media (max-width: 768px) {
-  .hero-carousel { border-radius: 12px; width: calc(100% - 16px); margin: 0 auto; }
-  .hero-slide { min-height: 480px; }
-  .slide-content {
-    grid-template-columns: 1fr;
-    padding: 28px 24px;
-    gap: 20px;
-  }
-  .slide-right { justify-content: center; }
-  .slide-headline { font-size: 22px; }
-  .slide-logo { max-width: 180px; }
-  .podium-product-img { width: 100px; height: 130px; }
-  .products-showcase { gap: 14px; }
-  .carousel-arrow { width: 36px; height: 36px; font-size: 14px; }
-  .carousel-arrow-left { left: 8px; }
-  .carousel-arrow-right { right: 8px; }
-  .slide-promo { padding: 10px 14px; }
+  .hero-brand-banner { border-radius: 12px; width: calc(100% - 16px); }
 }
 
 @media (max-width: 480px) {
-  .hero-carousel { border-radius: 10px; width: calc(100% - 12px); margin: 0 auto; }
-  .hero-slide { min-height: 400px; }
-  .slide-content { padding: 20px 16px; }
-  .slide-headline { font-size: 20px; }
-  .slide-logo { max-width: 150px; }
-  .products-showcase { gap: 10px; }
-  .podium-product-img { width: 80px; height: 105px; }
+  .hero-brand-banner { border-radius: 10px; width: calc(100% - 12px); }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- Hero Banner Carousel -->
-<section class="hero-carousel" id="heroCarousel">
-  <div class="hero-carousel-track" id="heroTrack">
-
-    <!-- SLIDE 1: Curated products -->
-    <div class="hero-slide">
-      <div class="slide-content">
-        <div class="slide-left">
-          <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados" class="slide-logo">
-          <h2 class="slide-headline">Importados Selecionados</h2>
-          <p class="slide-subtitle">Perfumes, K-beauty, skincare e eletrônicos com pronta entrega para todo o Brasil.</p>
-          <div class="slide-promo">
-            <div class="slide-promo-icon"><i class="fas fa-gem"></i></div>
-            <div class="slide-promo-text">
-              <strong>Curadoria Premium</strong>
-              <span>Preço em reais, referência de câmbio e envio rápido.</span>
-              <a href="{% url 'products:list' %}" class="slide-coupon">VER PRODUTOS →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SLIDE 2: Perfumes -->
-    <div class="hero-slide">
-      <div class="slide-content">
-        <div class="slide-left">
-          <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados" class="slide-logo">
-          <h2 class="slide-headline">Perfumes Importados</h2>
-          <p class="slide-subtitle">Fragrâncias tradicionais e decanter com status de estoque e opção sob encomenda.</p>
-          <div class="slide-promo">
-            <div class="slide-promo-icon"><i class="fas fa-spray-can-sparkles"></i></div>
-            <div class="slide-promo-text">
-              <strong>Disponibilidade Clara</strong>
-              <span>Pronta entrega, últimas unidades ou sob encomenda.</span>
-              <a href="{% url 'products:list' %}?category=perfumes" class="slide-coupon">VER PERFUMES →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SLIDE 3: K-Beauty -->
-    <div class="hero-slide">
-      <div class="slide-content">
-        <div class="slide-left">
-          <img src="{% static 'img/brand/essence-k-logo-official-horizontal.png' %}" alt="Essence K Importados" class="slide-logo">
-          <h2 class="slide-headline">K-Beauty &amp; Skincare</h2>
-          <p class="slide-subtitle">Beleza coreana com descrição, fotos e preço atualizado pelo câmbio.</p>
-          <div class="slide-promo">
-            <div class="slide-promo-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
-            <div class="slide-promo-text">
-              <strong>Compra com Acompanhamento</strong>
-              <span>Carrinho, pedidos e atendimento pelos canais da loja.</span>
-              <a href="{% url 'products:list' %}?category=beleza-coreana" class="slide-coupon">VER K-BEAUTY →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Navigation arrows -->
-  <button class="carousel-arrow carousel-arrow-left" id="heroPrev" aria-label="Slide anterior">
-    <i class="fas fa-chevron-left"></i>
-  </button>
-  <button class="carousel-arrow carousel-arrow-right" id="heroNext" aria-label="Próximo slide">
-    <i class="fas fa-chevron-right"></i>
-  </button>
+<!-- Hero Banner -->
+<section class="hero-brand-banner" aria-label="Essence K Importados">
+  <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados">
 </section>
-
-<!-- Carousel dots -->
-<div class="carousel-dots" id="heroDots">
-  <button class="carousel-dot active" data-slide="0" aria-label="Slide 1"></button>
-  <button class="carousel-dot" data-slide="1" aria-label="Slide 2"></button>
-  <button class="carousel-dot" data-slide="2" aria-label="Slide 3"></button>
-</div>
 
 <!-- Quick Nav (Sephora-style circle buttons) -->
 <section class="quick-nav-section">
@@ -484,57 +204,4 @@
   </div>
 </section>
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(function() {
-  const track = document.getElementById('heroTrack');
-  const dots = document.querySelectorAll('.carousel-dot');
-  const prev = document.getElementById('heroPrev');
-  const next = document.getElementById('heroNext');
-  if (!track) return;
-
-  const slides = track.querySelectorAll('.hero-slide');
-  let current = 0;
-  let autoTimer;
-
-  function goTo(idx) {
-    current = ((idx % slides.length) + slides.length) % slides.length;
-    track.style.transform = 'translateX(-' + (current * 100) + '%)';
-    dots.forEach(function(d, i) {
-      d.classList.toggle('active', i === current);
-    });
-  }
-
-  function startAuto() {
-    stopAuto();
-    autoTimer = setInterval(function() { goTo(current + 1); }, 5000);
-  }
-
-  function stopAuto() {
-    if (autoTimer) clearInterval(autoTimer);
-  }
-
-  prev.addEventListener('click', function() { stopAuto(); goTo(current - 1); startAuto(); });
-  next.addEventListener('click', function() { stopAuto(); goTo(current + 1); startAuto(); });
-  dots.forEach(function(dot) {
-    dot.addEventListener('click', function() {
-      stopAuto();
-      goTo(parseInt(this.dataset.slide));
-      startAuto();
-    });
-  });
-
-  var startX = 0;
-  track.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; stopAuto(); }, {passive: true});
-  track.addEventListener('touchend', function(e) {
-    var diff = startX - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) { goTo(current + (diff > 0 ? 1 : -1)); }
-    startAuto();
-  }, {passive: true});
-
-  startAuto();
-})();
-</script>
 {% endblock %}

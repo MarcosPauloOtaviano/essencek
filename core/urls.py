@@ -11,4 +11,5 @@ urlpatterns = [
     path('prazos-de-entrega/', views.shipping_policy, name='shipping_policy'),
     path('termos-de-encomenda/', views.pre_order_terms, name='pre_order_terms'),
     path('formas-de-pagamento/', views.payment_methods, name='payment_methods'),
+    path('cron/update-exchange-rate/', views.update_exchange_rates_cron, name='cron_update_exchange_rates'),
 ]
