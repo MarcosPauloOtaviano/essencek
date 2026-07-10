@@ -1,11 +1,13 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import requests
 from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
 
 from .middleware import CanonicalHostRedirectMiddleware
+from .services import fetch_exchange_rates
 
 
 class CanonicalHostRedirectMiddlewareTests(SimpleTestCase):
@@ -86,3 +88,30 @@ class ExchangeRateCronTests(SimpleTestCase):
         self.assertTrue(payload['ok'])
         self.assertEqual(payload['updated'][0]['pair'], 'USD-BRL')
         update_mock.assert_called_once_with()
+
+
+class ExchangeRateServiceTests(SimpleTestCase):
+    @override_settings(
+        EXCHANGE_RATE_API_URL='https://primary.example/USD-BRL',
+        EXCHANGE_RATE_FALLBACK_API_URL='https://fallback.example/{base}',
+    )
+    @patch('core.services.requests.get')
+    def test_fetch_exchange_rates_uses_fallback_when_primary_is_limited(self, get_mock):
+        primary_response = SimpleNamespace(
+            raise_for_status=lambda: (_ for _ in ()).throw(requests.HTTPError('429')),
+            json=lambda: {},
+        )
+        fallback_response = SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {
+                'provider': 'fallback',
+                'time_last_update_utc': 'today',
+                'rates': {'BRL': 5.12},
+            },
+        )
+        get_mock.side_effect = [primary_response, fallback_response]
+
+        rates = fetch_exchange_rates(['USD-BRL'])
+
+        self.assertEqual(str(rates[('USD', 'BRL')][0]), '5.1200')
+        self.assertIn('fallback', rates[('USD', 'BRL')][1])

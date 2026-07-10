@@ -127,6 +127,7 @@ ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif']
 # Exchange rate
 EXCHANGE_RATE_API_URL = config('EXCHANGE_RATE_API_URL', default='https://economia.awesomeapi.com.br/json/last/USD-BRL')
 EXCHANGE_RATE_API_BASE_URL = config('EXCHANGE_RATE_API_BASE_URL', default='https://economia.awesomeapi.com.br/json/last/{pairs}')
+EXCHANGE_RATE_FALLBACK_API_URL = config('EXCHANGE_RATE_FALLBACK_API_URL', default='https://open.er-api.com/v6/latest/{base}')
 EXCHANGE_RATE_CACHE_SECONDS = config('EXCHANGE_RATE_CACHE_SECONDS', default=3600, cast=int)
 EXCHANGE_RATE_DEFAULT_USD_BRL = config('EXCHANGE_RATE_DEFAULT_USD_BRL', default='5.50')
 EXCHANGE_RATE_PAIRS = [

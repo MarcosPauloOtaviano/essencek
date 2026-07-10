@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import JsonResponse
+from django.views.decorators.cache import never_cache
 from django.shortcuts import render
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.http import require_GET
@@ -73,6 +74,7 @@ def payment_methods(request):
     return render(request, 'pages/payment_methods.html')
 
 
+@never_cache
 @require_GET
 def update_exchange_rates_cron(request):
     expected_secret = getattr(settings, 'CRON_SECRET', '')
@@ -81,7 +83,11 @@ def update_exchange_rates_cron(request):
     if not expected_secret or not constant_time_compare(authorization, expected_header):
         return JsonResponse({'ok': False, 'error': 'Nao autorizado.'}, status=401)
 
-    rates = update_all_exchange_rates_from_api()
+    try:
+        rates = update_all_exchange_rates_from_api()
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=502)
+
     return JsonResponse({
         'ok': True,
         'updated': [

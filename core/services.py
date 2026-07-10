@@ -71,8 +71,7 @@ def _exchange_rate_url(pairs):
     return settings.EXCHANGE_RATE_API_BASE_URL.format(pairs=','.join(normalized_pairs))
 
 
-def fetch_exchange_rates(pairs=None):
-    normalized_pairs = [_normalize_pair(pair) for pair in (pairs or settings.EXCHANGE_RATE_PAIRS)]
+def _fetch_exchange_rates_from_primary(normalized_pairs):
     response = requests.get(_exchange_rate_url(normalized_pairs), timeout=8)
     response.raise_for_status()
     data = response.json()
@@ -89,6 +88,40 @@ def fetch_exchange_rates(pairs=None):
         source = payload.get('name') or f'AwesomeAPI {pair}'
         results[(currency_from, currency_to)] = (rate, source)
     return results
+
+
+def _fetch_exchange_rates_from_fallback(normalized_pairs):
+    grouped = {}
+    for pair in normalized_pairs:
+        currency_from, currency_to = _pair_parts(pair)
+        grouped.setdefault(currency_from, []).append(currency_to)
+
+    results = {}
+    for currency_from, targets in grouped.items():
+        url = settings.EXCHANGE_RATE_FALLBACK_API_URL.format(base=currency_from)
+        response = requests.get(url, timeout=8)
+        response.raise_for_status()
+        data = response.json()
+        rates = data.get('rates', {}) if isinstance(data, dict) else {}
+        provider = data.get('provider') or 'open.er-api.com'
+        date = data.get('time_last_update_utc') or data.get('date') or ''
+        for currency_to in targets:
+            rate = _decimal_rate(rates.get(currency_to))
+            if not rate:
+                raise ValueError(f'A API reserva não retornou um valor válido para {currency_from}-{currency_to}.')
+            source = f'{provider} {currency_from}-{currency_to}'.strip()
+            if date:
+                source = f'{source} ({date})'
+            results[(currency_from, currency_to)] = (rate, source)
+    return results
+
+
+def fetch_exchange_rates(pairs=None):
+    normalized_pairs = [_normalize_pair(pair) for pair in (pairs or settings.EXCHANGE_RATE_PAIRS)]
+    try:
+        return _fetch_exchange_rates_from_primary(normalized_pairs)
+    except requests.RequestException:
+        return _fetch_exchange_rates_from_fallback(normalized_pairs)
 
 
 def fetch_usd_brl_rate():
