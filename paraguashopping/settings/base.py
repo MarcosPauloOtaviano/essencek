@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'core.middleware.VercelCDNCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -49,7 +50,6 @@ MIDDLEWARE = [
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.LoginRateLimitMiddleware',
     'core.middleware.GlobalRateLimitMiddleware',
-    'core.middleware.VercelCDNCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'paraguashopping.urls'
