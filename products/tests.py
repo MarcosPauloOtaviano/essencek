@@ -102,6 +102,27 @@ class ProductLocalImageUploadTests(TestCase):
             self.assertEqual(saved_image.format, 'JPEG')
             self.assertLessEqual(max(saved_image.size), 1800)
 
+    def test_dashboard_product_add_accepts_long_product_name(self):
+        User.objects.create_user(
+            username='admin@example.com',
+            email='admin@example.com',
+            password='SenhaForte123!',
+            full_name='Admin Teste',
+            is_staff=True,
+        )
+        self.client.login(username='admin@example.com', password='SenhaForte123!')
+        data = self.product_form_data()
+        data['name'] = (
+            'Perfume Arabe Masculino Importado Premium Fragrancia Intensa '
+            'Edicao Especial Estoque Limitado'
+        )
+
+        response = self.client.post(reverse('dashboard:product_add'), data=data)
+
+        self.assertEqual(response.status_code, 302)
+        product = Product.objects.get(name=data['name'])
+        self.assertLessEqual(len(product.slug), Product._meta.get_field('slug').max_length)
+
     def test_product_form_rejects_invalid_sale_price(self):
         data = self.product_form_data()
         data.update({
@@ -113,6 +134,31 @@ class ProductLocalImageUploadTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn('sale_price', form.errors)
+
+    def test_product_form_saves_long_name_with_truncated_unique_slug(self):
+        long_name = (
+            'Perfume Arabe Masculino Importado Premium Fragrancia Intensa '
+            'Edicao Especial Estoque Limitado'
+        )
+        first_data = self.product_form_data()
+        first_data['name'] = long_name
+
+        first_form = ProductForm(data=first_data)
+
+        self.assertTrue(first_form.is_valid(), first_form.errors)
+        first_product = first_form.save()
+        self.assertLessEqual(len(first_product.slug), Product._meta.get_field('slug').max_length)
+
+        second_data = self.product_form_data()
+        second_data['name'] = long_name
+        second_data['gtin'] = '7500435135030'
+
+        second_form = ProductForm(data=second_data)
+
+        self.assertTrue(second_form.is_valid(), second_form.errors)
+        second_product = second_form.save()
+        self.assertLessEqual(len(second_product.slug), Product._meta.get_field('slug').max_length)
+        self.assertNotEqual(second_product.slug, first_product.slug)
 
     def test_dashboard_image_delete_requires_post(self):
         User.objects.create_user(

@@ -138,7 +138,8 @@ class ProductForm(forms.ModelForm):
     def save(self, commit=True):
         product = super().save(commit=False)
         if product.brand_fk:
-            product.brand = product.brand_fk.name
+            max_brand_length = Product._meta.get_field('brand').max_length
+            product.brand = product.brand_fk.name[:max_brand_length]
         if commit:
             product.save()
             self.save_m2m()

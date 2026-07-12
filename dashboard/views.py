@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
+from django.db import DatabaseError, transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -123,27 +124,32 @@ def product_add(request):
         form_valid = form.is_valid()
         variant_formset_valid = variant_formset.is_valid() if validate_variants else True
         if form_valid and variant_formset_valid:
-            product = form.save()
-            if validate_variants:
-                variant_formset.instance = product
-                variant_formset.save()
-                product.has_variants = product.variants.exists()
-                product.save(update_fields=['has_variants'])
-            elif product.has_variants:
-                product.has_variants = False
-                product.save(update_fields=['has_variants'])
-            images = form.cleaned_data.get('images', [])
-            for i, img in enumerate(images):
-                image_file = build_web_product_image(img)
-                ProductImage.objects.create(
-                    product=product,
-                    image=image_file,
-                    is_main=(i == 0),
-                    order=i
-                )
-            _save_captured_image(request, product, has_uploaded_images=bool(images))
-            messages.success(request, f'Produto "{product.name}" criado com sucesso!')
-            return redirect('dashboard:product_edit', pk=product.pk)
+            try:
+                with transaction.atomic():
+                    product = form.save()
+                    if validate_variants:
+                        variant_formset.instance = product
+                        variant_formset.save()
+                        product.has_variants = product.variants.exists()
+                        product.save(update_fields=['has_variants'])
+                    elif product.has_variants:
+                        product.has_variants = False
+                        product.save(update_fields=['has_variants'])
+                    images = form.cleaned_data.get('images', [])
+                    for i, img in enumerate(images):
+                        image_file = build_web_product_image(img)
+                        ProductImage.objects.create(
+                            product=product,
+                            image=image_file,
+                            is_main=(i == 0),
+                            order=i
+                        )
+                    _save_captured_image(request, product, has_uploaded_images=bool(images))
+                messages.success(request, f'Produto "{product.name}" criado com sucesso!')
+                return redirect('dashboard:product_edit', pk=product.pk)
+            except (DatabaseError, ValidationError, ValueError):
+                logger.exception('Dashboard product creation failed')
+                form.add_error(None, 'Não foi possível salvar este produto. Verifique nome, marca, GTIN, fotos e variações e tente novamente.')
         messages.error(request, 'Não foi possível salvar o produto. Corrija os campos destacados abaixo.')
     else:
         form = ProductForm()
@@ -173,27 +179,32 @@ def product_edit(request, pk):
         form_valid = form.is_valid()
         variant_formset_valid = variant_formset.is_valid() if validate_variants else True
         if form_valid and variant_formset_valid:
-            product = form.save()
-            if validate_variants:
-                variant_formset.save()
-                product.has_variants = product.variants.exists()
-                product.save(update_fields=['has_variants'])
-            elif product.has_variants:
-                product.has_variants = False
-                product.save(update_fields=['has_variants'])
-            images = form.cleaned_data.get('images', [])
-            existing_count = product.images.count()
-            for i, img in enumerate(images):
-                image_file = build_web_product_image(img)
-                ProductImage.objects.create(
-                    product=product,
-                    image=image_file,
-                    is_main=(existing_count == 0 and i == 0),
-                    order=existing_count + i
-                )
-            _save_captured_image(request, product, has_uploaded_images=bool(images))
-            messages.success(request, f'Produto "{product.name}" atualizado!')
-            return redirect('dashboard:product_edit', pk=product.pk)
+            try:
+                with transaction.atomic():
+                    product = form.save()
+                    if validate_variants:
+                        variant_formset.save()
+                        product.has_variants = product.variants.exists()
+                        product.save(update_fields=['has_variants'])
+                    elif product.has_variants:
+                        product.has_variants = False
+                        product.save(update_fields=['has_variants'])
+                    images = form.cleaned_data.get('images', [])
+                    existing_count = product.images.count()
+                    for i, img in enumerate(images):
+                        image_file = build_web_product_image(img)
+                        ProductImage.objects.create(
+                            product=product,
+                            image=image_file,
+                            is_main=(existing_count == 0 and i == 0),
+                            order=existing_count + i
+                        )
+                    _save_captured_image(request, product, has_uploaded_images=bool(images))
+                messages.success(request, f'Produto "{product.name}" atualizado!')
+                return redirect('dashboard:product_edit', pk=product.pk)
+            except (DatabaseError, ValidationError, ValueError):
+                logger.exception('Dashboard product update failed for product %s', product.pk)
+                form.add_error(None, 'Não foi possível salvar este produto. Verifique nome, marca, GTIN, fotos e variações e tente novamente.')
         messages.error(request, 'Não foi possível salvar o produto. Corrija os campos destacados abaixo.')
     else:
         form = ProductForm(instance=product)

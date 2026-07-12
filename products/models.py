@@ -24,6 +24,38 @@ DEFAULT_CATEGORY_IMAGE_MAP = {
 DEFAULT_PRODUCT_IMAGE = 'img/defaults/default-default.jpg'
 
 
+def make_unique_slug(instance, value, fallback='item'):
+    field = instance._meta.get_field('slug')
+    max_length = field.max_length or 50
+    fallback = slugify(fallback) or 'item'
+    base_slug = slugify(value) or fallback
+    base_slug = base_slug[:max_length].strip('-') or fallback[:max_length] or 'item'
+    slug = base_slug
+    counter = 1
+    queryset = instance.__class__._default_manager.all()
+    if instance.pk:
+        queryset = queryset.exclude(pk=instance.pk)
+
+    while queryset.filter(slug=slug).exists():
+        suffix = f'-{counter}'
+        root_length = max_length - len(suffix)
+        root = base_slug[:root_length].rstrip('-') or fallback[:root_length] or 'item'
+        slug = f'{root}{suffix}'
+        counter += 1
+
+    return slug
+
+
+def slug_needs_update(instance):
+    if not instance.slug:
+        return True
+    field = instance._meta.get_field('slug')
+    max_length = field.max_length or 50
+    if len(instance.slug) > max_length:
+        return True
+    return instance.__class__._default_manager.filter(slug=instance.slug).exclude(pk=instance.pk).exists()
+
+
 def normalize_gtin_value(value):
     normalized = ''.join(char for char in str(value or '') if char.isdigit())
     return normalized or None
@@ -56,8 +88,8 @@ class Brand(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
+        if slug_needs_update(self):
+            self.slug = make_unique_slug(self, self.slug or self.name, fallback='marca')
         super().save(*args, **kwargs)
 
 
@@ -79,8 +111,8 @@ class Category(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
+        if slug_needs_update(self):
+            self.slug = make_unique_slug(self, self.slug or self.name, fallback='categoria')
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
@@ -164,14 +196,8 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         self.gtin = normalize_gtin_value(self.gtin)
-        if not self.slug:
-            base_slug = slugify(self.name)
-            slug = base_slug
-            n = 1
-            while Product.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                slug = f'{base_slug}-{n}'
-                n += 1
-            self.slug = slug
+        if slug_needs_update(self):
+            self.slug = make_unique_slug(self, self.slug or self.name, fallback='produto')
         # Sync is_pre_order with status
         if self.status == self.STATUS_PRE_ORDER:
             self.is_pre_order = True
