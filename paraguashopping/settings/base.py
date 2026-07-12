@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.LoginRateLimitMiddleware',
     'core.middleware.GlobalRateLimitMiddleware',
+    'core.middleware.VercelCDNCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'paraguashopping.urls'

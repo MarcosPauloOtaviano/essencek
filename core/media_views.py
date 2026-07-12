@@ -37,5 +37,5 @@ def serve_media_file(request, path):
         raise Http404('Arquivo nao encontrado.')
     content_type = mimetypes.guess_type(path)[0] or 'application/octet-stream'
     response = FileResponse(default_storage.open(path, 'rb'), content_type=content_type)
-    response['Cache-Control'] = 'public, max-age=31536000, immutable'
+    response['Cache-Control'] = 'public, s-maxage=31536000, max-age=31536000, immutable'
     return response
