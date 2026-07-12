@@ -2,7 +2,7 @@
    Essence K Importados — Sephora-inspired Stylesheet
 ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Fonts loaded via base.html <link> with display=swap */
 
 :root {
   --white: #ffffff;

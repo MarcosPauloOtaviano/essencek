@@ -52,7 +52,7 @@
       {% endfor %}
       {% for cat in categories %}
       <a href="{{ cat.get_absolute_url }}" class="category-slide" aria-hidden="true">
-        <img src="{{ cat.display_image_url }}" alt="{{ cat.name }}" class="category-slide-img">
+        <img src="{{ cat.display_image_url }}" alt="{{ cat.name }}" class="category-slide-img" loading="lazy">
         <span class="category-slide-name">{{ cat.name }}</span>
       </a>
       {% endfor %}

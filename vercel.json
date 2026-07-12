@@ -8,6 +8,20 @@
       "maxDuration": 60
     }
   },
+  "headers": [
+    {
+      "source": "/media/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, s-maxage=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, s-maxage=31536000, immutable" }
+      ]
+    }
+  ],
   "crons": [
     {
       "path": "/cron/update-exchange-rate/",

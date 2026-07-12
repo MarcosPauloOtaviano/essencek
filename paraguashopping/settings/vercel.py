@@ -86,21 +86,8 @@ else:
     }
     DATA_PERSISTENCE_MODE = 'ephemeral-sqlite'
 
-_preview_source_media = BASE_DIR / 'media'
 _preview_runtime_media = Path(config('VERCEL_PREVIEW_RUNTIME_MEDIA', default='/tmp/essencek_media'))
-if _preview_source_media.exists():
-    _preview_runtime_media.mkdir(parents=True, exist_ok=True)
-    for source_path in _preview_source_media.rglob('*'):
-        if not source_path.is_file():
-            continue
-        target_path = _preview_runtime_media / source_path.relative_to(_preview_source_media)
-        if target_path.exists():
-            continue
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            shutil.copy2(source_path, target_path)
-        except OSError:
-            pass
+_preview_runtime_media.mkdir(parents=True, exist_ok=True)
 
 MEDIA_ROOT = _preview_runtime_media
 SERVE_MEDIA_FILES = True
