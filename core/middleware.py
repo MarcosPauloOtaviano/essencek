@@ -124,7 +124,7 @@ class GlobalRateLimitMiddleware:
 class VercelCDNCacheMiddleware:
     """Add s-maxage + stale-while-revalidate so Vercel CDN caches public pages."""
 
-    SKIP_PREFIXES = ('/painel/', '/admin/', '/conta/', '/checkout/', '/pagamento/')
+    SKIP_PREFIXES = ('/painel/', '/admin/', '/conta/', '/checkout/', '/pagamento/', '/carrinho/')
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -138,8 +138,10 @@ class VercelCDNCacheMiddleware:
             return response
         if hasattr(request, 'user') and request.user.is_authenticated:
             return response
-        if 'Cache-Control' in response:
+        if response.get('Content-Type', '').startswith('application/json'):
             return response
 
         response['Cache-Control'] = 'public, s-maxage=60, stale-while-revalidate=300'
+        if response.has_header('Vary'):
+            del response['Vary']
         return response
