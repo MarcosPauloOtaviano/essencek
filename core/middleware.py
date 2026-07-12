@@ -142,6 +142,7 @@ class VercelCDNCacheMiddleware:
             return response
 
         response['Cache-Control'] = 'public, s-maxage=60, stale-while-revalidate=300'
+        response['X-CDN-Middleware'] = 'active'
         if response.has_header('Vary'):
             del response['Vary']
         response.cookies.clear()
