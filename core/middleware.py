@@ -144,4 +144,6 @@ class VercelCDNCacheMiddleware:
         response['Cache-Control'] = 'public, s-maxage=60, stale-while-revalidate=300'
         if response.has_header('Vary'):
             del response['Vary']
+        if response.has_header('Set-Cookie'):
+            del response['Set-Cookie']
         return response
