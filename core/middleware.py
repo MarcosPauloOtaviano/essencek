@@ -138,6 +138,8 @@ class VercelCDNCacheMiddleware:
             return response
         if hasattr(request, 'user') and request.user.is_authenticated:
             return response
+        if request.COOKIES.get('sessionid'):
+            return response
         if response.get('Content-Type', '').startswith('application/json'):
             return response
 
