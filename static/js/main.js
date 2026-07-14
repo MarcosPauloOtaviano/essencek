@@ -17,15 +17,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Showcase carousel (logo + new arrivals)
+  // Showcase banner carousel
   const slides = document.querySelectorAll('.showcase-slide');
+  const dots = document.querySelectorAll('.showcase-dot');
   if (slides.length > 1) {
     let current = 0;
-    setInterval(() => {
+    const goTo = (i) => {
       slides[current].classList.remove('showcase-slide--active');
-      current = (current + 1) % slides.length;
+      dots[current]?.classList.remove('showcase-dot--active');
+      current = i;
       slides[current].classList.add('showcase-slide--active');
-    }, 4000);
+      dots[current]?.classList.add('showcase-dot--active');
+    };
+    let timer = setInterval(() => goTo((current + 1) % slides.length), 5000);
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        clearInterval(timer);
+        goTo(Number(dot.dataset.slide));
+        timer = setInterval(() => goTo((current + 1) % slides.length), 5000);
+      });
+    });
   }
 
   // Add to cart AJAX

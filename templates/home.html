@@ -6,23 +6,26 @@
 
 {% block content %}
 
-<!-- Showcase Carousel (logo + new arrivals) -->
+<!-- Showcase Banner Carousel -->
 <section class="showcase-section">
   <div class="container">
     <div class="showcase-carousel">
-      <div class="showcase-slide showcase-slide--active">
-        <a href="{% url 'home' %}">
-          <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="showcase-img">
-        </a>
-      </div>
-      {% for product in new_arrivals %}
-      <div class="showcase-slide">
+      {% for product in new_arrivals|slice:":3" %}
+      <div class="showcase-slide {% if forloop.first %}showcase-slide--active{% endif %}">
         <a href="{{ product.get_absolute_url }}">
-          <img src="{{ product.display_image_url }}" alt="{{ product.name }}" class="showcase-img showcase-img--product">
-          <span class="showcase-label">{{ product.name|truncatechars:30 }}</span>
+          <img src="{{ product.display_image_url }}" alt="{{ product.name }}" class="showcase-img">
+          <div class="showcase-overlay">
+            {% if product.brand_fk %}<span class="showcase-brand">{{ product.brand_fk.name }}</span>{% endif %}
+            <span class="showcase-name">{{ product.name }}</span>
+          </div>
         </a>
       </div>
       {% endfor %}
+      <div class="showcase-dots">
+        {% for product in new_arrivals|slice:":3" %}
+        <button class="showcase-dot {% if forloop.first %}showcase-dot--active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="Slide {{ forloop.counter }}"></button>
+        {% endfor %}
+      </div>
     </div>
   </div>
 </section>
