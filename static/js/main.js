@@ -17,6 +17,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Showcase carousel (logo + new arrivals)
+  const slides = document.querySelectorAll('.showcase-slide');
+  if (slides.length > 1) {
+    let current = 0;
+    setInterval(() => {
+      slides[current].classList.remove('showcase-slide--active');
+      current = (current + 1) % slides.length;
+      slides[current].classList.add('showcase-slide--active');
+    }, 4000);
+  }
+
   // Add to cart AJAX
   document.querySelectorAll('.add-to-cart-form').forEach(form => {
     form.addEventListener('submit', async e => {

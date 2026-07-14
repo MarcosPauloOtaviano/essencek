@@ -133,6 +133,29 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
 .logo-text span { color: var(--red-promo); }
 .logo-k { font-family: var(--font-serif); font-size: 32px; font-weight: 700; color: var(--red-promo); }
 
+/* Header exchange rate (mobile only — replaces logo in header) */
+.header-exchange-mobile {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.header-exchange-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--red-promo);
+  text-transform: uppercase;
+}
+.header-exchange-mobile strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 /* Search bar */
 .search-form {
   flex: 1;
@@ -459,6 +482,67 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
   color: var(--text-primary);
   text-align: center;
   max-width: 72px;
+}
+
+/* ─── SHOWCASE CAROUSEL (logo + new arrivals) ────────────────── */
+.showcase-section { padding: 20px 0 8px; }
+.showcase-carousel {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-light);
+  box-shadow: 0 4px 16px var(--shadow-md);
+}
+.showcase-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.showcase-slide--active { opacity: 1; }
+.showcase-slide a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.showcase-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 16px;
+}
+.showcase-slide:not(:first-child) .showcase-img {
+  object-fit: cover;
+  padding: 0;
+}
+.showcase-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  color: var(--text-muted);
+  background: var(--bg-light);
+}
+.showcase-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 14px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* ─── CATEGORIES ─────────────────────────────────────────────── */
@@ -952,11 +1036,13 @@ select.form-control { cursor: pointer; }
   .logo { min-width: 0; }
   .brand-logo-header { width: auto; height: 46px; max-width: 150px; }
 
-  /* Mobile: hamburger left, logo center, icons right */
+  /* Mobile: hamburger left, exchange center, icons right */
   .nav-toggle { display: block; order: -1; }
-  .logo { order: 0; justify-self: center; }
+  .logo { order: 0; justify-self: center; display: none; }
+  .header-exchange-mobile { display: flex; order: 0; justify-self: center; }
   .header-actions { order: 1; justify-self: end; gap: 4px; margin-left: 0; }
   .search-form { grid-column: 1 / -1; order: 2; width: 100%; max-width: 100%; }
+  .exchange-rate-panel { display: none; }
 
   .cart-btn,
   .header-admin-btn { min-height: 38px; padding: 6px 10px; font-size: 18px; }

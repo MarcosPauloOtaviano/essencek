@@ -19,6 +19,7 @@ def home(request):
     hero_products = _base_qs.order_by('-is_featured', '-created_at')[:3]
     hero_perfumes = _base_qs.filter(category__slug__in=['perfumes', 'decanter']).order_by('-is_featured', '-created_at')[:3]
     hero_kbeauty = _base_qs.filter(category__slug='beleza-coreana').order_by('-is_featured', '-created_at')[:3]
+    new_arrivals = _base_qs.order_by('-created_at')[:5]
     categories = Category.objects.filter(is_active=True)
     next_trip = NextTrip.objects.filter(is_active=True).first()
     current_exchange_rate = ExchangeRate.objects.filter(is_active=True).order_by('-updated_at').first()
@@ -31,6 +32,7 @@ def home(request):
         'hero_products': hero_products,
         'hero_perfumes': hero_perfumes,
         'hero_kbeauty': hero_kbeauty,
+        'new_arrivals': new_arrivals,
         'categories': categories,
         'next_trip': next_trip,
         'current_exchange_rate': current_exchange_rate,
