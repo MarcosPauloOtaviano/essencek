@@ -17,26 +17,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Showcase banner carousel
-  const slides = document.querySelectorAll('.showcase-slide');
-  const dots = document.querySelectorAll('.showcase-dot');
-  if (slides.length > 1) {
-    let current = 0;
-    const goTo = (i) => {
-      slides[current].classList.remove('showcase-slide--active');
-      dots[current]?.classList.remove('showcase-dot--active');
-      current = i;
-      slides[current].classList.add('showcase-slide--active');
-      dots[current]?.classList.add('showcase-dot--active');
-    };
-    let timer = setInterval(() => goTo((current + 1) % slides.length), 5000);
-    dots.forEach(dot => {
-      dot.addEventListener('click', () => {
-        clearInterval(timer);
-        goTo(Number(dot.dataset.slide));
-        timer = setInterval(() => goTo((current + 1) % slides.length), 5000);
+  // Showcase: 3 squares cycling products, converging on logo
+  const boxes = document.querySelectorAll('.showcase-box');
+  const products = window.__showcaseProducts || [];
+  if (boxes.length === 3 && products.length > 0) {
+    const perBox = Math.ceil(products.length / 3);
+    boxes.forEach((box, i) => {
+      const slice = products.slice(i * perBox, (i + 1) * perBox);
+      slice.forEach(p => {
+        const frame = document.createElement('div');
+        frame.className = 'showcase-frame';
+        frame.innerHTML = `<a href="${p.url}"><img src="${p.img}" alt="${p.name}" class="showcase-img"></a>`;
+        box.appendChild(frame);
       });
     });
+    const allFrames = Array.from(boxes).map(b => Array.from(b.querySelectorAll('.showcase-frame')));
+    const state = [0, 0, 0];
+    let tick = 0;
+    setInterval(() => {
+      tick++;
+      const showLogo = tick % 4 === 0;
+      allFrames.forEach((frames, i) => {
+        frames[state[i]].classList.remove('showcase-frame--active');
+        if (showLogo) {
+          state[i] = 0;
+        } else {
+          state[i] = state[i] + 1 >= frames.length ? 1 : state[i] + 1;
+          if (state[i] === 0) state[i] = 1;
+        }
+        frames[state[i]].classList.add('showcase-frame--active');
+      });
+    }, 3000);
   }
 
   // Add to cart AJAX
