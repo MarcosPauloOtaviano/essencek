@@ -485,13 +485,12 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
 }
 
 /* ─── SHOWCASE CAROUSEL (logo + new arrivals) ────────────────── */
-.showcase-section { padding: 20px 0 8px; }
+.showcase-section { padding: 16px 0 8px; }
 .showcase-carousel {
   position: relative;
-  width: 100%;
-  max-width: 400px;
+  width: 200px;
+  height: 200px;
   margin: 0 auto;
-  aspect-ratio: 1;
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--bg-light);
@@ -518,7 +517,7 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
   object-fit: contain;
   padding: 16px;
 }
-.showcase-slide:not(:first-child) .showcase-img {
+.showcase-img--product {
   object-fit: cover;
   padding: 0;
 }

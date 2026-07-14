@@ -18,11 +18,7 @@
       {% for product in new_arrivals %}
       <div class="showcase-slide">
         <a href="{{ product.get_absolute_url }}">
-          {% if product.primary_image %}
-          <img src="{{ product.primary_image.image.url }}" alt="{{ product.name }}" class="showcase-img">
-          {% else %}
-          <div class="showcase-placeholder"><i class="fas fa-box-open"></i></div>
-          {% endif %}
+          <img src="{{ product.display_image_url }}" alt="{{ product.name }}" class="showcase-img showcase-img--product">
           <span class="showcase-label">{{ product.name|truncatechars:30 }}</span>
         </a>
       </div>
