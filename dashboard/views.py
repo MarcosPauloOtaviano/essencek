@@ -13,8 +13,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
-from core.forms import NextTripForm, StoreSettingsForm
-from core.models import StoreSettings, NextTrip
+from core.forms import NextTripForm, ShowcaseSlideForm, StoreSettingsForm
+from core.models import ShowcaseSlide, StoreSettings, NextTrip
 from orders.models import Order, PreOrderRequest
 from orders.services import confirm_order_payment
 from products.forms import ProductForm, CategoryForm, BrandForm, ProductVariantFormSet
@@ -465,6 +465,39 @@ def image_search(request):
 
     results = _search_product_images(query)
     return JsonResponse({'images': results})
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def showcase_list(request):
+    slides = ShowcaseSlide.objects.all()
+    return render(request, 'dashboard/showcase.html', {'slides': slides})
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def showcase_edit(request, pk=None):
+    slide = get_object_or_404(ShowcaseSlide, pk=pk) if pk else None
+    if request.method == 'POST':
+        form = ShowcaseSlideForm(request.POST, request.FILES, instance=slide)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Slide salvo!')
+            return redirect('dashboard:showcase')
+    else:
+        form = ShowcaseSlideForm(instance=slide)
+    return render(request, 'dashboard/showcase_form.html', {
+        'form': form,
+        'slide': slide,
+        'title': 'Editar slide' if slide else 'Novo slide',
+    })
+
+
+@staff_member_required(login_url='/conta/entrar/')
+@require_POST
+def showcase_delete(request, pk):
+    slide = get_object_or_404(ShowcaseSlide, pk=pk)
+    slide.delete()
+    messages.success(request, 'Slide removido!')
+    return redirect('dashboard:showcase')
 
 
 def _search_product_images(query):

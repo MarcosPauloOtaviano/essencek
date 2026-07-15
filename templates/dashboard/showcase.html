@@ -1,0 +1,61 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Showcase{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>Showcase (Banner da Home)</h1>
+  <a href="{% url 'dashboard:showcase_add' %}" class="btn-dash btn-dash-primary"><i class="fas fa-plus"></i> Novo slide</a>
+</div>
+<p class="dash-hint">A logo aparece automaticamente como primeiro slide. Os slides abaixo são exibidos depois dela, na ordem definida.</p>
+<div class="dash-card">
+  {% if slides %}
+  <div class="dash-table-wrap">
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th>Imagem</th>
+          <th>Título</th>
+          <th>Texto</th>
+          <th>Link</th>
+          <th>Ordem</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slide in slides %}
+        <tr>
+          <td>
+            {% if slide.display_image_url %}
+              <img src="{{ slide.display_image_url }}" alt="" style="width:80px;height:50px;object-fit:cover;border-radius:6px;">
+            {% else %}
+              <span class="text-muted">Sem imagem</span>
+            {% endif %}
+          </td>
+          <td>{{ slide.title|default:"—" }}</td>
+          <td>{{ slide.description|default:"—"|truncatechars:40 }}</td>
+          <td>{{ slide.link|default:"—"|truncatechars:30 }}</td>
+          <td>{{ slide.position }}</td>
+          <td>
+            {% if slide.is_active %}
+              <span class="badge-active">Ativo</span>
+            {% else %}
+              <span class="badge-inactive">Inativo</span>
+            {% endif %}
+          </td>
+          <td class="dash-actions">
+            <a href="{% url 'dashboard:showcase_edit' slide.pk %}" class="btn-dash btn-dash-sm"><i class="fas fa-edit"></i></a>
+            <form method="post" action="{% url 'dashboard:showcase_delete' slide.pk %}" style="display:inline" onsubmit="return confirm('Remover este slide?')">
+              {% csrf_token %}
+              <button type="submit" class="btn-dash btn-dash-sm btn-dash-danger"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhum slide cadastrado. A logo será exibida sozinha no showcase.</p>
+  {% endif %}
+</div>
+{% endblock %}

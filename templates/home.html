@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<!-- Showcase Banner: logo first, then featured products -->
+<!-- Showcase Banner: logo first, then admin-managed slides -->
 <section class="showcase-section">
   <div class="container">
     <div class="showcase-banner">
@@ -15,20 +15,28 @@
           <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="showcase-img showcase-img--logo">
         </a>
       </div>
-      {% for product in featured|slice:":5" %}
+      {% for slide in showcase_slides %}
       <div class="showcase-slide">
-        <a href="{{ product.get_absolute_url }}">
-          <img src="{{ product.display_image_url }}" alt="{{ product.name }}" class="showcase-img">
-          <span class="showcase-label">{{ product.name|truncatechars:30 }}</span>
-        </a>
+        {% if slide.link %}<a href="{{ slide.link }}">{% endif %}
+          <img src="{{ slide.display_image_url }}" alt="{{ slide.title }}" class="showcase-img">
+          {% if slide.title or slide.description %}
+          <span class="showcase-label">
+            {% if slide.title %}{{ slide.title }}{% endif %}
+            {% if slide.title and slide.description %} — {% endif %}
+            {% if slide.description %}{{ slide.description }}{% endif %}
+          </span>
+          {% endif %}
+        {% if slide.link %}</a>{% endif %}
       </div>
       {% endfor %}
+      {% if showcase_slides %}
       <div class="showcase-dots">
         <button class="showcase-dot showcase-dot--active" data-slide="0" aria-label="Logo"></button>
-        {% for product in featured|slice:":5" %}
-        <button class="showcase-dot" data-slide="{{ forloop.counter }}" aria-label="{{ product.name }}"></button>
+        {% for slide in showcase_slides %}
+        <button class="showcase-dot" data-slide="{{ forloop.counter }}" aria-label="{{ slide.title|default:'Slide' }}"></button>
         {% endfor %}
       </div>
+      {% endif %}
     </div>
   </div>
 </section>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib import messages
-from .models import StoreSettings, NextTrip, ExchangeRate
+from .models import StoreSettings, NextTrip, ExchangeRate, ShowcaseSlide
 from .services import update_usd_brl_rate_from_api
 
 
@@ -40,3 +40,10 @@ class ExchangeRateAdmin(admin.ModelAdmin):
             self.message_user(request, f'Não foi possível atualizar a cotação: {exc}', level=messages.ERROR)
         else:
             self.message_user(request, f'Cotação atualizada: 1 USD = R$ {rate.rate}.')
+
+
+@admin.register(ShowcaseSlide)
+class ShowcaseSlideAdmin(admin.ModelAdmin):
+    list_display = ['title', 'position', 'is_active', 'updated_at']
+    list_filter = ['is_active']
+    list_editable = ['position', 'is_active']

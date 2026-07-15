@@ -1,5 +1,5 @@
 from django import forms
-from .models import StoreSettings, NextTrip
+from .models import StoreSettings, NextTrip, ShowcaseSlide
 from accounts.validators import only_digits, normalize_whatsapp, validate_whatsapp
 from products.image_utils import validate_product_image_upload
 
@@ -54,6 +54,23 @@ class StoreSettingsForm(forms.ModelForm):
         if logo:
             validate_product_image_upload(logo)
         return logo
+
+
+class ShowcaseSlideForm(forms.ModelForm):
+    class Meta:
+        model = ShowcaseSlide
+        fields = ['image', 'title', 'description', 'link', 'position', 'is_active']
+        widgets = {
+            'description': forms.TextInput(attrs={'placeholder': 'Ex: Lançamento! Perfume importado...'}),
+            'link': forms.TextInput(attrs={'placeholder': '/produtos/ ou URL completa'}),
+            'position': forms.NumberInput(attrs={'min': 0}),
+        }
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if image:
+            validate_product_image_upload(image)
+        return image
 
 
 class NextTripForm(forms.ModelForm):

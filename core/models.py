@@ -81,6 +81,30 @@ class ExchangeRate(models.Model):
         return get_usd_brl_rate()
 
 
+class ShowcaseSlide(models.Model):
+    title = models.CharField('Título (opcional)', max_length=120, blank=True)
+    description = models.CharField('Texto/descrição (opcional)', max_length=200, blank=True)
+    image = models.ImageField('Imagem', upload_to='showcase/')
+    link = models.CharField('Link (opcional)', max_length=500, blank=True,
+                            help_text='URL para onde o slide leva ao clicar. Ex: /produtos/')
+    position = models.PositiveIntegerField('Ordem', default=0)
+    is_active = models.BooleanField('Ativo', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Slide do Showcase'
+        verbose_name_plural = 'Slides do Showcase'
+        ordering = ['position', '-created_at']
+
+    def __str__(self):
+        return self.title or f'Slide #{self.pk}'
+
+    @property
+    def display_image_url(self):
+        return image_url_if_exists(self.image)
+
+
 class StoredMediaFile(models.Model):
     name = models.CharField('Caminho do arquivo', max_length=500, unique=True)
     content_type = models.CharField('Tipo de arquivo', max_length=120, blank=True)

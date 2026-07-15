@@ -1,0 +1,51 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load widget_tweaks %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>{{ title }}</h1>
+  <a href="{% url 'dashboard:showcase' %}" class="btn-dash"><i class="fas fa-arrow-left"></i> Voltar</a>
+</div>
+<div class="dash-card">
+  <form method="post" enctype="multipart/form-data" class="dash-form">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group full">
+        <label>{{ form.image.label }}</label>
+        {% if slide and slide.display_image_url %}
+          <div style="margin-bottom:8px">
+            <img src="{{ slide.display_image_url }}" alt="" style="max-width:300px;max-height:180px;object-fit:cover;border-radius:8px;">
+          </div>
+        {% endif %}
+        {% render_field form.image class="dash-input" %}
+        <small class="form-hint">Recomendado: 1200×500px ou proporcional (formato paisagem).</small>
+      </div>
+      <div class="form-group">
+        <label>{{ form.title.label }}</label>
+        {% render_field form.title class="dash-input" placeholder="Ex: Lançamento Perfume X" %}
+      </div>
+      <div class="form-group">
+        <label>{{ form.description.label }}</label>
+        {% render_field form.description class="dash-input" %}
+      </div>
+      <div class="form-group">
+        <label>{{ form.link.label }}</label>
+        {% render_field form.link class="dash-input" %}
+        <small class="form-hint">Deixe vazio para o slide não ser clicável.</small>
+      </div>
+      <div class="form-group">
+        <label>{{ form.position.label }}</label>
+        {% render_field form.position class="dash-input" %}
+        <small class="form-hint">Slides com número menor aparecem primeiro.</small>
+      </div>
+      <div class="form-group">
+        <label class="toggle-label">
+          {% render_field form.is_active %}
+          Ativo (visível na loja)
+        </label>
+      </div>
+    </div>
+    <button type="submit" class="btn-dash btn-dash-primary"><i class="fas fa-save"></i> Salvar</button>
+  </form>
+</div>
+{% endblock %}

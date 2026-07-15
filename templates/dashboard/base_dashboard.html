@@ -42,6 +42,9 @@
       <a href="{% url 'dashboard:customers' %}" class="dash-nav-item {% if 'customer' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-users"></i> Clientes
       </a>
+      <a href="{% url 'dashboard:showcase' %}" class="dash-nav-item {% if 'showcase' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-images"></i> Showcase
+      </a>
       <a href="{% url 'dashboard:next_trip' %}" class="dash-nav-item {% if 'next_trip' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-plane-departure"></i> Próxima Viagem
       </a>

@@ -7,7 +7,7 @@ from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView
 from products.models import Product, Category
 from .services import update_all_exchange_rates_from_api
-from .models import ExchangeRate, NextTrip, StoreSettings
+from .models import ExchangeRate, NextTrip, ShowcaseSlide, StoreSettings
 
 
 def home(request):
@@ -23,6 +23,7 @@ def home(request):
     categories = Category.objects.filter(is_active=True)
     next_trip = NextTrip.objects.filter(is_active=True).first()
     current_exchange_rate = ExchangeRate.objects.filter(is_active=True).order_by('-updated_at').first()
+    showcase_slides = ShowcaseSlide.objects.filter(is_active=True)
 
     return render(request, 'home.html', {
         'featured': featured,
@@ -36,6 +37,7 @@ def home(request):
         'categories': categories,
         'next_trip': next_trip,
         'current_exchange_rate': current_exchange_rate,
+        'showcase_slides': showcase_slides,
     })
 
 
