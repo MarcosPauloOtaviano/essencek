@@ -133,29 +133,6 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
 .logo-text span { color: var(--red-promo); }
 .logo-k { font-family: var(--font-serif); font-size: 32px; font-weight: 700; color: var(--red-promo); }
 
-/* Header exchange rate (mobile only — replaces logo in header) */
-.header-exchange-mobile {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-.header-exchange-label {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  color: var(--red-promo);
-  text-transform: uppercase;
-}
-.header-exchange-mobile strong {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
 /* Search bar */
 .search-form {
   flex: 1;
@@ -335,14 +312,6 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
 .btn-white { background: white; color: var(--black); border-color: white; font-size: 13px; padding: 7px 16px; }
 .btn-add-cart { border-radius: var(--radius-full); }
 
-/* ─── EXCHANGE RATE BANNER ──────────────────────────────────── */
-.exchange-rate-bar { background: var(--bg-light); text-align: center; padding: 6px 0; font-size: 13px; color: var(--text-secondary); }
-.exchange-rate-bar strong { color: var(--black); }
-.exchange-rate-panel { background: var(--bg-ivory); border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
-.exchange-rate-inner { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12px; }
-.exchange-rate-inner strong { font-size: 14px; margin-left: 8px; }
-.exchange-label { color: var(--red-promo); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; font-size: 10px; }
-.exchange-note { color: var(--text-muted); text-align: right; }
 
 /* ─── SECTIONS ───────────────────────────────────────────────── */
 .section { padding: 48px 0; }
@@ -1048,39 +1017,14 @@ select.form-control { cursor: pointer; }
 
   /* Mobile: hamburger left, exchange center, icons right */
   .nav-toggle { display: block; order: -1; }
-  .logo { order: 0; justify-self: center; display: none; }
-  .header-exchange-mobile { display: flex; order: 0; justify-self: center; }
+  .logo { order: 0; justify-self: center; }
   .header-actions { order: 1; justify-self: end; gap: 4px; margin-left: 0; }
   .search-form { grid-column: 1 / -1; order: 2; width: 100%; max-width: 100%; }
-  .exchange-rate-panel { display: none; }
 
   .cart-btn,
   .header-admin-btn { min-height: 38px; padding: 6px 10px; font-size: 18px; }
   .cart-btn span:not(.cart-badge) { display: none; }
 
-  .exchange-rate-inner {
-    min-height: 30px;
-    align-items: center;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    gap: 3px 8px;
-    font-size: 10px;
-  }
-  .exchange-rate-inner > div { display: flex; align-items: center; min-width: 0; }
-  .exchange-rate-inner strong { font-size: 12px; margin-left: 6px; white-space: nowrap; }
-  .exchange-label { font-size: 8px; letter-spacing: 1px; }
-  .exchange-note {
-    flex: 1 1 100%;
-    min-width: 0;
-    text-align: left;
-    font-size: 10px;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
   .nav-list {
     display: none;
@@ -1127,9 +1071,6 @@ select.form-control { cursor: pointer; }
   .products-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .container { padding: 0 12px; }
   .brand-logo-header { width: auto; height: 40px; max-width: 132px; }
-  .exchange-rate-panel { border-bottom-color: rgba(17,17,17,0.06); }
-  .exchange-rate-inner { min-height: 26px; padding-top: 4px; padding-bottom: 4px; }
-  .exchange-note { display: none; }
   .header-admin-btn { padding: 6px 8px; }
   .header-admin-btn span { display: inline; font-size: 11px; }
   .product-card-body { padding: 10px 12px; }

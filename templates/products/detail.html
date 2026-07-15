@@ -63,9 +63,6 @@
           {% if first_variant.promotional_price %}
             <span class="price-save">Preço promocional para {{ first_variant.name }}</span>
           {% endif %}
-          {% if current_exchange_rate %}
-            <span class="price-rate-note">Preço cobrado em reais. Referência: US$ 1 = {{ current_exchange_rate.rate|rate_brl }}</span>
-          {% endif %}
         {% elif product.is_on_sale and product.sale_price %}
           <span class="price-was">De {{ product.price|brl }}</span>
           <span class="price-now">{{ product.sale_price|brl }}</span>
@@ -78,9 +75,6 @@
           {% if product.display_price_usd %}
             <span class="price-brl">≈ {{ product.display_price_usd|usd }} no câmbio do dia</span>
           {% endif %}
-        {% endif %}
-        {% if current_exchange_rate and not variants %}
-          <span class="price-rate-note">Preço cobrado em reais. Referência: US$ 1 = {{ current_exchange_rate.rate|rate_brl }}</span>
         {% endif %}
       </div>
 

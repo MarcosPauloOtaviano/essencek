@@ -54,13 +54,6 @@
           <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="brand-logo brand-logo-header">
         </a>
 
-        {% if current_exchange_rate %}
-        <a href="{% url 'home' %}" class="header-exchange-mobile">
-          <span class="header-exchange-label">CÂMBIO DE REFERÊNCIA</span>
-          <strong>US$ 1 = {{ current_exchange_rate.rate|rate_brl }}</strong>
-        </a>
-        {% endif %}
-
         <form action="{% url 'products:list' %}" method="get" class="search-form">
           <input type="text" name="q" placeholder="O que você está buscando?"
                  value="{{ request.GET.q }}" class="search-input">
@@ -122,20 +115,6 @@
   </nav>
 </header>
 
-{% if current_exchange_rate %}
-<section class="exchange-rate-panel" aria-label="Câmbio de referência">
-  <div class="container exchange-rate-inner">
-    <div>
-      <span class="exchange-label">Câmbio de referência</span>
-      <strong>US$ 1 = {{ current_exchange_rate.rate|rate_brl }}</strong>
-    </div>
-    <span class="exchange-note">
-      Produtos e pagamentos em Reais (R$). Conversão exibida apenas como referência para compras no Paraguai
-      {% if current_exchange_rate_updated_label %} · atualizado em {{ current_exchange_rate_updated_label }}{% endif %}
-    </span>
-  </div>
-</section>
-{% endif %}
 
 <!-- Messages -->
 {% if messages %}

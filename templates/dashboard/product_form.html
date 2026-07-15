@@ -112,14 +112,6 @@
             {% if form.cost_price.errors %}<span class="field-error">{{ form.cost_price.errors.0 }}</span>{% endif %}
             <small class="field-note">Visível apenas no painel. Nunca exibido ao cliente.</small>
           </div>
-          {% if product and product.display_price_usd %}
-          <div class="form-group full">
-            <div class="dash-info-note">
-              Cotação atual: {% if current_exchange_rate %}US$ 1 = {{ current_exchange_rate.rate|rate_brl }}{% else %}sem cotação ativa{% endif %}.
-              Referência estimada no câmbio: {{ product.display_current_price_usd|usd }}.
-            </div>
-          </div>
-          {% endif %}
         </div>
       </div>
 
