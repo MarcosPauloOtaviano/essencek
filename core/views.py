@@ -23,7 +23,10 @@ def home(request):
     categories = Category.objects.filter(is_active=True)
     next_trip = NextTrip.objects.filter(is_active=True).first()
     current_exchange_rate = ExchangeRate.objects.filter(is_active=True).order_by('-updated_at').first()
-    showcase_slides = ShowcaseSlide.objects.filter(is_active=True)
+    try:
+        showcase_slides = list(ShowcaseSlide.objects.filter(is_active=True))
+    except Exception:
+        showcase_slides = []
 
     return render(request, 'home.html', {
         'featured': featured,
