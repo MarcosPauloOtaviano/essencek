@@ -6,27 +6,30 @@
 
 {% block content %}
 
-<!-- Showcase: 3 squares, each cycles products then all show logo together -->
+<!-- Showcase Banner: logo first, then featured products -->
 <section class="showcase-section">
   <div class="container">
-    <div class="showcase-row">
-      {% for i in "012" %}
-      <div class="showcase-box">
-        <div class="showcase-frame showcase-frame--logo showcase-frame--active">
-          <a href="{% url 'home' %}">
-            <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="showcase-img showcase-img--logo">
-          </a>
-        </div>
+    <div class="showcase-banner">
+      <div class="showcase-slide showcase-slide--active">
+        <a href="{% url 'home' %}">
+          <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="showcase-img showcase-img--logo">
+        </a>
+      </div>
+      {% for product in featured|slice:":5" %}
+      <div class="showcase-slide">
+        <a href="{{ product.get_absolute_url }}">
+          <img src="{{ product.display_image_url }}" alt="{{ product.name }}" class="showcase-img">
+          <span class="showcase-label">{{ product.name|truncatechars:30 }}</span>
+        </a>
       </div>
       {% endfor %}
-    </div>
-    <script>
-      window.__showcaseProducts = [
-        {% for p in new_arrivals|slice:":6" %}
-        {url:"{{ p.get_absolute_url }}",img:"{{ p.display_image_url }}",name:"{{ p.name|truncatechars:25 }}"}{% if not forloop.last %},{% endif %}
+      <div class="showcase-dots">
+        <button class="showcase-dot showcase-dot--active" data-slide="0" aria-label="Logo"></button>
+        {% for product in featured|slice:":5" %}
+        <button class="showcase-dot" data-slide="{{ forloop.counter }}" aria-label="{{ product.name }}"></button>
         {% endfor %}
-      ];
-    </script>
+      </div>
+    </div>
   </div>
 </section>
 
