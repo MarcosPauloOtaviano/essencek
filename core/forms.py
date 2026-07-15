@@ -56,21 +56,21 @@ class StoreSettingsForm(forms.ModelForm):
         return logo
 
 
-class ShowcaseSlideForm(forms.ModelForm):
+class ShowcaseTextSlideForm(forms.ModelForm):
     class Meta:
         model = ShowcaseSlide
-        fields = ['image', 'title', 'description', 'link', 'position', 'is_active']
+        fields = ['title', 'description', 'background_style', 'link', 'is_active']
         widgets = {
-            'description': forms.TextInput(attrs={'placeholder': 'Ex: Lançamento! Perfume importado...'}),
-            'link': forms.TextInput(attrs={'placeholder': '/produtos/ ou URL completa'}),
-            'position': forms.NumberInput(attrs={'min': 0}),
+            'title': forms.TextInput(attrs={'placeholder': 'Ex: Frete grátis essa semana!'}),
+            'description': forms.TextInput(attrs={'placeholder': 'Ex: Em compras acima de R$ 300'}),
+            'link': forms.TextInput(attrs={'placeholder': '/produtos/ ou URL completa (opcional)'}),
         }
 
-    def clean_image(self):
-        image = self.cleaned_data.get('image')
-        if image:
-            validate_product_image_upload(image)
-        return image
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get('title') and not cleaned_data.get('description'):
+            raise forms.ValidationError('Escreva um título ou um texto para o slide.')
+        return cleaned_data
 
 
 class NextTripForm(forms.ModelForm):

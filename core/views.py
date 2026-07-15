@@ -24,7 +24,9 @@ def home(request):
     next_trip = NextTrip.objects.filter(is_active=True).first()
     current_exchange_rate = ExchangeRate.objects.filter(is_active=True).order_by('-updated_at').first()
     try:
-        showcase_slides = list(ShowcaseSlide.objects.filter(is_active=True))
+        showcase_slides = list(
+            ShowcaseSlide.objects.filter(is_active=True).select_related('product')[:ShowcaseSlide.MAX_SLIDES]
+        )
     except Exception:
         showcase_slides = []
 

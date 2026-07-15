@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
-from core.forms import NextTripForm, ShowcaseSlideForm, StoreSettingsForm
+from core.forms import NextTripForm, ShowcaseTextSlideForm, StoreSettingsForm
 from core.models import ShowcaseSlide, StoreSettings, NextTrip
 from orders.models import Order, PreOrderRequest
 from orders.services import confirm_order_payment
@@ -469,25 +469,146 @@ def image_search(request):
 
 @staff_member_required(login_url='/conta/entrar/')
 def showcase_list(request):
-    slides = ShowcaseSlide.objects.all()
-    return render(request, 'dashboard/showcase.html', {'slides': slides})
+    slides = ShowcaseSlide.objects.all().select_related('product')
+    return render(request, 'dashboard/showcase.html', {
+        'slides': slides,
+        'active_count': ShowcaseSlide.active_count(),
+        'max_slides': ShowcaseSlide.MAX_SLIDES,
+        'remaining_slots': ShowcaseSlide.remaining_slots(),
+        'background_choices': ShowcaseSlide.BACKGROUND_CHOICES,
+    })
 
 
 @staff_member_required(login_url='/conta/entrar/')
-def showcase_edit(request, pk=None):
-    slide = get_object_or_404(ShowcaseSlide, pk=pk) if pk else None
+def showcase_product_search(request):
+    query = request.GET.get('q', '').strip()
+    qs = Product.objects.filter(is_active=True).select_related('category', 'brand_fk').prefetch_related('images')
+    if query:
+        qs = qs.filter(
+            Q(name__icontains=query) | Q(brand__icontains=query) |
+            Q(brand_fk__name__icontains=query) | Q(gtin__icontains=query)
+        )
+    qs = qs.order_by('-created_at')[:60]
+    existing_ids = set(
+        ShowcaseSlide.objects.filter(kind=ShowcaseSlide.KIND_PRODUCT, product_id__isnull=False)
+        .values_list('product_id', flat=True)
+    )
+    products = [{
+        'id': p.id,
+        'name': p.name,
+        'brand': p.display_brand,
+        'price': str(p.current_price_brl),
+        'image': p.display_image_url,
+        'in_showcase': p.id in existing_ids,
+    } for p in qs]
+    return JsonResponse({'products': products})
+
+
+@staff_member_required(login_url='/conta/entrar/')
+@require_POST
+def showcase_add_products(request):
+    raw_ids = request.POST.getlist('product_ids')
+    try:
+        ids = [int(i) for i in raw_ids]
+    except (TypeError, ValueError):
+        ids = []
+    ids = list(dict.fromkeys(ids))
+    if not ids:
+        messages.error(request, 'Selecione ao menos um produto do estoque.')
+        return redirect('dashboard:showcase')
+
+    existing_ids = set(
+        ShowcaseSlide.objects.filter(kind=ShowcaseSlide.KIND_PRODUCT, product_id__in=ids)
+        .values_list('product_id', flat=True)
+    )
+    new_ids = [i for i in ids if i not in existing_ids]
+    if not new_ids:
+        messages.info(request, 'Os produtos selecionados já estão no showcase.')
+        return redirect('dashboard:showcase')
+
+    remaining = ShowcaseSlide.remaining_slots()
+    if len(new_ids) > remaining:
+        messages.error(
+            request,
+            f'Só há espaço para mais {remaining} item(ns) no showcase '
+            f'(limite de {ShowcaseSlide.MAX_SLIDES}). Remova algo antes de adicionar mais.'
+        )
+        return redirect('dashboard:showcase')
+
+    products_by_id = {p.id: p for p in Product.objects.filter(id__in=new_ids, is_active=True)}
+    next_position = ShowcaseSlide.objects.count()
+    created = 0
+    for pid in new_ids:
+        product = products_by_id.get(pid)
+        if not product:
+            continue
+        ShowcaseSlide.objects.create(
+            kind=ShowcaseSlide.KIND_PRODUCT,
+            product=product,
+            position=next_position,
+            is_active=True,
+        )
+        next_position += 1
+        created += 1
+
+    if created:
+        messages.success(request, f'{created} produto(s) adicionado(s) ao showcase!')
+    else:
+        messages.error(request, 'Não foi possível adicionar os produtos selecionados.')
+    return redirect('dashboard:showcase')
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def showcase_text_add(request):
     if request.method == 'POST':
-        form = ShowcaseSlideForm(request.POST, request.FILES, instance=slide)
+        if ShowcaseSlide.remaining_slots() <= 0:
+            messages.error(
+                request,
+                f'Limite de {ShowcaseSlide.MAX_SLIDES} itens no showcase atingido. '
+                'Remova ou desative algo antes de adicionar um novo slide.'
+            )
+            return redirect('dashboard:showcase')
+        form = ShowcaseTextSlideForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Slide salvo!')
+            slide = form.save(commit=False)
+            slide.kind = ShowcaseSlide.KIND_TEXT
+            slide.position = ShowcaseSlide.objects.count()
+            slide.save()
+            messages.success(request, 'Slide de texto adicionado!')
             return redirect('dashboard:showcase')
     else:
-        form = ShowcaseSlideForm(instance=slide)
+        if ShowcaseSlide.remaining_slots() <= 0:
+            messages.error(
+                request,
+                f'Limite de {ShowcaseSlide.MAX_SLIDES} itens no showcase atingido. '
+                'Remova ou desative algo antes de adicionar um novo slide.'
+            )
+            return redirect('dashboard:showcase')
+        form = ShowcaseTextSlideForm()
+    return render(request, 'dashboard/showcase_form.html', {
+        'form': form,
+        'slide': None,
+        'title': 'Novo slide de texto',
+        'background_choices': ShowcaseSlide.BACKGROUND_CHOICES,
+    })
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def showcase_edit(request, pk):
+    slide = get_object_or_404(ShowcaseSlide, pk=pk, kind=ShowcaseSlide.KIND_TEXT)
+    if request.method == 'POST':
+        form = ShowcaseTextSlideForm(request.POST, instance=slide)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Slide atualizado!')
+            return redirect('dashboard:showcase')
+    else:
+        form = ShowcaseTextSlideForm(instance=slide)
     return render(request, 'dashboard/showcase_form.html', {
         'form': form,
         'slide': slide,
-        'title': 'Editar slide' if slide else 'Novo slide',
+        'title': 'Editar slide de texto',
+        'background_choices': ShowcaseSlide.BACKGROUND_CHOICES,
     })
 
 
@@ -497,6 +618,37 @@ def showcase_delete(request, pk):
     slide = get_object_or_404(ShowcaseSlide, pk=pk)
     slide.delete()
     messages.success(request, 'Slide removido!')
+    return redirect('dashboard:showcase')
+
+
+@staff_member_required(login_url='/conta/entrar/')
+@require_POST
+def showcase_move(request, pk, direction):
+    slides = list(ShowcaseSlide.objects.order_by('position', '-created_at', 'id'))
+    idx = next((i for i, s in enumerate(slides) if s.pk == pk), None)
+    if idx is not None:
+        swap_idx = idx - 1 if direction == 'up' else idx + 1
+        if 0 <= swap_idx < len(slides):
+            slides[idx], slides[swap_idx] = slides[swap_idx], slides[idx]
+            for position, slide in enumerate(slides):
+                if slide.position != position:
+                    ShowcaseSlide.objects.filter(pk=slide.pk).update(position=position)
+    return redirect('dashboard:showcase')
+
+
+@staff_member_required(login_url='/conta/entrar/')
+@require_POST
+def showcase_toggle_active(request, pk):
+    slide = get_object_or_404(ShowcaseSlide, pk=pk)
+    if not slide.is_active and ShowcaseSlide.remaining_slots() <= 0:
+        messages.error(
+            request,
+            f'Limite de {ShowcaseSlide.MAX_SLIDES} itens no showcase atingido. '
+            'Desative outro item antes de ativar este.'
+        )
+        return redirect('dashboard:showcase')
+    slide.is_active = not slide.is_active
+    slide.save(update_fields=['is_active'])
     return redirect('dashboard:showcase')
 
 

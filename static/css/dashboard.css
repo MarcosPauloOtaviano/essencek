@@ -299,3 +299,69 @@ body.dashboard-menu-open { overflow: hidden; }
   background: #c0392b;
   color: #fff;
 }
+.btn-dash-disabled { opacity: 0.45; pointer-events: none; cursor: not-allowed; }
+
+/* ─── SHOWCASE MANAGER ───────────────────────────────────────── */
+.showcase-slots-bar { height: 8px; border-radius: 20px; background: var(--d-border); overflow: hidden; margin-bottom: 6px; }
+.showcase-slots-fill { height: 100%; background: linear-gradient(90deg, var(--d-accent), var(--d-primary)); border-radius: 20px; transition: width 0.3s ease; }
+.showcase-slots-label { font-size: 12.5px; color: var(--d-text-light); margin-bottom: 18px; }
+
+.showcase-manager-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+.showcase-item-card { border: 1px solid var(--d-border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; background: var(--d-card); transition: opacity 0.2s; }
+.showcase-item-card--inactive { opacity: 0.55; }
+.showcase-item-preview { position: relative; aspect-ratio: 16/9; background: var(--d-bg); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.showcase-item-preview img { width: 100%; height: 100%; object-fit: cover; }
+.showcase-item-preview-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 17px; font-weight: 700; text-align: center; padding: 0 12px; }
+.showcase-item-preview-desc { font-size: 11.5px; text-align: center; padding: 0 12px; margin-top: 4px; opacity: 0.85; }
+.showcase-item-body { padding: 10px 12px 4px; display: flex; flex-direction: column; gap: 5px; }
+.showcase-item-kind-badge { align-self: flex-start; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; padding: 2px 9px; border-radius: 20px; color: var(--d-text-light); background: var(--d-bg); }
+.showcase-item-kind-badge--product { color: #1565c0; background: #e3f2fd; }
+.showcase-item-kind-badge--text { color: #c78da0; background: #fde8ef; }
+.showcase-item-kind-badge--image { color: #757575; background: #f5f5f5; }
+.showcase-item-title { font-size: 13.5px; color: var(--d-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.showcase-item-actions { display: flex; align-items: center; gap: 4px; padding: 8px 10px 12px; margin-top: auto; }
+.showcase-item-actions form { display: inline-flex; }
+.showcase-item-actions .btn-dash-sm { padding: 6px 9px; }
+.showcase-item-actions .btn-dash-sm:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Background swatch picker (text slide form) */
+.showcase-bg-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 4px; }
+.showcase-bg-swatch { position: relative; display: flex; align-items: center; justify-content: center; height: 56px; border-radius: 8px; cursor: pointer; overflow: hidden; border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s; }
+.showcase-bg-swatch:hover { transform: translateY(-1px); }
+.showcase-bg-swatch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.showcase-bg-swatch input:checked ~ span { text-decoration: underline; }
+.showcase-bg-swatch:has(input:checked) { border-color: var(--d-primary); box-shadow: 0 0 0 2px var(--d-card), 0 0 0 4px var(--d-accent); }
+.showcase-bg-swatch span { font-size: 11px; font-weight: 700; text-align: center; padding: 0 6px; pointer-events: none; }
+.showcase-bg-preto-dourado { background: linear-gradient(135deg, #111111 0%, #262626 55%, #a8842c 100%); color: #f8e9c8; }
+.showcase-bg-rosa-nude { background: linear-gradient(135deg, #f8c8dc 0%, #f5e6ec 100%); color: #5a2438; }
+.showcase-bg-vinho { background: linear-gradient(135deg, #4a0d1f 0%, #7c1f3a 100%); color: #f6dfe6; }
+.showcase-bg-azul-noite { background: linear-gradient(135deg, #0b1e33 0%, #1b3a5c 100%); color: #dce8f5; }
+.showcase-bg-esmeralda { background: linear-gradient(135deg, #0b3d2e 0%, #1f6f54 100%); color: #e2f3ec; }
+.showcase-bg-nude { background: linear-gradient(135deg, #ede0d4 0%, #d9c2a8 100%); color: #4a3826; }
+
+/* Stock picker modal */
+.dash-modal-overlay { position: fixed; inset: 0; background: rgba(17,17,17,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dash-modal-overlay[hidden] { display: none; }
+.dash-modal { background: var(--d-card); border-radius: var(--d-radius); width: 100%; max-width: 680px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.dash-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--d-border); }
+.dash-modal-header h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 19px; color: var(--d-primary); display: flex; align-items: center; gap: 8px; }
+.dash-modal-close { background: none; border: none; font-size: 24px; line-height: 1; cursor: pointer; color: var(--d-text-light); padding: 4px 8px; }
+.dash-modal-close:hover { color: var(--d-primary); }
+.dash-modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.dash-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--d-border); flex-wrap: wrap; }
+.dash-modal-footer span { font-size: 12.5px; color: var(--d-text-light); }
+
+.showcase-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.showcase-picker-item { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 2px solid var(--d-border); border-radius: 8px; padding: 8px; background: var(--d-card); cursor: pointer; text-align: center; transition: border-color 0.15s, background 0.15s; font-family: 'Jost', sans-serif; }
+.showcase-picker-item:hover:not(:disabled) { border-color: var(--d-accent); }
+.showcase-picker-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--d-bg); }
+.showcase-picker-item-name { font-size: 11.5px; color: var(--d-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.showcase-picker-item-price { font-size: 11px; color: var(--d-text-light); font-weight: 700; }
+.showcase-picker-item-tag { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--d-accent); font-weight: 700; }
+.showcase-picker-item--selected { border-color: var(--d-primary); background: #fdf3f6; box-shadow: 0 0 0 2px var(--d-accent) inset; }
+.showcase-picker-item--added { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .showcase-manager-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .dash-modal { max-height: 92vh; }
+}

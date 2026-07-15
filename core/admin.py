@@ -44,6 +44,6 @@ class ExchangeRateAdmin(admin.ModelAdmin):
 
 @admin.register(ShowcaseSlide)
 class ShowcaseSlideAdmin(admin.ModelAdmin):
-    list_display = ['title', 'position', 'is_active', 'updated_at']
-    list_filter = ['is_active']
+    list_display = ['__str__', 'kind', 'position', 'is_active', 'updated_at']
+    list_filter = ['kind', 'is_active']
     list_editable = ['position', 'is_active']

@@ -16,18 +16,33 @@
         </a>
       </div>
       {% for slide in showcase_slides %}
+      {% if slide.kind == 'text' %}
+      <div class="showcase-slide showcase-slide--text showcase-bg-{{ slide.background_style|default:'preto-dourado' }}">
+        {% if slide.display_link %}<a href="{{ slide.display_link }}">{% endif %}
+          <div class="showcase-text-inner">
+            {% if slide.title %}<span class="showcase-text-title">{{ slide.title }}</span>{% endif %}
+            {% if slide.description %}<span class="showcase-text-desc">{{ slide.description }}</span>{% endif %}
+          </div>
+        {% if slide.display_link %}</a>{% endif %}
+      </div>
+      {% else %}
       <div class="showcase-slide">
-        {% if slide.link %}<a href="{{ slide.link }}">{% endif %}
-          <img src="{{ slide.display_image_url }}" alt="{{ slide.title }}" class="showcase-img">
-          {% if slide.title or slide.description %}
+        {% if slide.display_link %}<a href="{{ slide.display_link }}">{% endif %}
+          <img src="{{ slide.display_image_url }}" alt="{{ slide.display_title }}" class="showcase-img">
+          {% if slide.kind == 'product' %}
+          <span class="showcase-label">
+            {{ slide.display_title }}{% if slide.product.current_price_brl %} — {{ slide.product.current_price_brl|brl }}{% endif %}
+          </span>
+          {% elif slide.title or slide.description %}
           <span class="showcase-label">
             {% if slide.title %}{{ slide.title }}{% endif %}
             {% if slide.title and slide.description %} — {% endif %}
             {% if slide.description %}{{ slide.description }}{% endif %}
           </span>
           {% endif %}
-        {% if slide.link %}</a>{% endif %}
+        {% if slide.display_link %}</a>{% endif %}
       </div>
+      {% endif %}
       {% endfor %}
       {% if showcase_slides %}
       <div class="showcase-dots">

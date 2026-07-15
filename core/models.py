@@ -82,9 +82,37 @@ class ExchangeRate(models.Model):
 
 
 class ShowcaseSlide(models.Model):
+    KIND_PRODUCT = 'product'
+    KIND_TEXT = 'text'
+    KIND_IMAGE = 'image'
+    KIND_CHOICES = [
+        (KIND_PRODUCT, 'Produto do estoque'),
+        (KIND_TEXT, 'Texto / Promoção'),
+        (KIND_IMAGE, 'Imagem manual (legado)'),
+    ]
+
+    BACKGROUND_CHOICES = [
+        ('preto-dourado', 'Preto & Dourado'),
+        ('rosa-nude', 'Rosa Nude'),
+        ('vinho', 'Vinho Profundo'),
+        ('azul-noite', 'Azul Noite'),
+        ('esmeralda', 'Verde Esmeralda'),
+        ('nude', 'Nude Elegante'),
+    ]
+
+    MAX_SLIDES = 6
+
+    kind = models.CharField('Tipo de slide', max_length=10, choices=KIND_CHOICES,
+                            default=KIND_IMAGE)
+    product = models.ForeignKey('products.Product', verbose_name='Produto',
+                                on_delete=models.CASCADE, null=True, blank=True,
+                                related_name='showcase_slides')
+    background_style = models.CharField('Estilo de fundo', max_length=20,
+                                        choices=BACKGROUND_CHOICES,
+                                        blank=True, default='preto-dourado')
     title = models.CharField('Título (opcional)', max_length=120, blank=True)
     description = models.CharField('Texto/descrição (opcional)', max_length=200, blank=True)
-    image = models.ImageField('Imagem', upload_to='showcase/')
+    image = models.ImageField('Imagem', upload_to='showcase/', blank=True, null=True)
     link = models.CharField('Link (opcional)', max_length=500, blank=True,
                             help_text='URL para onde o slide leva ao clicar. Ex: /produtos/')
     position = models.PositiveIntegerField('Ordem', default=0)
@@ -98,11 +126,37 @@ class ShowcaseSlide(models.Model):
         ordering = ['position', '-created_at']
 
     def __str__(self):
+        if self.kind == self.KIND_PRODUCT and self.product_id:
+            return f'Produto: {self.product.name}'
         return self.title or f'Slide #{self.pk}'
 
     @property
     def display_image_url(self):
+        if self.kind == self.KIND_PRODUCT and self.product_id:
+            return self.product.display_image_url
         return image_url_if_exists(self.image)
+
+    @property
+    def display_title(self):
+        if self.kind == self.KIND_PRODUCT and self.product_id:
+            return self.title or self.product.name
+        return self.title
+
+    @property
+    def display_link(self):
+        if self.link:
+            return self.link
+        if self.kind == self.KIND_PRODUCT and self.product_id:
+            return self.product.get_absolute_url()
+        return ''
+
+    @classmethod
+    def active_count(cls):
+        return cls.objects.filter(is_active=True).count()
+
+    @classmethod
+    def remaining_slots(cls):
+        return max(0, cls.MAX_SLIDES - cls.active_count())
 
 
 class StoredMediaFile(models.Model):
