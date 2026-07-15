@@ -3,59 +3,233 @@
 {% block content %}
 <div class="dash-page-header">
   <h1>Showcase (Banner da Home)</h1>
-  <a href="{% url 'dashboard:showcase_add' %}" class="btn-dash btn-dash-primary"><i class="fas fa-plus"></i> Novo slide</a>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button type="button" class="btn-dash btn-dash-primary" id="openStockPickerBtn" {% if remaining_slots <= 0 %}disabled{% endif %}>
+      <i class="fas fa-boxes-stacked"></i> Adicionar do Estoque
+    </button>
+    <a href="{% url 'dashboard:showcase_text_add' %}" class="btn-dash {% if remaining_slots <= 0 %}btn-dash-disabled{% endif %}">
+      <i class="fas fa-font"></i> Slide de texto
+    </a>
+  </div>
 </div>
-<p class="dash-hint">A logo aparece automaticamente como primeiro slide. Os slides abaixo são exibidos depois dela, na ordem definida.</p>
+
+<p class="dash-hint">
+  A logo aparece automaticamente como primeiro slide. Depois dela, você pode exibir até <strong>{{ max_slides }}</strong>
+  itens no carrossel — produtos direto do estoque, slides de texto (avisos e promoções) ou os dois combinados.
+</p>
+
+<div class="showcase-slots-bar"><div class="showcase-slots-fill" style="width:{% widthratio active_count max_slides 100 %}%"></div></div>
+<p class="showcase-slots-label">
+  {{ active_count }} de {{ max_slides }} espaços usados
+  {% if remaining_slots > 0 %}&middot; {{ remaining_slots }} espaço{{ remaining_slots|pluralize }} disponíve{{ remaining_slots|pluralize:"l,is" }}{% else %}&middot; limite atingido{% endif %}
+</p>
+
 <div class="dash-card">
   {% if slides %}
-  <div class="dash-table-wrap">
-    <table class="dash-table">
-      <thead>
-        <tr>
-          <th>Imagem</th>
-          <th>Título</th>
-          <th>Texto</th>
-          <th>Link</th>
-          <th>Ordem</th>
-          <th>Status</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for slide in slides %}
-        <tr>
-          <td>
-            {% if slide.display_image_url %}
-              <img src="{{ slide.display_image_url }}" alt="" style="width:80px;height:50px;object-fit:cover;border-radius:6px;">
-            {% else %}
-              <span class="text-muted">Sem imagem</span>
-            {% endif %}
-          </td>
-          <td>{{ slide.title|default:"—" }}</td>
-          <td>{{ slide.description|default:"—"|truncatechars:40 }}</td>
-          <td>{{ slide.link|default:"—"|truncatechars:30 }}</td>
-          <td>{{ slide.position }}</td>
-          <td>
-            {% if slide.is_active %}
-              <span class="badge-active">Ativo</span>
-            {% else %}
-              <span class="badge-inactive">Inativo</span>
-            {% endif %}
-          </td>
-          <td class="dash-actions">
-            <a href="{% url 'dashboard:showcase_edit' slide.pk %}" class="btn-dash btn-dash-sm"><i class="fas fa-edit"></i></a>
-            <form method="post" action="{% url 'dashboard:showcase_delete' slide.pk %}" style="display:inline" onsubmit="return confirm('Remover este slide?')">
-              {% csrf_token %}
-              <button type="submit" class="btn-dash btn-dash-sm btn-dash-danger"><i class="fas fa-trash"></i></button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="showcase-manager-grid">
+    {% for slide in slides %}
+    <div class="showcase-item-card {% if not slide.is_active %}showcase-item-card--inactive{% endif %}">
+      {% if slide.kind == 'text' %}
+      <div class="showcase-item-preview showcase-bg-{{ slide.background_style|default:'preto-dourado' }}">
+        <div>
+          <span class="showcase-item-preview-title">{{ slide.title|default:"—" }}</span>
+          {% if slide.description %}<span class="showcase-item-preview-desc">{{ slide.description }}</span>{% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="showcase-item-preview">
+        {% if slide.display_image_url %}
+          <img src="{{ slide.display_image_url }}" alt="">
+        {% else %}
+          <span class="text-muted">Sem imagem</span>
+        {% endif %}
+      </div>
+      {% endif %}
+      <div class="showcase-item-body">
+        <span class="showcase-item-kind-badge showcase-item-kind-badge--{{ slide.kind }}">
+          {% if slide.kind == 'product' %}<i class="fas fa-box"></i> Produto
+          {% elif slide.kind == 'text' %}<i class="fas fa-font"></i> Texto
+          {% else %}<i class="fas fa-image"></i> Imagem
+          {% endif %}
+        </span>
+        <strong class="showcase-item-title">{{ slide.display_title|default:"Sem título" }}</strong>
+        {% if slide.is_active %}<span class="badge-active">Ativo</span>{% else %}<span class="badge-inactive">Inativo</span>{% endif %}
+      </div>
+      <div class="showcase-item-actions">
+        <form method="post" action="{% url 'dashboard:showcase_move' slide.pk 'up' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-dash btn-dash-sm" title="Mover para cima" {% if forloop.first %}disabled{% endif %}><i class="fas fa-arrow-up"></i></button>
+        </form>
+        <form method="post" action="{% url 'dashboard:showcase_move' slide.pk 'down' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-dash btn-dash-sm" title="Mover para baixo" {% if forloop.last %}disabled{% endif %}><i class="fas fa-arrow-down"></i></button>
+        </form>
+        <form method="post" action="{% url 'dashboard:showcase_toggle_active' slide.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-dash btn-dash-sm" title="{% if slide.is_active %}Desativar{% else %}Ativar{% endif %}">
+            <i class="fas {% if slide.is_active %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+          </button>
+        </form>
+        {% if slide.kind == 'text' %}
+        <a href="{% url 'dashboard:showcase_edit' slide.pk %}" class="btn-dash btn-dash-sm" title="Editar"><i class="fas fa-edit"></i></a>
+        {% endif %}
+        <form method="post" action="{% url 'dashboard:showcase_delete' slide.pk %}" onsubmit="return confirm('Remover este slide?')">
+          {% csrf_token %}
+          <button type="submit" class="btn-dash btn-dash-sm btn-dash-danger" title="Remover"><i class="fas fa-trash"></i></button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
   </div>
   {% else %}
   <p>Nenhum slide cadastrado. A logo será exibida sozinha no showcase.</p>
   {% endif %}
 </div>
+
+<div class="dash-modal-overlay" id="stockPickerOverlay" hidden>
+  <div class="dash-modal" role="dialog" aria-modal="true" aria-labelledby="stockPickerTitle">
+    <div class="dash-modal-header">
+      <h2 id="stockPickerTitle"><i class="fas fa-boxes-stacked"></i> Adicionar do estoque</h2>
+      <button type="button" class="dash-modal-close" id="closeStockPickerBtn" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="dash-modal-body">
+      <p class="dash-hint" id="stockPickerHint"></p>
+      <input type="text" class="dash-input" style="width:100%" id="stockPickerSearch" placeholder="Buscar por nome, marca ou código...">
+      <div class="showcase-picker-grid" id="stockPickerResults">
+        <p class="field-note">Carregando produtos...</p>
+      </div>
+    </div>
+    <div class="dash-modal-footer">
+      <span id="stockPickerSelectedCount">0 selecionado(s)</span>
+      <form method="post" action="{% url 'dashboard:showcase_add_products' %}" id="stockPickerForm">
+        {% csrf_token %}
+        <div id="stockPickerHiddenInputs"></div>
+        <button type="submit" class="btn-dash btn-dash-primary" id="stockPickerSubmitBtn" disabled>
+          <i class="fas fa-plus"></i> Adicionar selecionados
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const MAX_REMAINING = {{ remaining_slots }};
+  const MAX_SLIDES = {{ max_slides }};
+  const overlay = document.getElementById('stockPickerOverlay');
+  const openBtn = document.getElementById('openStockPickerBtn');
+  const closeBtn = document.getElementById('closeStockPickerBtn');
+  const searchInput = document.getElementById('stockPickerSearch');
+  const resultsEl = document.getElementById('stockPickerResults');
+  const hint = document.getElementById('stockPickerHint');
+  const selectedCountEl = document.getElementById('stockPickerSelectedCount');
+  const submitBtn = document.getElementById('stockPickerSubmitBtn');
+  const hiddenInputsEl = document.getElementById('stockPickerHiddenInputs');
+  const searchUrl = '{% url "dashboard:showcase_product_search" %}';
+
+  let selected = new Set();
+  let searchTimer = null;
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  function updateFooter() {
+    const remaining = Math.max(0, MAX_REMAINING - selected.size);
+    selectedCountEl.textContent = `${selected.size} selecionado(s) — ${remaining} espaço(s) restante(s)`;
+    submitBtn.disabled = selected.size === 0;
+    hiddenInputsEl.innerHTML = '';
+    selected.forEach(id => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'product_ids';
+      input.value = id;
+      hiddenInputsEl.appendChild(input);
+    });
+  }
+
+  function toggleSelect(card, id) {
+    if (selected.has(id)) {
+      selected.delete(id);
+      card.classList.remove('showcase-picker-item--selected');
+    } else {
+      if (selected.size >= MAX_REMAINING) {
+        alert(`Você pode selecionar no máximo ${MAX_REMAINING} produto(s) — esse é o espaço restante no showcase.`);
+        return;
+      }
+      selected.add(id);
+      card.classList.add('showcase-picker-item--selected');
+    }
+    updateFooter();
+  }
+
+  function renderResults(products) {
+    if (!products.length) {
+      resultsEl.innerHTML = '<p class="field-note">Nenhum produto encontrado.</p>';
+      return;
+    }
+    resultsEl.innerHTML = '';
+    products.forEach(p => {
+      const id = String(p.id);
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'showcase-picker-item';
+      if (p.in_showcase) card.classList.add('showcase-picker-item--added');
+      if (selected.has(id)) card.classList.add('showcase-picker-item--selected');
+      card.disabled = !!p.in_showcase;
+      card.innerHTML = `
+        <img src="${esc(p.image)}" alt="" loading="lazy">
+        <span class="showcase-picker-item-name">${esc(p.name)}</span>
+        <span class="showcase-picker-item-price">R$ ${esc(p.price)}</span>
+        ${p.in_showcase ? '<span class="showcase-picker-item-tag">Já no showcase</span>' : ''}
+      `;
+      if (!p.in_showcase) {
+        card.addEventListener('click', () => toggleSelect(card, id));
+      }
+      resultsEl.appendChild(card);
+    });
+  }
+
+  function search(query) {
+    resultsEl.innerHTML = '<p class="field-note"><i class="fas fa-spinner fa-spin"></i> Buscando...</p>';
+    fetch(`${searchUrl}?q=${encodeURIComponent(query)}`)
+      .then(r => r.json())
+      .then(data => renderResults(data.products || []))
+      .catch(() => { resultsEl.innerHTML = '<p class="field-note" style="color:red">Erro ao buscar produtos.</p>'; });
+  }
+
+  function openModal() {
+    if (MAX_REMAINING <= 0) {
+      alert(`Limite de ${MAX_SLIDES} itens no showcase atingido. Remova ou desative algo antes de adicionar mais.`);
+      return;
+    }
+    selected = new Set();
+    updateFooter();
+    hint.textContent = `Selecione até ${MAX_REMAINING} produto(s) para exibir no showcase da home.`;
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+    searchInput.value = '';
+    search('');
+    searchInput.focus();
+  }
+
+  function closeModal() {
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  openBtn?.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  overlay?.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !overlay.hidden) closeModal(); });
+  searchInput?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => search(searchInput.value.trim()), 300);
+  });
+})();
+</script>
 {% endblock %}
