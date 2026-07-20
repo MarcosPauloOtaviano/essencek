@@ -1,6 +1,6 @@
 {% load humanize static money %}
 <div class="product-card">
-  <a href="{{ product.get_absolute_url }}" class="product-card-link">
+  <a href="{% if product.slug %}{{ product.get_absolute_url }}{% else %}{% url 'products:list' %}{% endif %}" class="product-card-link">
     <div class="product-card-image">
       <img src="{{ product.display_image_url }}" alt="{{ product.name }}" loading="lazy">
       <!-- Badges -->
