@@ -215,3 +215,32 @@ Tres arquivos de midia persistida responderam `200` entre 0,197 s e 0,309 s. No 
 A busca negativa final respondeu `200`, mostrou zero cards e o estado vazio correto, sem criar cookie. O calculo de frete na pagina de produto retornou opcoes sem criar carrinho. Logs de erro do deployment nos 30 minutos finais: nenhum registro.
 
 Login, carrinho, checkout, pedidos e painel nao foram alterados no Preview porque ele compartilha o banco de producao. Esses fluxos foram exercitados no ambiente local isolado descrito acima. O PR permanece em rascunho e a producao permanece no commit `ef06608e6db3f3ae4b0802b01c245d5c7829054a`, sem migration ou promocao, ate autorizacao explicita.
+
+## Atualizacao de performance por miniaturas - 2026-08-06
+
+O commit `609e134` acrescentou miniaturas sob demanda para as imagens persistidas, sem regravar o arquivo original ou alterar o banco. As telas publicas solicitam versoes de 160 px para categorias, 480 px para cards de produto e 960 px para slides; somente tamanhos permitidos sao aceitos. Arquivos invalidos, animados ou fora dos limites mantem a resposta original como fallback. Cada resposta de midia e imutavel e cacheavel na CDN por um ano.
+
+Validacao direta de uma imagem de categoria anteriormente com 1.115,1 KB:
+
+| Recurso | Resultado |
+| --- | --- |
+| Original | PNG de 1.115,1 KB |
+| Miniatura `w=160` | PNG de 35.379 bytes |
+| Reducao | 96,9% |
+| CDN | `MISS` em 0,561 s, seguido de `HIT` em 0,200 s |
+| Integridade | `200`, `image/png`, transparencia preservada, sem gravacao no banco |
+
+O Preview do commit foi `https://essencek-7idi7codg-marcos-paulos-projects-7e938b4a.vercel.app`, deployment `dpl_RueTnYvsCVKzNSMAz81uqLt4scsP`, pronto em `gru1`. No navegador mobile de 390 x 844, categorias e cards usaram as URLs de miniatura corretas, as bolinhas permaneceram visiveis, e foram confirmados zero erros de console, imagens quebradas e overflow horizontal.
+
+| Lighthouse de laboratorio | Antes | Depois |
+| --- | ---: | ---: |
+| Mobile Performance | 85 | 94 |
+| Mobile FCP | 1,870 s | 1,776 s |
+| Mobile LCP | 3,409 s | 3,008 s |
+| Mobile transferido | 4,522 MB | 0,943 MB |
+| Mobile TBT | 269 ms | 5 ms |
+| Mobile CLS | 0 | 0 |
+
+O desktop final registrou Performance 93, Acessibilidade 100, Boas praticas 100, FCP 0,673 s, LCP 0,931 s, TBT 0 ms, CLS 0 e 1,039 MB transferidos. A variacao do score de Performance entre execucoes desktop e sensivel a animacao visual e a simulacao de rede; os tempos de LCP, bytes transferidos e ausencia de bloqueio permanecem os sinais comparaveis. O SEO 63 no Preview decorre exclusivamente do `X-Robots-Tag: noindex` aplicado pela Vercel a deployments de Preview.
+
+Foram adicionados quatro testes unitarios para URL, limites, transparencia, resposta HTTP e cache de miniaturas. A suite completa passou com 92 testes em 66,769 s; `check`, `check --deploy` com ambiente isolado, `makemigrations --check`, compilacao, Bandit, `pip-audit` e `collectstatic` passaram. Os relatorios Lighthouse foram gravados em `C:\EssenceKBackups\e2e-browser-20260805-224753`. No Windows, a CLI do Lighthouse pode avisar `EPERM` apenas ao limpar sua pasta temporaria depois de gravar o JSON; os relatorios foram confirmados e nao restaram processos headless do ensaio.
