@@ -267,3 +267,9 @@ Medicoes HTTP com query unica, sem alterar estado:
 | Catalogo | 9,259 s | 0,430 s |
 
 A producao continua lenta porque ainda executa o codigo anterior: inicializacao pesada com migracao no caminho da requisicao, funcao fora da regiao do banco Neon e sem cache publico seguro ou miniaturas responsivas. Para levar a melhora ao dominio publico e necessario autorizar explicitamente a promocao controlada do PR `#11`, confirmar as variaveis de producao, executar a migration pendente `orders/0006_alter_order_payment_method_alter_order_status.py` durante manutencao e validar somente leitura apos o deploy. Nenhuma dessas acoes foi executada nesta atualizacao.
+
+## Otimizacao do carrinho - 2026-08-06
+
+O commit `ad78643` reduz a latencia de inclusao sem alterar o contrato do carrinho ou o banco. O catalogo solicita o token CSRF em segundo plano apos a pagina ficar ociosa, evitando que o primeiro clique comum aguarde duas requisicoes sequenciais. As mutacoes de carrinho reutilizam a transacao ja aberta, a contagem usa `SUM(quantity)` e a inclusao deixa de bloquear a linha global do produto; os locks do carrinho e de itens existentes continuam protegendo alteracoes concorrentes do mesmo carrinho.
+
+No perfil de banco de teste, o primeiro `cart_add` caiu de 14 para 12 comandos SQL e a duracao interna registrada foi 6,7 ms. A resposta AJAX agora inclui `Server-Timing`, permitindo separar processamento do servidor e rede depois da promocao. O Preview validou 16 controles de adicao, o script atualizado e a rota segura de CSRF com `200` em 0,247 s. A suite completa passou com 94 testes em 61,921 s. O Preview compartilha o banco de producao, portanto nenhum produto foi adicionado durante essa validacao.
