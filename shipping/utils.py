@@ -12,6 +12,19 @@ logger = logging.getLogger('shipping')
 FRENET_URL = 'https://private-anon-65817d5e1c-frabornepr.apiary-proxy.com/shipping/quote'
 
 
+def _product_dimensions(product, quantity=1):
+    weight = product.weight if product.weight else Decimal('0.3')
+    height = product.height if product.height else Decimal('10')
+    width = product.width if product.width else Decimal('10')
+    length = product.length if product.length else Decimal('15')
+    return {
+        'weight': float(weight * quantity),
+        'height': float(height),
+        'width': float(width),
+        'length': float(min(length * quantity, Decimal('100'))),
+    }
+
+
 def _get_package_from_cart(cart):
     total_weight_kg = Decimal('0')
     max_height = Decimal('0')
@@ -64,7 +77,7 @@ def _call_frenet(cep_dest, package):
 
     try:
         resp = requests.post(
-            'https://private-anon-65817d5e1c-frabornepr.apiary-proxy.com/shipping/quote',
+            FRENET_URL,
             json=payload,
             headers={
                 'Content-Type': 'application/json',
@@ -85,13 +98,18 @@ def _call_frenet(cep_dest, package):
             if svc.get('Error'):
                 continue
             price = svc.get('ShippingPrice') or svc.get('OriginalShippingPrice')
-            if not price or float(price) <= 0:
+            try:
+                normalized_price = float(price)
+                normalized_days = int(svc.get('DeliveryTime', 0))
+            except (TypeError, ValueError):
+                continue
+            if normalized_price < 0:
                 continue
             options.append({
                 'service': svc.get('ServiceCode', ''),
                 'label': svc.get('ServiceDescription', svc.get('Carrier', 'Frete')),
-                'price': float(price),
-                'days': int(svc.get('DeliveryTime', 0)),
+                'price': normalized_price,
+                'days': normalized_days,
                 'carrier': svc.get('Carrier', ''),
             })
 
@@ -189,7 +207,7 @@ def validate_cep(cep):
     return False
 
 
-def calculate_shipping(cep_dest, cart=None):
+def calculate_shipping(cep_dest, cart=None, product=None):
     cep_clean = cep_dest.replace('-', '').replace('.', '').strip()
     if len(cep_clean) != 8 or not cep_clean.isdigit():
         return {'error': 'CEP inválido.'}
@@ -201,7 +219,11 @@ def calculate_shipping(cep_dest, cart=None):
     if cart:
         package = _get_package_from_cart(cart)
         options = _call_frenet(cep_clean, package)
+    elif product:
+        package = _product_dimensions(product)
+        options = _call_frenet(cep_clean, package)
 
+    used_fallback = not options
     if not options:
         options = _fallback_shipping(cep_clean)
 
@@ -209,4 +231,9 @@ def calculate_shipping(cep_dest, cart=None):
         'success': True,
         'cep': cep_clean,
         'options': options,
+        'note': (
+            'Valores estimados; a modalidade e o prazo serão confirmados no atendimento.'
+            if used_fallback else
+            'Cotação calculada conforme os dados atuais do produto.'
+        ),
     }

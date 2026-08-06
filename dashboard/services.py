@@ -55,7 +55,9 @@ def get_dashboard_summary(now):
     monthly_revenue = monthly_orders.aggregate(total=Sum('total'))['total'] or 0
     gross_profit = _gross_profit_for_orders(monthly_orders)
 
-    awaiting_payment = Order.objects.filter(status=Order.STATUS_AWAITING_PAYMENT).count()
+    awaiting_payment = Order.objects.filter(
+        status__in=[Order.STATUS_AWAITING_CONTACT, Order.STATUS_AWAITING_PAYMENT],
+    ).count()
     paid_orders = Order.objects.filter(
         status__in=[
             Order.STATUS_PAYMENT_CONFIRMED, Order.STATUS_SEPARATING,
@@ -150,7 +152,9 @@ def get_reports_data(now):
         )
     ).order_by('-margin')[:10]
 
-    pending_orders = Order.objects.filter(status=Order.STATUS_AWAITING_PAYMENT).count()
+    pending_orders = Order.objects.filter(
+        status__in=[Order.STATUS_AWAITING_CONTACT, Order.STATUS_AWAITING_PAYMENT],
+    ).count()
     open_pre_orders = PreOrderRequest.objects.exclude(
         status__in=['delivered', 'cancelled'],
     ).count()

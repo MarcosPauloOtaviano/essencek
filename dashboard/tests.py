@@ -59,3 +59,35 @@ class DashboardBrandActionTests(TestCase):
         self.assertFalse(Brand.objects.filter(pk=self.brand.pk).exists())
         self.assertIsNone(product.brand_fk)
         self.assertEqual(product.brand, 'Marca Teste')
+
+    def test_category_form_exposes_parent_category_field(self):
+        response = self.client.get(reverse('dashboard:category_add'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="parent"')
+
+    def test_category_list_shows_parent_and_annotated_product_counts(self):
+        parent = Category.objects.create(name='Perfumes', slug='perfumes')
+        child = Category.objects.create(name='Perfume Arabe', slug='perfume-arabe', parent=parent)
+        Product.objects.create(
+            name='Produto ativo',
+            category=child,
+            price='99.90',
+            stock=2,
+            status=Product.STATUS_AVAILABLE,
+            is_active=True,
+        )
+        Product.objects.create(
+            name='Produto inativo',
+            category=child,
+            price='99.90',
+            stock=0,
+            status=Product.STATUS_OUT_OF_STOCK,
+            is_active=False,
+        )
+
+        response = self.client.get(reverse('dashboard:categories'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Perfumes')
+        self.assertContains(response, '2 <small>(1 ativos)</small>', html=True)

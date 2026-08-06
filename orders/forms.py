@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from core.utils import sanitize_text
 from .models import Order
 from accounts.validators import only_digits, normalize_email, normalize_whatsapp, validate_whatsapp
@@ -29,6 +30,7 @@ SHIPPING_METHOD_CHOICES = [
 
 
 class CheckoutForm(forms.Form):
+    checkout_token = forms.CharField(widget=forms.HiddenInput, max_length=64)
     customer_name = forms.CharField(label='Nome completo', max_length=200)
     customer_email = forms.EmailField(label='E-mail')
     customer_whatsapp = forms.CharField(label='Telefone', max_length=20)
@@ -52,14 +54,22 @@ class CheckoutForm(forms.Form):
 
     payment_method = forms.ChoiceField(
         label='Forma de pagamento',
-        choices=Order.PAYMENT_CHOICES,
-        widget=forms.RadioSelect
+        choices=[
+            (Order.PAYMENT_PIX, 'Pix'),
+            (Order.PAYMENT_CREDIT_CARD, 'Cartão de crédito'),
+        ],
+        widget=forms.RadioSelect,
     )
 
     customer_notes = forms.CharField(
         label='Observações (opcional)', required=False,
         widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Informações adicionais...'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if getattr(settings, 'WHATSAPP_CHECKOUT_ONLY', True):
+            self.fields.pop('payment_method')
 
     def clean_customer_name(self):
         name = sanitize_text(self.cleaned_data.get('customer_name') or '')
@@ -83,12 +93,17 @@ class CheckoutForm(forms.Form):
 
     def clean_cep(self):
         cep = only_digits(self.cleaned_data.get('cep'))
+        if not cep:
+            return ''
         if len(cep) != 8:
             raise forms.ValidationError('Informe um CEP válido com 8 dígitos.')
         return f'{cep[:5]}-{cep[5:]}'
 
     def clean_address(self):
         return sanitize_text(self.cleaned_data.get('address') or '')
+
+    def clean_address_number(self):
+        return sanitize_text(self.cleaned_data.get('address_number') or '')
 
     def clean_address_complement(self):
         return sanitize_text(self.cleaned_data.get('address_complement') or '')

@@ -17,28 +17,48 @@ class Cart(models.Model):
     def __str__(self):
         return f'Carrinho de {self.user or self.session_key}'
 
+    def _loaded_items(self):
+        return getattr(self, '_prefetched_objects_cache', {}).get('items')
+
     @property
     def total_items(self):
-        return sum(item.quantity for item in self.items.all())
+        items = self._loaded_items()
+        return sum(item.quantity for item in (items if items is not None else self.items.all()))
 
     @property
     def subtotal(self):
-        return sum(item.subtotal for item in self.items.all())
+        items = self._loaded_items()
+        return sum(item.subtotal for item in (items if items is not None else self.items.all()))
 
     @property
     def subtotal_usd(self):
-        values = [item.subtotal_usd for item in self.items.all()]
+        items = self._loaded_items()
+        values = [item.subtotal_usd for item in (items if items is not None else self.items.all())]
         if any(value is None for value in values):
             return None
         return sum(values)
 
     @property
     def has_pre_order(self):
+        items = self._loaded_items()
+        if items is not None:
+            return any(item.product.is_pre_order for item in items)
         return self.items.filter(product__is_pre_order=True).exists()
 
     @property
     def has_in_stock(self):
+        items = self._loaded_items()
+        if items is not None:
+            return any(not item.product.is_pre_order for item in items)
         return self.items.filter(product__is_pre_order=False).exists()
+
+    @property
+    def has_unavailable_items(self):
+        items = self._loaded_items()
+        return any(
+            not item.is_available
+            for item in (items if items is not None else self.items.select_related('product', 'variant'))
+        )
 
 
 class CartItem(models.Model):
@@ -75,3 +95,13 @@ class CartItem(models.Model):
         if not self.unit_price_usd:
             return None
         return self.unit_price_usd * self.quantity
+
+    @property
+    def is_available(self):
+        if not self.product.can_add_to_cart():
+            return False
+        if self.product.is_fractioned and self.product.has_variants:
+            if not self.variant or not self.variant.is_active:
+                return False
+            return self.product.is_pre_order or self.quantity <= self.variant.stock
+        return self.product.is_pre_order or self.quantity <= self.product.stock

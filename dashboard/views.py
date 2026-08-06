@@ -6,7 +6,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db import DatabaseError, transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
@@ -16,7 +16,7 @@ from accounts.models import User
 from core.forms import NextTripForm, ShowcaseTextSlideForm, StoreSettingsForm
 from core.models import ShowcaseSlide, StoreSettings, NextTrip
 from orders.models import Order, PreOrderRequest
-from orders.services import confirm_order_payment
+from orders.services import InsufficientStockError, confirm_order_payment
 from products.forms import ProductForm, CategoryForm, BrandForm, ProductVariantFormSet
 from products.gtin_service import lookup_product_identifier, normalize_gtin
 from products.image_downloader import download_and_process_image
@@ -278,11 +278,15 @@ def order_detail(request, pk):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'confirm_payment':
-            confirmed = confirm_order_payment(order)
-            if confirmed:
-                messages.success(request, 'Pagamento confirmado!')
+            try:
+                confirmed = confirm_order_payment(order)
+            except InsufficientStockError as exc:
+                messages.error(request, str(exc))
             else:
-                messages.info(request, 'Este pagamento já estava confirmado.')
+                if confirmed:
+                    messages.success(request, 'Pagamento confirmado!')
+                else:
+                    messages.info(request, 'Este pagamento já estava confirmado.')
         elif action == 'update_tracking':
             tracking_url = request.POST.get('tracking_url', '').strip()
             if tracking_url:
@@ -373,7 +377,14 @@ def reports_view(request):
 
 @staff_member_required(login_url='/conta/entrar/')
 def category_list(request):
-    categories = Category.objects.all().order_by('order', 'name')
+    categories = (
+        Category.objects.select_related('parent')
+        .annotate(
+            product_count=Count('products', distinct=True),
+            active_product_count=Count('products', filter=Q(products__is_active=True), distinct=True),
+        )
+        .order_by('order', 'name')
+    )
     return render(request, 'dashboard/categories.html', {'categories': categories})
 
 
@@ -699,7 +710,8 @@ def _search_open_facts_images(code, http_requests):
                 url = product.get(key, '')
                 if url:
                     results.append({'url': url, 'source': source, 'label': product.get('product_name', code)})
-        except Exception:
+        except Exception as exc:
+            logger.info('Open Facts image lookup failed for %s: %s', base_url, exc)
             continue
     return results
 
@@ -720,8 +732,8 @@ def _search_cosmos_images(code, http_requests):
         thumb = data.get('thumbnail', '')
         if thumb:
             return [{'url': thumb, 'source': 'Cosmos', 'label': data.get('description', code)}]
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.info('Cosmos image lookup failed: %s', exc)
     return []
 
 
@@ -744,8 +756,8 @@ def _search_open_facts_by_name(query, http_requests):
                         'source': 'Open Food Facts',
                         'label': p.get('product_name', ''),
                     })
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.info('Open Food Facts name lookup failed: %s', exc)
     try:
         resp = http_requests.get(
             'https://world.openbeautyfacts.org/cgi/search.pl',
@@ -763,8 +775,8 @@ def _search_open_facts_by_name(query, http_requests):
                         'source': 'Open Beauty Facts',
                         'label': p.get('product_name', ''),
                     })
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.info('Open Beauty Facts name lookup failed: %s', exc)
     return results
 
 

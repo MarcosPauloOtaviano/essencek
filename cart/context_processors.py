@@ -1,4 +1,5 @@
 from .models import Cart
+from .utils import get_cart_token
 
 
 def cart_count(request):
@@ -7,10 +8,10 @@ def cart_count(request):
         if hasattr(request, 'user') and request.user.is_authenticated:
             cart = Cart.objects.filter(user=request.user).first()
         else:
-            session_key = request.session.session_key if hasattr(request, 'session') else None
-            if not session_key:
+            cart_token = get_cart_token(request) if hasattr(request, 'session') else ''
+            if not cart_token:
                 return {'cart_count': 0}
-            cart = Cart.objects.filter(session_key=session_key, user=None).first()
+            cart = Cart.objects.filter(session_key=cart_token, user=None).first()
         count = cart.total_items if cart else 0
     except Exception:
         count = 0

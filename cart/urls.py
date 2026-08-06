@@ -5,6 +5,7 @@ app_name = 'cart'
 
 urlpatterns = [
     path('', views.cart_detail, name='detail'),
+    path('csrf/', views.csrf_token_view, name='csrf'),
     path('adicionar/<int:product_id>/', views.cart_add, name='add'),
     path('atualizar/<int:item_id>/', views.cart_update, name='update'),
     path('remover/<int:item_id>/', views.cart_remove, name='remove'),

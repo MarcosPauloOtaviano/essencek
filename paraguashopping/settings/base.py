@@ -5,6 +5,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-production')
 SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
+STORE_WHATSAPP = config(
+    'STORE_WHATSAPP',
+    default=config('STORE_PHONE', default='5535999073391'),
+)
+WHATSAPP_CHECKOUT_ONLY = config('WHATSAPP_CHECKOUT_ONLY', default=True, cast=bool)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -67,6 +72,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.store_settings',
                 'core.context_processors.exchange_rate',
+                'core.context_processors.site_navigation',
                 'cart.context_processors.cart_count',
             ],
         },

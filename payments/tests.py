@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from accounts.models import User
 from orders.models import Order
@@ -51,3 +52,23 @@ class PaymentServiceTests(TestCase):
         self.assertIn('PIX-SIMULADO', payment.pix_code)
         self.assertFalse(payment.payment_link)
         self.assertEqual(Payment.objects.count(), 1)
+
+    @override_settings(WHATSAPP_CHECKOUT_ONLY=True)
+    def test_payment_pages_do_not_create_simulated_payment_in_whatsapp_mode(self):
+        order = self.create_order()
+        self.client.login(username='cliente@example.com', password='SenhaForte123!')
+
+        response = self.client.get(reverse('payment_pix', args=[order.order_number]))
+
+        self.assertRedirects(
+            response,
+            reverse('orders:whatsapp', args=[order.order_number]),
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Payment.objects.exists())
+
+    @override_settings(WHATSAPP_CHECKOUT_ONLY=True)
+    def test_mercadopago_webhook_is_closed_in_whatsapp_mode(self):
+        response = self.client.post(reverse('webhook_mp'), data=b'{}', content_type='application/json')
+
+        self.assertEqual(response.status_code, 404)

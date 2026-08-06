@@ -26,7 +26,7 @@ class MercadoPagoGateway(BasePaymentGateway):
         self.public_key = getattr(settings, 'MP_PUBLIC_KEY', '')
         self.webhook_secret = getattr(settings, 'MP_WEBHOOK_SECRET', '')
         raw_url = getattr(settings, 'SITE_URL', '').rstrip('/')
-        is_local = any(h in raw_url for h in ('localhost', '127.0.0.1', '0.0.0.0'))
+        is_local = any(h in raw_url for h in ('localhost', '127.0.0.1', '0.0.0.0'))  # nosec B104
         self.site_url = '' if is_local else raw_url
         self.use_sandbox_link = getattr(settings, 'MP_USE_SANDBOX_LINK', True)
         self.max_installments = getattr(settings, 'MP_MAX_INSTALLMENTS', 12)
@@ -247,7 +247,8 @@ class MercadoPagoGateway(BasePaymentGateway):
 
     def _valid_signature(self, request, payload):
         if not self.webhook_secret:
-            return bool(getattr(settings, 'PAYMENT_SANDBOX', True))
+            logger.error('Mercado Pago webhook rejected: MP_WEBHOOK_SECRET is not configured')
+            return False
 
         signature = request.headers.get('X-Signature', '')
         request_id = request.headers.get('X-Request-Id', '')

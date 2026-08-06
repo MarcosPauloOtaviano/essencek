@@ -1,8 +1,10 @@
 import uuid
+from decimal import Decimal
 
 from django.db import models
 from django.conf import settings
 from django.templatetags.static import static
+from django.utils import timezone
 
 from core.utils import money
 from products.models import Product
@@ -12,9 +14,15 @@ def generate_order_number():
     return 'ESK' + uuid.uuid4().hex[:8].upper()
 
 
+def format_brl(value):
+    value = money(Decimal(value or 0))
+    return f'{value:,.2f}'.replace(',', '#').replace('.', ',').replace('#', '.')
+
+
 class Order(models.Model):
     # General statuses
     STATUS_CREATED = 'created'
+    STATUS_AWAITING_CONTACT = 'awaiting_contact'
     STATUS_AWAITING_PAYMENT = 'awaiting_payment'
     STATUS_PAYMENT_CONFIRMED = 'payment_confirmed'
     STATUS_PARTIAL_CONFIRMED = 'partial_confirmed'
@@ -25,6 +33,7 @@ class Order(models.Model):
     STATUS_CANCELLED = 'cancelled'
     STATUS_CHOICES = [
         (STATUS_CREATED, 'Pedido criado'),
+        (STATUS_AWAITING_CONTACT, 'Aguardando confirmação no WhatsApp'),
         (STATUS_AWAITING_PAYMENT, 'Aguardando pagamento'),
         (STATUS_PAYMENT_CONFIRMED, 'Pagamento confirmado'),
         (STATUS_PARTIAL_CONFIRMED, 'Parcialmente confirmado'),
@@ -37,7 +46,9 @@ class Order(models.Model):
 
     PAYMENT_PIX = 'pix'
     PAYMENT_CREDIT_CARD = 'credit_card'
+    PAYMENT_WHATSAPP = 'whatsapp'
     PAYMENT_CHOICES = [
+        (PAYMENT_WHATSAPP, 'A combinar pelo WhatsApp'),
         (PAYMENT_PIX, 'Pix'),
         (PAYMENT_CREDIT_CARD, 'Cartão de crédito'),
     ]
@@ -71,7 +82,7 @@ class Order(models.Model):
 
     # Payment
     payment_method = models.CharField('Forma de pagamento', max_length=20,
-                                       choices=PAYMENT_CHOICES, default=PAYMENT_PIX)
+                                       choices=PAYMENT_CHOICES, default=PAYMENT_WHATSAPP)
     payment_status = models.CharField('Status do pagamento', max_length=50,
                                        default='pending')
     payment_link = models.URLField('Link de pagamento', blank=True)
@@ -79,7 +90,7 @@ class Order(models.Model):
 
     # Status and tracking
     status = models.CharField('Status', max_length=30, choices=STATUS_CHOICES,
-                               default=STATUS_AWAITING_PAYMENT)
+                               default=STATUS_AWAITING_CONTACT)
     tracking_code = models.CharField('Código de rastreio', max_length=100, blank=True)
     carrier = models.CharField('Transportadora', max_length=100, blank=True)
     tracking_url = models.URLField('Link de rastreio', blank=True)
@@ -106,31 +117,65 @@ class Order(models.Model):
 
     @property
     def whatsapp_message(self):
-        items_text = '\n'.join(
-            f'• {item.product_name} x{item.quantity} — R$ {item.subtotal:.2f}'
-            + (f' (ref. US$ {item.display_subtotal_usd:.2f})' if item.display_subtotal_usd else '')
-            for item in self.items.all()
+        items = list(self.items.all())
+        item_lines = []
+        for index, item in enumerate(items, start=1):
+            variant = f' - {item.display_variant_label}' if item.display_variant_label else ''
+            item_lines.append(
+                f'{index}. {item.quantity}x {item.product_name}{variant}\n'
+                f'   R$ {format_brl(item.unit_price)} cada | Subtotal R$ {format_brl(item.subtotal)}'
+            )
+
+        delivery = self.shipping_service or 'Entrega a confirmar'
+        address = ''
+        if self.shipping_service != 'Retirada na loja' and self.address:
+            address = (
+                f'\n*Endereço:* {self.address}, {self.address_number}'
+                f'{f" - {self.address_complement}" if self.address_complement else ""}'
+                f'\n{self.neighborhood + " - " if self.neighborhood else ""}'
+                f'{self.city}/{self.state} - CEP {self.cep}'
+            )
+        notes = f'\n*Observações:* {self.customer_notes[:300]}' if self.customer_notes else ''
+        created_at = timezone.localtime(self.created_at).strftime('%d/%m/%Y às %H:%M')
+        message = (
+            'Olá! Quero finalizar este pedido da EssenceK:\n\n'
+            f'*Pedido:* #{self.order_number}\n'
+            f'*Data:* {created_at}\n\n'
+            f'*Produtos:*\n' + '\n'.join(item_lines) + '\n\n'
+            f'*Subtotal:* R$ {format_brl(self.subtotal)}\n'
+            f'*Frete:* R$ {format_brl(self.shipping_cost)}\n'
+            f'*Total:* R$ {format_brl(self.total)}\n\n'
+            f'*Nome:* {self.customer_name}\n'
+            f'*Forma de entrega:* {delivery}'
+            f'{address}{notes}\n\n'
+            'Este pedido aguarda confirmação de disponibilidade, entrega e pagamento.'
         )
-        msg = (
-            f'Olá! Aqui estão os detalhes do seu pedido:\n\n'
-            f'*Pedido:* {self.order_number}\n'
-            f'*Cliente:* {self.customer_name}\n\n'
-            f'*Produtos:*\n{items_text}\n\n'
-            f'*Frete:* R$ {self.shipping_cost:.2f}\n'
-            f'*Total a pagar:* R$ {self.total:.2f}\n'
+
+        if len(message) <= 3500:
+            return message
+
+        compact_items = item_lines[:12]
+        remaining = len(item_lines) - len(compact_items)
+        if remaining > 0:
+            compact_items.append(f'... e mais {remaining} item(ns) no pedido.')
+        order_url = f'{settings.SITE_URL.rstrip("/")}/conta/meus-pedidos/{self.order_number}/'
+        return (
+            'Olá! Quero finalizar este pedido da EssenceK:\n\n'
+            f'*Pedido:* #{self.order_number}\n'
+            f'*Produtos:*\n' + '\n'.join(compact_items) + '\n\n'
+            f'*Total:* R$ {format_brl(self.total)}\n'
+            f'*Forma de entrega:* {delivery}\n'
+            f'*Detalhes do pedido:* {order_url}\n\n'
+            'Este pedido aguarda confirmação de disponibilidade, entrega e pagamento.'
         )
-        if self.display_total_usd:
-            msg += f'*Referência no câmbio:* US$ {self.display_total_usd:.2f}\n'
-        msg += f'\n*Forma de pagamento:* {self.get_payment_method_display()}'
-        if self.payment_link:
-            msg += f'\n\n*Link de pagamento:* {self.payment_link}'
-        return msg
 
     RETRYABLE_STATUSES = {STATUS_CREATED, STATUS_AWAITING_PAYMENT}
 
     @property
     def can_retry_payment(self):
         return (
+            self.payment_method != self.PAYMENT_WHATSAPP
+            and
             self.status in self.RETRYABLE_STATUSES
             and self.payment_status in ('pending', '')
         )

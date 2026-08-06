@@ -11,6 +11,29 @@ from .models import ExchangeRate
 DEFAULT_EXCHANGE_PAIR = 'USD-BRL'
 
 
+def normalize_store_whatsapp(value):
+    digits = ''.join(char for char in str(value or '') if char.isdigit())
+    if len(digits) in (10, 11):
+        digits = f'55{digits}'
+    if not digits.startswith('55') or len(digits) not in (12, 13):
+        return ''
+    return digits
+
+
+def get_store_whatsapp_number(store=None):
+    if store is None:
+        from .models import StoreSettings
+
+        store = StoreSettings.objects.filter(pk=1).only('whatsapp').first()
+    configured = getattr(store, 'whatsapp', '') if store else ''
+    return normalize_store_whatsapp(configured) or normalize_store_whatsapp(settings.STORE_WHATSAPP)
+
+
+def get_store_whatsapp_url(store=None):
+    number = get_store_whatsapp_number(store)
+    return f'https://wa.me/{number}' if number else ''
+
+
 def _decimal_rate(value):
     try:
         return Decimal(str(value)).quantize(Decimal('0.0001'))
