@@ -189,4 +189,29 @@ Rollback de codigo: reimplantar o commit de referencia `ef06608e6db3f3ae4b0802b0
 
 ## Preview
 
-URL, commit e medicoes finais serao acrescentados depois que a branch for enviada. Producao permanece no commit de referencia ate autorizacao explicita.
+O artefato de codigo do commit `bfeb527` foi publicado somente como Preview e validado em leitura:
+
+| Item | Valor |
+| --- | --- |
+| Pull Request | `https://github.com/MarcosPauloOtaviano/essencek/pull/11` |
+| Alias estavel da branch | `https://essencek-git-feat-sincro-24b5f4-marcos-paulos-projects-7e938b4a.vercel.app` |
+| Deployment validado | `https://essencek-lh54k6ij9-marcos-paulos-projects-7e938b4a.vercel.app` |
+| Deployment ID | `dpl_DspdVPgFczPcMtqTd1fS5moq3VMm` |
+| Estado | `Ready`, target `Preview` |
+| Function | 44,06 MB em `gru1` |
+
+Medicoes HTTP do Preview final, com query unica para separar MISS e HIT:
+
+| Rota | MISS | HIT | HTML |
+| --- | ---: | ---: | ---: |
+| Home | 0,509 s | 0,216 s | 61.306 bytes |
+| Catalogo | 0,304 s | 0,190 s | 63.042 bytes |
+| Categoria Perfumes | 0,317 s | 0,202 s | 62.861 bytes |
+
+As respostas foram `200`, passaram de `X-Vercel-Cache: MISS` para `HIT`, vieram de `gru1`, nao emitiram `Set-Cookie` e preservaram a separacao entre paginas publicas e estado de sessao. A primeira invocacao observada logo apos um deployment anterior levou 1,804 s, contra 35,59 s da Home de producao antes das correcoes.
+
+Tres arquivos de midia persistida responderam `200` entre 0,197 s e 0,309 s. No navegador, 47 de 47 imagens da Home terminaram carregadas. Foram revistos Home, catalogo, categoria, produto, busca positiva, busca sem resultado, filtros, paginas institucionais e 404 customizada em desktop e celular. Nao houve erro no console, overflow horizontal ou imagem quebrada nas telas finais; catalogo e produto terminaram com zero violacoes e zero resultados inconclusivos no axe. As bolinhas dinamicas da Home permaneceram rolaveis e livres dos atalhos flutuantes no celular.
+
+A busca negativa final respondeu `200`, mostrou zero cards e o estado vazio correto, sem criar cookie. O calculo de frete na pagina de produto retornou opcoes sem criar carrinho. Logs de erro do deployment nos 30 minutos finais: nenhum registro.
+
+Login, carrinho, checkout, pedidos e painel nao foram alterados no Preview porque ele compartilha o banco de producao. Esses fluxos foram exercitados no ambiente local isolado descrito acima. O PR permanece em rascunho e a producao permanece no commit `ef06608e6db3f3ae4b0802b01c245d5c7829054a`, sem migration ou promocao, ate autorizacao explicita.
