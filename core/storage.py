@@ -19,10 +19,13 @@ class PersistentMediaStorage(Storage):
         self.filesystem = FileSystemStorage(location=self.location, base_url=self.base_url)
 
     def _clean_name(self, name):
-        normalized = PurePosixPath(str(name).replace('\\', '/')).as_posix().lstrip('/')
-        if normalized.startswith('../') or '/..' in normalized:
+        raw_name = str(name).replace('\\', '/')
+        if raw_name.startswith('/'):
             raise ValueError('Caminho de arquivo inválido.')
-        return normalized
+        path = PurePosixPath(raw_name)
+        if any(part in ('', '.', '..') for part in path.parts):
+            raise ValueError('Caminho de arquivo inválido.')
+        return path.as_posix()
 
     def _model(self):
         from core.models import StoredMediaFile

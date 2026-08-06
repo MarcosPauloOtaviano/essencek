@@ -1,8 +1,13 @@
 from django.urls import path
 from . import views
+from products.views import product_list
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('ofertas/', product_list, {'quick_filter': 'ofertas'}, name='offers'),
+    path('destaques/', product_list, {'quick_filter': 'destaques'}, name='featured_products'),
+    path('pronta-entrega/', product_list, {'quick_filter': 'pronta-entrega'}, name='available_products'),
+    path('categoria/<slug:category_key>/', product_list, name='category_landing'),
     path('sobre/', views.about, name='about'),
     path('contato/', views.contact, name='contact'),
     path('proxima-viagem/', views.next_trip_page, name='next_trip'),

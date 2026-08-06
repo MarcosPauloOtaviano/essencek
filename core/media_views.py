@@ -1,10 +1,20 @@
 import mimetypes
 import shutil
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
+
+
+def _clean_media_path(path):
+    raw_path = str(path or '').replace('\\', '/')
+    if not raw_path or raw_path.startswith('/'):
+        raise Http404('Arquivo nao encontrado.')
+    normalized = PurePosixPath(raw_path)
+    if any(part in ('', '.', '..') for part in normalized.parts):
+        raise Http404('Arquivo nao encontrado.')
+    return normalized.as_posix()
 
 
 def _try_lazy_copy(path):
@@ -27,15 +37,14 @@ def _try_lazy_copy(path):
 
 
 def serve_media_file(request, path):
+    path = _clean_media_path(path)
     _try_lazy_copy(path)
 
     try:
-        exists = path and default_storage.exists(path)
+        media_file = default_storage.open(path, 'rb')
     except (OSError, ValueError):
-        exists = False
-    if not exists:
         raise Http404('Arquivo nao encontrado.')
     content_type = mimetypes.guess_type(path)[0] or 'application/octet-stream'
-    response = FileResponse(default_storage.open(path, 'rb'), content_type=content_type)
+    response = FileResponse(media_file, content_type=content_type)
     response['Cache-Control'] = 'public, s-maxage=31536000, max-age=31536000, immutable'
     return response

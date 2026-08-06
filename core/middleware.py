@@ -4,6 +4,7 @@ import time
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponsePermanentRedirect, JsonResponse
+from django.utils.cache import patch_vary_headers
 
 logger = logging.getLogger('django.security')
 
@@ -77,9 +78,9 @@ class LoginRateLimitMiddleware:
 
             response = self.get_response(request)
 
-            if response.status_code == 200 and not getattr(request, 'user', None) or (
-                hasattr(request, 'user') and not request.user.is_authenticated
-            ):
+            if hasattr(request, 'user') and request.user.is_authenticated:
+                cache.delete(cache_key)
+            elif response.status_code == 200:
                 attempts.append(now)
                 cache.set(cache_key, attempts, self.window)
 
@@ -142,11 +143,13 @@ class VercelCDNCacheMiddleware:
             return response
         if response.get('Content-Type', '').startswith('application/json'):
             return response
+        if response.cookies or response.has_header('Set-Cookie'):
+            return response
+        if getattr(response, 'streaming', False):
+            return response
+        if b'csrfmiddlewaretoken' in response.content:
+            return response
 
+        patch_vary_headers(response, ('Cookie',))
         response['Cache-Control'] = 'public, s-maxage=60, stale-while-revalidate=300'
-        if response.has_header('Vary'):
-            del response['Vary']
-        response.cookies.clear()
-        if response.has_header('Set-Cookie'):
-            del response['Set-Cookie']
         return response

@@ -5,7 +5,8 @@
   },
   "functions": {
     "paraguashopping/wsgi.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "regions": ["gru1"]
     }
   },
   "headers": [

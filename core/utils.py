@@ -23,7 +23,11 @@ def money(value):
 def image_url_if_exists(image_field):
     """Return the URL of an ImageField if the file exists on storage, else ''."""
     try:
-        if image_field and image_field.name and image_field.storage.exists(image_field.name):
+        if not image_field or not image_field.name:
+            return ''
+        if image_field.storage.__class__.__name__ == 'PersistentMediaStorage':
+            return image_field.url
+        if image_field.storage.exists(image_field.name):
             return image_field.url
     except (OSError, ValueError):
         return ''

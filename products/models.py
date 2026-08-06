@@ -116,7 +116,7 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse('products:list') + f'?category={self.slug}'
+        return reverse('category_landing', kwargs={'category_key': self.slug})
 
     @property
     def is_subcategory(self):
@@ -298,10 +298,11 @@ class Product(models.Model):
 
     @property
     def main_image(self):
-        img = self.images.filter(is_main=True).first()
-        if not img:
-            img = self.images.first()
-        return img
+        prefetched = getattr(self, '_prefetched_objects_cache', {}).get('images')
+        if prefetched is not None:
+            images = list(prefetched)
+            return next((img for img in images if img.is_main), images[0] if images else None)
+        return self.images.filter(is_main=True).first() or self.images.first()
 
     @property
     def default_image_url(self):
@@ -315,7 +316,20 @@ class Product(models.Model):
         return self.default_image_url
 
     def can_add_to_cart(self):
-        return self.status != self.STATUS_OUT_OF_STOCK and self.is_active
+        if not self.is_active or self.status == self.STATUS_OUT_OF_STOCK:
+            return False
+        if self.is_fractioned and self.has_variants:
+            prefetched = getattr(self, '_prefetched_objects_cache', {}).get('variants')
+            if prefetched is not None:
+                return any(
+                    variant.is_active and (self.is_pre_order or variant.stock > 0)
+                    for variant in prefetched
+                )
+            variants = self.variants.filter(is_active=True)
+            return variants.exists() if self.is_pre_order else variants.filter(stock__gt=0).exists()
+        if self.is_pre_order:
+            return True
+        return self.stock > 0
 
     def get_status_display_class(self):
         return {

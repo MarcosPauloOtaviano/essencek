@@ -1,5 +1,5 @@
-Django==4.2.16
-Pillow==10.4.0
+Django==4.2.30
+Pillow==12.3.0
 python-decouple==3.8
 dj-database-url==2.2.0
 psycopg2-binary==2.9.9
@@ -8,9 +8,9 @@ PyMySQL==1.1.1
 django-crispy-forms==2.3
 crispy-bootstrap5==2024.2
 django-widget-tweaks==1.5.0
-requests==2.32.4
+requests==2.34.2
 qrcode==7.4.2
 django-otp==1.7.0
 django-two-factor-auth[phonenumbers]==1.18.1
-cryptography>=43.0
+cryptography==50.0.0
 mercadopago==3.1.1

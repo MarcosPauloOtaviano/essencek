@@ -5,7 +5,14 @@ from django.shortcuts import render
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView
-from products.models import Product, Category
+from products.models import Product
+from products.services import (
+    build_quick_nav,
+    catalog_visibility,
+    category_ids_for_group,
+    public_categories_with_products,
+    valid_sale_q,
+)
 from .services import update_all_exchange_rates_from_api
 from .models import ExchangeRate, NextTrip, ShowcaseSlide, StoreSettings
 
@@ -13,14 +20,18 @@ from .models import ExchangeRate, NextTrip, ShowcaseSlide, StoreSettings
 def home(request):
     _base_qs = Product.objects.filter(is_active=True).select_related('category', 'brand_fk').prefetch_related('images')
     featured = _base_qs.filter(is_featured=True).order_by('-created_at')[:8]
-    on_sale = _base_qs.filter(is_on_sale=True).order_by('-created_at')[:8]
+    on_sale = _base_qs.filter(valid_sale_q()).order_by('-created_at')[:8]
     in_stock = _base_qs.filter(status='available').order_by('-created_at')[:8]
     pre_order = _base_qs.filter(is_pre_order=True).order_by('-created_at')[:8]
     hero_products = _base_qs.order_by('-is_featured', '-created_at')[:3]
-    hero_perfumes = _base_qs.filter(category__slug__in=['perfumes', 'decanter']).order_by('-is_featured', '-created_at')[:3]
-    hero_kbeauty = _base_qs.filter(category__slug='beleza-coreana').order_by('-is_featured', '-created_at')[:3]
+    categories = public_categories_with_products()
+    perfume_category_ids = category_ids_for_group(categories, 'perfumes')
+    kbeauty_category_ids = category_ids_for_group(categories, 'k-beauty')
+    hero_perfumes = _base_qs.filter(category_id__in=perfume_category_ids).order_by('-is_featured', '-created_at')[:3]
+    hero_kbeauty = _base_qs.filter(category_id__in=kbeauty_category_ids).order_by('-is_featured', '-created_at')[:3]
     new_arrivals = _base_qs.order_by('-created_at')[:6]
-    categories = Category.objects.filter(is_active=True)
+    visibility = catalog_visibility()
+    quick_nav = build_quick_nav(categories, visibility=visibility)
     next_trip = NextTrip.objects.filter(is_active=True).first()
     current_exchange_rate = ExchangeRate.objects.filter(is_active=True).order_by('-updated_at').first()
     try:
@@ -40,6 +51,7 @@ def home(request):
         'hero_kbeauty': hero_kbeauty,
         'new_arrivals': new_arrivals,
         'categories': categories,
+        'quick_nav': quick_nav,
         'next_trip': next_trip,
         'current_exchange_rate': current_exchange_rate,
         'showcase_slides': showcase_slides,

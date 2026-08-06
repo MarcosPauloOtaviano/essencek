@@ -2,8 +2,10 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from django.conf import settings
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.datastructures import MultiValueDict
@@ -13,7 +15,9 @@ from PIL import Image
 from accounts.models import User
 from .forms import BrandForm, ProductForm
 from .gtin_service import lookup_gtin, lookup_product_identifier, normalize_gtin
-from .models import Brand, Category, Product, ProductImage
+from .image_downloader import download_and_process_image
+from .models import Brand, Category, Product, ProductImage, ProductVariant
+from .services import active_category_queryset, build_filter_tree
 
 
 def make_image_upload(name='foto.jpg', size=(900, 700), color=(160, 90, 60)):
@@ -203,6 +207,172 @@ class ProductLocalImageUploadTests(TestCase):
         self.assertIn('/static/img/defaults/default-perfumes.jpg', product.display_image_url)
         self.assertIn('/static/img/defaults/default-perfumes.jpg', product.main_image.display_url)
 
+    def test_product_main_image_uses_prefetched_images_without_extra_queries(self):
+        product = Product.objects.create(
+            name='Produto com fotos prefetch',
+            category=self.category,
+            price='99.90',
+            stock=3,
+            status=Product.STATUS_AVAILABLE,
+        )
+        secondary = ProductImage.objects.create(
+            product=product,
+            image=make_image_upload('secundaria.jpg'),
+            is_main=False,
+            order=2,
+        )
+        main = ProductImage.objects.create(
+            product=product,
+            image=make_image_upload('principal.jpg'),
+            is_main=True,
+            order=1,
+        )
+
+        product = Product.objects.prefetch_related('images').get(pk=product.pk)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(product.main_image.pk, main.pk)
+            self.assertNotEqual(product.main_image.pk, secondary.pk)
+
+
+@override_settings(
+    ALLOWED_HOSTS=['testserver'],
+    STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage',
+)
+class CatalogNavigationTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.perfume_category = Category.objects.create(
+            name='Perfume Arabe Feminino',
+            slug='perfume-arabe-feminino',
+        )
+        self.kbeauty_category = Category.objects.create(
+            name='Skincare Coreano',
+            slug='Skincare-coreano',
+        )
+        self.empty_legacy_category = Category.objects.create(
+            name='Perfumes legado vazio',
+            slug='perfumes',
+        )
+        self.empty_decanter_category = Category.objects.create(
+            name='Decanter vazio',
+            slug='Perfume-fracionado-decanter5ml',
+        )
+        self.empty_electronics_category = Category.objects.create(
+            name='Eletronicos vazio',
+            slug='eletronicos-tecnologia',
+        )
+
+        self.perfume = Product.objects.create(
+            name='Perfume Real',
+            category=self.perfume_category,
+            price='200.00',
+            sale_price='150.00',
+            stock=3,
+            status=Product.STATUS_AVAILABLE,
+            is_on_sale=True,
+            is_featured=True,
+        )
+        self.kbeauty = Product.objects.create(
+            name='K Beauty Real',
+            category=self.kbeauty_category,
+            price='90.00',
+            stock=2,
+            status=Product.STATUS_AVAILABLE,
+        )
+        self.invalid_sale = Product.objects.create(
+            name='Promocao invalida',
+            category=self.perfume_category,
+            price='100.00',
+            sale_price='130.00',
+            stock=2,
+            status=Product.STATUS_AVAILABLE,
+            is_on_sale=True,
+        )
+
+    def test_home_quick_nav_uses_real_product_groups_and_hides_empty_categories(self):
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '/categoria/perfumes/')
+        self.assertContains(response, 'PERFUMES')
+        self.assertContains(response, '/categoria/k-beauty/')
+        self.assertContains(response, 'K-BEAUTY')
+        self.assertContains(response, 'OFERTAS')
+        self.assertContains(response, 'DESTAQUES')
+        self.assertContains(response, 'PRONTA ENTREGA')
+        self.assertNotContains(response, 'DECANTER')
+        self.assertNotContains(response, 'ELETRO')
+        self.assertNotContains(response, 'Perfumes legado vazio')
+        self.assertNotContains(response, 'Decanter vazio')
+        self.assertNotContains(response, 'Eletronicos vazio')
+        self.assertNotContains(response, '?category=perfumes')
+        self.assertNotContains(response, '?category=beleza-coreana')
+
+    def test_category_group_routes_return_expected_products(self):
+        perfume_response = self.client.get(reverse('category_landing', args=['perfumes']))
+        kbeauty_response = self.client.get(reverse('category_landing', args=['k-beauty']))
+
+        self.assertEqual(perfume_response.status_code, 200)
+        self.assertContains(perfume_response, 'Perfume Real')
+        self.assertNotContains(perfume_response, 'K Beauty Real')
+        self.assertContains(perfume_response, 'Perfumes')
+
+        self.assertEqual(kbeauty_response.status_code, 200)
+        self.assertContains(kbeauty_response, 'K Beauty Real')
+        self.assertNotContains(kbeauty_response, 'Perfume Real')
+        self.assertContains(kbeauty_response, 'K-Beauty')
+
+    def test_legacy_query_filter_and_exact_category_route_still_work(self):
+        legacy_query_response = self.client.get(
+            reverse('products:list'),
+            {'category': 'perfume-arabe-feminino'},
+        )
+        category_route_response = self.client.get(
+            reverse('category_landing', args=['Skincare-coreano']),
+        )
+
+        self.assertContains(legacy_query_response, 'Perfume Real')
+        self.assertNotContains(legacy_query_response, 'K Beauty Real')
+        self.assertContains(category_route_response, 'K Beauty Real')
+        self.assertNotContains(category_route_response, 'Perfume Real')
+
+    def test_offer_route_only_returns_valid_public_sales(self):
+        response = self.client.get(reverse('offers'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Perfume Real')
+        self.assertNotContains(response, 'Promocao invalida')
+        self.assertNotContains(response, 'K Beauty Real')
+
+    def test_text_search_does_not_match_every_product_via_empty_gtin(self):
+        response = self.client.get(reverse('products:list'), {'q': 'produto inexistente'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Perfume Real')
+        self.assertNotContains(response, 'K Beauty Real')
+
+    def test_filter_tree_query_count_does_not_grow_with_categories(self):
+        extra_parent = Category.objects.create(name='Maquiagem', slug='maquiagem')
+        extra_child = Category.objects.create(
+            name='Lábios',
+            slug='labios',
+            parent=extra_parent,
+        )
+        Product.objects.create(
+            name='Batom teste',
+            category=extra_child,
+            price='50.00',
+            stock=1,
+            status=Product.STATUS_AVAILABLE,
+        )
+        categories = list(active_category_queryset())
+
+        with self.assertNumQueries(1):
+            tree, _, _ = build_filter_tree(categories, '', '', '', '')
+
+        self.assertGreaterEqual(len(tree), 2)
+
 
 class ProductGtinLookupTests(TestCase):
     def setUp(self):
@@ -356,3 +526,116 @@ class BrandFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn('logo', form.errors)
+
+
+class ProductAvailabilityTests(TestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name='Decanters', slug='decanters-teste')
+
+    def test_fractioned_product_requires_an_available_variant(self):
+        product = Product.objects.create(
+            name='Perfume fracionado',
+            category=self.category,
+            price='50.00',
+            stock=0,
+            status=Product.STATUS_AVAILABLE,
+            is_fractioned=True,
+            has_variants=True,
+        )
+        ProductVariant.objects.create(
+            product=product,
+            name='5ml',
+            price='50.00',
+            stock=0,
+            is_active=True,
+        )
+        self.assertFalse(product.can_add_to_cart())
+
+        ProductVariant.objects.create(
+            product=product,
+            name='10ml',
+            price='90.00',
+            stock=2,
+            is_active=True,
+        )
+
+        self.assertTrue(product.can_add_to_cart())
+
+    def test_product_detail_selects_first_variant_with_stock(self):
+        product = Product.objects.create(
+            name='Perfume com volumes',
+            category=self.category,
+            price='50.00',
+            stock=2,
+            status=Product.STATUS_AVAILABLE,
+            is_fractioned=True,
+            has_variants=True,
+        )
+        ProductVariant.objects.create(
+            product=product,
+            name='5ml',
+            price='50.00',
+            stock=0,
+            is_active=True,
+            order=0,
+        )
+        available = ProductVariant.objects.create(
+            product=product,
+            name='10ml',
+            price='90.00',
+            stock=2,
+            is_active=True,
+            order=1,
+        )
+
+        response = self.client.get(reverse('products:detail', args=[product.slug]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['first_variant'], available)
+
+    def test_fractioned_pre_order_requires_an_active_variant_but_not_stock(self):
+        product = Product.objects.create(
+            name='Encomenda fracionada',
+            category=self.category,
+            price='50.00',
+            stock=0,
+            status=Product.STATUS_PRE_ORDER,
+            is_pre_order=True,
+            is_fractioned=True,
+            has_variants=True,
+        )
+
+        self.assertFalse(product.can_add_to_cart())
+        ProductVariant.objects.create(
+            product=product,
+            name='5ml',
+            price='50.00',
+            stock=0,
+            is_active=True,
+        )
+
+        self.assertTrue(product.can_add_to_cart())
+
+
+class ProductImageDownloadSecurityTests(TestCase):
+    def test_image_downloader_blocks_loopback_destination(self):
+        result = download_and_process_image('http://127.0.0.1:8000/private-image')
+
+        self.assertIsNone(result)
+
+    @patch('products.image_downloader._is_public_image_url', return_value=True)
+    @patch('products.image_downloader.requests.get')
+    def test_image_downloader_rejects_invalid_content_length(self, get_mock, _public_mock):
+        response = MagicMock()
+        response.is_redirect = False
+        response.is_permanent_redirect = False
+        response.headers = {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': 'not-a-number',
+        }
+        get_mock.return_value = response
+
+        result = download_and_process_image('https://images.example/product.jpg')
+
+        self.assertIsNone(result)
+        response.close.assert_called_once()
