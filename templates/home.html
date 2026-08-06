@@ -91,8 +91,8 @@
   <div class="container">
     <div class="quick-nav-row">
       {% for item in quick_nav %}
-      <a href="{{ item.url }}" class="quick-nav-item" aria-label="{{ item.aria_label }}">
-        <div class="quick-nav-circle">{{ item.label }}</div>
+      <a href="{{ item.url }}" class="quick-nav-item" aria-label="{{ item.aria_label }}" title="{{ item.hint }}">
+        <div class="quick-nav-circle{% if item.long_label %} quick-nav-circle--long{% endif %}">{{ item.label }}</div>
       </a>
       {% endfor %}
     </div>

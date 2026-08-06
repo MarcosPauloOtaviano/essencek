@@ -469,6 +469,7 @@ h1,h2,h3,h4,h5 { font-family: var(--font-serif); font-weight: 600; line-height: 
   padding: 8px;
   transition: transform var(--transition), box-shadow var(--transition);
 }
+.quick-nav-circle--long { font-size: 10px; line-height: 1.1; }
 .quick-nav-item:hover .quick-nav-circle { transform: scale(1.08); box-shadow: 0 8px 20px var(--shadow-md); }
 .quick-nav-item:focus-visible {
   outline: none;

@@ -250,6 +250,10 @@ class CatalogNavigationTests(TestCase):
             name='Skincare Coreano',
             slug='Skincare-coreano',
         )
+        self.japanese_beauty_category = Category.objects.create(
+            name='Beleza japonesa',
+            slug='beleza-japonesa-tratamento-cabelos',
+        )
         self.empty_legacy_category = Category.objects.create(
             name='Perfumes legado vazio',
             slug='perfumes',
@@ -280,6 +284,13 @@ class CatalogNavigationTests(TestCase):
             stock=2,
             status=Product.STATUS_AVAILABLE,
         )
+        self.japanese_beauty = Product.objects.create(
+            name='Beleza Japonesa Real',
+            category=self.japanese_beauty_category,
+            price='95.00',
+            stock=2,
+            status=Product.STATUS_AVAILABLE,
+        )
         self.invalid_sale = Product.objects.create(
             name='Promocao invalida',
             category=self.perfume_category,
@@ -296,8 +307,8 @@ class CatalogNavigationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '/categoria/perfumes/')
         self.assertContains(response, 'PERFUMES')
-        self.assertContains(response, '/categoria/k-beauty/')
-        self.assertContains(response, 'K-BEAUTY')
+        self.assertContains(response, '/categoria/beleza-asiatica/')
+        self.assertContains(response, 'BELEZA ASIÁTICA')
         self.assertContains(response, 'OFERTAS')
         self.assertContains(response, 'DESTAQUES')
         self.assertContains(response, 'PRONTA ENTREGA')
@@ -311,17 +322,43 @@ class CatalogNavigationTests(TestCase):
 
     def test_category_group_routes_return_expected_products(self):
         perfume_response = self.client.get(reverse('category_landing', args=['perfumes']))
-        kbeauty_response = self.client.get(reverse('category_landing', args=['k-beauty']))
+        asian_beauty_response = self.client.get(
+            reverse('category_landing', args=['beleza-asiatica'])
+        )
+        legacy_group_response = self.client.get(
+            reverse('category_landing', args=['k-beauty'])
+        )
 
         self.assertEqual(perfume_response.status_code, 200)
         self.assertContains(perfume_response, 'Perfume Real')
         self.assertNotContains(perfume_response, 'K Beauty Real')
         self.assertContains(perfume_response, 'Perfumes')
 
-        self.assertEqual(kbeauty_response.status_code, 200)
-        self.assertContains(kbeauty_response, 'K Beauty Real')
-        self.assertNotContains(kbeauty_response, 'Perfume Real')
-        self.assertContains(kbeauty_response, 'K-Beauty')
+        self.assertEqual(asian_beauty_response.status_code, 200)
+        self.assertContains(asian_beauty_response, 'K Beauty Real')
+        self.assertContains(asian_beauty_response, 'Beleza Japonesa Real')
+        self.assertNotContains(asian_beauty_response, 'Perfume Real')
+        self.assertContains(asian_beauty_response, 'Beleza Asiática')
+
+        self.assertEqual(legacy_group_response.status_code, 200)
+        self.assertContains(legacy_group_response, 'K Beauty Real')
+        self.assertContains(legacy_group_response, 'Beleza Japonesa Real')
+
+    def test_legacy_quick_nav_queries_use_real_product_groups(self):
+        perfume_response = self.client.get(
+            reverse('products:list'),
+            {'category': 'perfumes'},
+        )
+        asian_beauty_response = self.client.get(
+            reverse('products:list'),
+            {'category': 'beleza-coreana'},
+        )
+
+        self.assertContains(perfume_response, 'Perfume Real')
+        self.assertNotContains(perfume_response, 'K Beauty Real')
+        self.assertContains(asian_beauty_response, 'K Beauty Real')
+        self.assertContains(asian_beauty_response, 'Beleza Japonesa Real')
+        self.assertNotContains(asian_beauty_response, 'Perfume Real')
 
     def test_legacy_query_filter_and_exact_category_route_still_work(self):
         legacy_query_response = self.client.get(

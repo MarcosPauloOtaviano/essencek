@@ -10,32 +10,49 @@ CATEGORY_GROUPS = {
         'label': 'Perfumes',
         'nav_label': 'PERFUMES',
         'aria_label': 'Ver perfumes',
+        'hint': 'Perfumes arabes, de nicho e para cabelo e corpo',
         'tokens': (
             'perfume', 'perfumes', 'nicho', 'arabe', 'árabe', 'arab',
             'cabelo-corpo', 'cabelo corpo',
         ),
     },
-    'k-beauty': {
-        'label': 'K-Beauty',
-        'nav_label': 'K-BEAUTY',
-        'aria_label': 'Ver produtos K-Beauty',
+    'beleza-asiatica': {
+        'label': 'Beleza Asiática',
+        'nav_label': 'BELEZA ASIÁTICA',
+        'aria_label': 'Ver beleza asiatica: skincare coreano e japones',
+        'hint': 'Skincare coreano e japones',
         'tokens': (
             'k-beauty', 'k beauty', 'coreano', 'coreana', 'korean',
-            'skincare-coreano', 'beleza-coreana',
+            'skincare-coreano', 'beleza-coreana', 'j-beauty', 'j beauty',
+            'japonesa', 'japones', 'japan', 'beleza-japonesa',
         ),
     },
     'decanter': {
         'label': 'Decanter',
         'nav_label': 'DECANTER',
         'aria_label': 'Ver perfumes fracionados e decanters',
+        'hint': 'Perfumes fracionados e decanters',
         'tokens': ('decanter', 'fracionado', 'decant', 'miniatura'),
     },
     'eletronicos': {
         'label': 'Eletrônicos',
         'nav_label': 'ELETRO',
         'aria_label': 'Ver eletrônicos',
+        'hint': 'Eletronicos e tecnologia',
         'tokens': ('eletronico', 'eletronicos', 'eletrônico', 'eletrônicos', 'tecnologia'),
     },
+}
+
+CATEGORY_GROUP_ALIASES = {
+    'k-beauty': 'beleza-asiatica',
+    'kbeauty': 'beleza-asiatica',
+}
+
+LEGACY_CATEGORY_GROUPS = {
+    'perfumes': 'perfumes',
+    'beleza-coreana': 'beleza-asiatica',
+    'decanter': 'decanter',
+    'eletronicos': 'eletronicos',
 }
 
 
@@ -56,6 +73,7 @@ def catalog_url(**params):
 
 
 def category_landing_url(category_key, **params):
+    category_key = canonical_category_group(category_key)
     cleaned = {k: v for k, v in params.items() if v not in (None, '')}
     qs = urlencode(cleaned)
     url = reverse('category_landing', kwargs={'category_key': category_key})
@@ -110,16 +128,29 @@ def _category_blob(category):
     return f'{category.slug or ""} {category.name or ""}'.casefold()
 
 
+def canonical_category_group(group_slug):
+    normalized = str(group_slug or '').casefold()
+    return CATEGORY_GROUP_ALIASES.get(normalized, normalized)
+
+
 def is_category_group(group_slug):
-    return group_slug in CATEGORY_GROUPS
+    return canonical_category_group(group_slug) in CATEGORY_GROUPS
 
 
 def get_category_group_label(group_slug):
-    return CATEGORY_GROUPS.get(group_slug, {}).get('label', group_slug.replace('-', ' ').title())
+    canonical_group = canonical_category_group(group_slug)
+    return CATEGORY_GROUPS.get(canonical_group, {}).get(
+        'label',
+        canonical_group.replace('-', ' ').title(),
+    )
+
+
+def category_group_from_legacy_slug(category_slug):
+    return LEGACY_CATEGORY_GROUPS.get(str(category_slug or '').casefold())
 
 
 def category_matches_group(category, group_slug):
-    group = CATEGORY_GROUPS.get(group_slug)
+    group = CATEGORY_GROUPS.get(canonical_category_group(group_slug))
     if not group:
         return False
     blob = _category_blob(category)
@@ -127,6 +158,7 @@ def category_matches_group(category, group_slug):
 
 
 def category_ids_for_group(categories, group_slug):
+    group_slug = canonical_category_group(group_slug)
     categories = list(categories)
     matching_ids = {
         cat.pk for cat in categories
@@ -171,15 +203,18 @@ def build_quick_nav(categories=None, visibility=None):
             'label': 'OFERTAS',
             'url': reverse('offers'),
             'aria_label': 'Ver ofertas',
+            'hint': 'Produtos com preco promocional valido',
         })
 
-    for group_slug in ('perfumes', 'k-beauty', 'decanter', 'eletronicos'):
+    for group_slug in ('perfumes', 'beleza-asiatica', 'decanter', 'eletronicos'):
         group = CATEGORY_GROUPS[group_slug]
         if count_group_products(categories, group_slug) > 0:
             items.append({
                 'label': group['nav_label'],
                 'url': category_landing_url(group_slug),
                 'aria_label': group['aria_label'],
+                'hint': group['hint'],
+                'long_label': group_slug == 'beleza-asiatica',
             })
 
     if visibility['featured']:
@@ -187,6 +222,7 @@ def build_quick_nav(categories=None, visibility=None):
             'label': 'DESTAQUES',
             'url': reverse('featured_products'),
             'aria_label': 'Ver produtos em destaque',
+            'hint': 'Produtos selecionados em destaque',
         })
 
     if visibility['available']:
@@ -194,6 +230,7 @@ def build_quick_nav(categories=None, visibility=None):
             'label': 'PRONTA ENTREGA',
             'url': reverse('available_products'),
             'aria_label': 'Ver produtos a pronta entrega',
+            'hint': 'Produtos disponiveis para envio agora',
         })
 
     return items
@@ -207,7 +244,7 @@ def build_main_navigation(categories=None, visibility=None):
         {'label': 'Todos os produtos', 'url': reverse('products:list'), 'class': ''},
     ]
 
-    for group_slug in ('perfumes', 'k-beauty', 'decanter', 'eletronicos'):
+    for group_slug in ('perfumes', 'beleza-asiatica', 'decanter', 'eletronicos'):
         group = CATEGORY_GROUPS[group_slug]
         if count_group_products(categories, group_slug) > 0:
             items.append({

@@ -26,9 +26,9 @@ def home(request):
     hero_products = _base_qs.order_by('-is_featured', '-created_at')[:3]
     categories = public_categories_with_products()
     perfume_category_ids = category_ids_for_group(categories, 'perfumes')
-    kbeauty_category_ids = category_ids_for_group(categories, 'k-beauty')
+    asian_beauty_category_ids = category_ids_for_group(categories, 'beleza-asiatica')
     hero_perfumes = _base_qs.filter(category_id__in=perfume_category_ids).order_by('-is_featured', '-created_at')[:3]
-    hero_kbeauty = _base_qs.filter(category_id__in=kbeauty_category_ids).order_by('-is_featured', '-created_at')[:3]
+    hero_kbeauty = _base_qs.filter(category_id__in=asian_beauty_category_ids).order_by('-is_featured', '-created_at')[:3]
     new_arrivals = _base_qs.order_by('-created_at')[:6]
     visibility = catalog_visibility()
     quick_nav = build_quick_nav(categories, visibility=visibility)

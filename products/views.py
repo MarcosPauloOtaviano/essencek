@@ -11,6 +11,8 @@ from .services import (
     build_filter_tree,
     build_breadcrumbs,
     catalog_url,
+    canonical_category_group,
+    category_group_from_legacy_slug,
     category_ids_for_group,
     find_category_by_slug,
     get_category_group_label,
@@ -47,7 +49,7 @@ def product_list(request, category_key='', quick_filter=''):
 
     query = request.GET.get('q', '').strip()[:100]
     category_slug = request.GET.get('category', '')
-    category_group = request.GET.get('group', '')
+    category_group = canonical_category_group(request.GET.get('group', ''))
     status = request.GET.get('status', '')
     on_sale = request.GET.get('on_sale', '')
     featured = request.GET.get('featured', '')
@@ -56,11 +58,17 @@ def product_list(request, category_key='', quick_filter=''):
 
     if category_key:
         if is_category_group(category_key):
-            category_group = category_key
+            category_group = canonical_category_group(category_key)
             category_slug = ''
         else:
             category_slug = category_key
             category_group = ''
+
+    if not category_group:
+        legacy_category_group = category_group_from_legacy_slug(category_slug)
+        if legacy_category_group:
+            category_group = legacy_category_group
+            category_slug = ''
 
     if quick_filter == 'ofertas':
         on_sale = '1'
