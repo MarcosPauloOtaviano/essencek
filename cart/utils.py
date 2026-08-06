@@ -85,47 +85,56 @@ def _merge_cart_items(target, source):
     source.delete()
 
 
-def get_cart(request):
-    """Return or create cart for current user/session."""
+def _get_locked_cart(request):
+    """Return or create a cart while the caller owns a database transaction."""
     legacy_session_key = request.session.session_key
     token = get_cart_token(request, create=True)
 
     if request.user.is_authenticated:
-        with transaction.atomic():
-            cart, _ = Cart.objects.get_or_create(user=request.user)
-            cart = Cart.objects.select_for_update().get(pk=cart.pk)
-            candidate_keys = {token}
-            if legacy_session_key and len(legacy_session_key) <= 40:
-                candidate_keys.add(legacy_session_key)
-            anonymous_carts = list(
-                Cart.objects.select_for_update()
-                .filter(session_key__in=candidate_keys, user=None)
-                .exclude(pk=cart.pk)
-            )
-            for anonymous_cart in anonymous_carts:
-                _merge_cart_items(cart, anonymous_cart)
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart = Cart.objects.select_for_update().get(pk=cart.pk)
+        candidate_keys = {token}
+        if legacy_session_key and len(legacy_session_key) <= 40:
+            candidate_keys.add(legacy_session_key)
+        anonymous_carts = list(
+            Cart.objects.select_for_update()
+            .filter(session_key__in=candidate_keys, user=None)
+            .exclude(pk=cart.pk)
+        )
+        for anonymous_cart in anonymous_carts:
+            _merge_cart_items(cart, anonymous_cart)
         return cart
+
+    carts = list(
+        Cart.objects.select_for_update()
+        .filter(session_key=token, user=None)
+        .order_by('-updated_at')
+    )
+    cart = carts[0] if carts else None
+    for duplicate in carts[1:]:
+        _merge_cart_items(cart, duplicate)
+
+    if cart is None and legacy_session_key and len(legacy_session_key) <= 40:
+        cart = (
+            Cart.objects.select_for_update()
+            .filter(session_key=legacy_session_key, user=None)
+            .order_by('-updated_at')
+            .first()
+        )
+        if cart:
+            cart.session_key = token
+            cart.save(update_fields=['session_key', 'updated_at'])
+    if cart is None:
+        cart = Cart.objects.create(session_key=token, user=None)
+    return cart
+
+
+def get_cart(request, *, for_update=False):
+    """Return or create the current cart, locking it when a mutation needs it."""
+    if for_update:
+        if not transaction.get_connection().in_atomic_block:
+            raise RuntimeError('get_cart(for_update=True) requer uma transacao ativa.')
+        return _get_locked_cart(request)
 
     with transaction.atomic():
-        carts = list(
-            Cart.objects.select_for_update()
-            .filter(session_key=token, user=None)
-            .order_by('-updated_at')
-        )
-        cart = carts[0] if carts else None
-        for duplicate in carts[1:]:
-            _merge_cart_items(cart, duplicate)
-
-        if cart is None and legacy_session_key and len(legacy_session_key) <= 40:
-            cart = (
-                Cart.objects.select_for_update()
-                .filter(session_key=legacy_session_key, user=None)
-                .order_by('-updated_at')
-                .first()
-            )
-            if cart:
-                cart.session_key = token
-                cart.save(update_fields=['session_key', 'updated_at'])
-        if cart is None:
-            cart = Cart.objects.create(session_key=token, user=None)
-        return cart
+        return _get_locked_cart(request)

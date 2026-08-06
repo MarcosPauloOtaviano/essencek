@@ -6,6 +6,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib import messages
 from django.db import transaction
 from decimal import Decimal, InvalidOperation
+from time import perf_counter
 from products.models import Product, ProductVariant
 from shipping.utils import calculate_shipping
 from .models import CartItem
@@ -75,9 +76,10 @@ def csrf_token_view(request):
 
 @require_POST
 def cart_add(request, product_id):
+    started_at = perf_counter()
     with transaction.atomic():
         product = get_object_or_404(
-            Product.objects.select_for_update(),
+            Product.objects,
             pk=product_id,
             is_active=True,
         )
@@ -91,7 +93,7 @@ def cart_add(request, product_id):
             if not variant_id:
                 return _cart_error(request, 'Escolha uma variação antes de adicionar ao carrinho.', 'products:detail', slug=product.slug)
             variant = get_object_or_404(
-                ProductVariant.objects.select_for_update(),
+                ProductVariant.objects,
                 pk=variant_id,
                 product=product,
                 is_active=True,
@@ -102,7 +104,7 @@ def cart_add(request, product_id):
         except ValueError as exc:
             return _cart_error(request, str(exc), 'products:detail', slug=product.slug)
 
-        cart = get_cart(request)
+        cart = get_cart(request, for_update=True)
         item = (
             CartItem.objects.select_for_update()
             .filter(cart=cart, product=product, variant=variant)
@@ -125,11 +127,13 @@ def cart_add(request, product_id):
         clear_shipping_selection(request)
 
     if _is_ajax(request):
-        return JsonResponse({
+        response = JsonResponse({
             'success': True,
             'cart_count': cart.total_items,
             'message': f'{product.name} adicionado ao carrinho!'
         })
+        response['Server-Timing'] = f'cart;dur={(perf_counter() - started_at) * 1000:.1f}'
+        return response
 
     messages.success(request, f'{product.name} adicionado ao carrinho!')
     if request.POST.get('buy_now'):
@@ -140,7 +144,7 @@ def cart_add(request, product_id):
 @require_POST
 def cart_update(request, item_id):
     with transaction.atomic():
-        cart = get_cart(request)
+        cart = get_cart(request, for_update=True)
         item = get_object_or_404(
             CartItem.objects.select_for_update().select_related('product', 'variant'),
             pk=item_id,
@@ -205,7 +209,7 @@ def cart_update(request, item_id):
 @require_POST
 def cart_remove(request, item_id):
     with transaction.atomic():
-        cart = get_cart(request)
+        cart = get_cart(request, for_update=True)
         item = get_object_or_404(
             CartItem.objects.select_for_update(),
             pk=item_id,

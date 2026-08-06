@@ -1,4 +1,6 @@
+from django.db import connection
 from django.test import Client, TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from unittest.mock import patch
 
@@ -73,6 +75,19 @@ class CartValidationTests(TestCase):
 
         self.assertEqual(add_response.status_code, 200)
         self.assertTrue(add_response.json()['success'])
+
+    def test_cart_add_keeps_database_work_bounded_and_reports_duration(self):
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.post(
+                reverse('cart:add', args=[self.product.pk]),
+                {'quantity': '1'},
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLessEqual(len(queries), 12)
+        self.assertTrue(any('SUM(' in query['sql'] for query in queries))
+        self.assertRegex(response['Server-Timing'], r'^cart;dur=\d+(?:\.\d+)?$')
 
     def test_select_shipping_requires_calculated_option(self):
         self.client.post(

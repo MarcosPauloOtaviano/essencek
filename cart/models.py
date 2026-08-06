@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 from django.conf import settings
 from products.models import Product
 
@@ -23,7 +24,9 @@ class Cart(models.Model):
     @property
     def total_items(self):
         items = self._loaded_items()
-        return sum(item.quantity for item in (items if items is not None else self.items.all()))
+        if items is not None:
+            return sum(item.quantity for item in items)
+        return self.items.aggregate(total=Sum('quantity'))['total'] or 0
 
     @property
     def subtotal(self):

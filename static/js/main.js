@@ -147,6 +147,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return csrfTokenPromise;
   };
 
+  const warmCartCsrfToken = () => {
+    if (!document.querySelector('.quick-add-cart')) return;
+    getCartCsrfToken().catch(() => {});
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(warmCartCsrfToken, { timeout: 1200 });
+  } else {
+    window.setTimeout(warmCartCsrfToken, 250);
+  }
+
   document.querySelectorAll('.quick-add-cart').forEach(link => {
     link.addEventListener('click', async event => {
       event.preventDefault();
