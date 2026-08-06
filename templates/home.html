@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static money %}
+{% load static money media %}
 {% load humanize %}
 
 {% block title %}Essence K Importados{% endblock %}
@@ -14,7 +14,7 @@
     <div class="showcase-banner">
       <div class="showcase-slide showcase-slide--active">
         <a href="{% url 'home' %}">
-          <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="showcase-img showcase-img--logo">
+          <img src="{% static 'img/banners/essence-k-banner.png' %}" alt="Essence K Importados" class="showcase-img showcase-img--logo" width="1024" height="340" fetchpriority="high" decoding="async">
         </a>
       </div>
       {% for slide in showcase_slides %}
@@ -30,7 +30,7 @@
       {% else %}
       <div class="showcase-slide">
         {% if slide.display_link %}<a href="{{ slide.display_link }}">{% endif %}
-          <img src="{{ slide.display_image_url }}" alt="{{ slide.display_title }}" class="showcase-img">
+          <img src="{{ slide.display_image_url|media_thumbnail:'960' }}" alt="{{ slide.display_title }}" class="showcase-img" loading="lazy" decoding="async">
           {% if slide.kind == 'product' %}
           <span class="showcase-label">
             {{ slide.display_title }}{% if slide.product.current_price_brl %} — {{ slide.product.current_price_brl|brl }}{% endif %}
@@ -70,13 +70,13 @@
     <div class="categories-carousel-track">
       {% for cat in categories %}
       <a href="{{ cat.get_absolute_url }}" class="category-slide">
-        <img src="{{ cat.display_image_url }}" alt="" class="category-slide-img" loading="lazy" decoding="async">
+        <img src="{{ cat.display_image_url|media_thumbnail:'160' }}" alt="" class="category-slide-img" width="100" height="100" loading="lazy" decoding="async">
         <span class="category-slide-name">{{ cat.name }}</span>
       </a>
       {% endfor %}
       {% for cat in categories %}
       <a href="{{ cat.get_absolute_url }}" class="category-slide" aria-hidden="true" tabindex="-1">
-        <img src="{{ cat.display_image_url }}" alt="" class="category-slide-img" loading="lazy" decoding="async">
+        <img src="{{ cat.display_image_url|media_thumbnail:'160' }}" alt="" class="category-slide-img" width="100" height="100" loading="lazy" decoding="async">
         <span class="category-slide-name">{{ cat.name }}</span>
       </a>
       {% endfor %}

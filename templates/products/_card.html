@@ -1,8 +1,8 @@
-{% load humanize static money %}
+{% load humanize static money media %}
 <div class="product-card">
   <a href="{% if product.slug %}{{ product.get_absolute_url }}{% else %}{% url 'products:list' %}{% endif %}" class="product-card-link">
     <div class="product-card-image">
-      <img src="{{ product.display_image_url }}" alt="{{ product.name }}" loading="lazy">
+      <img src="{{ product.display_image_url|media_thumbnail:'480' }}" alt="{{ product.name }}" loading="lazy" decoding="async">
       <!-- Badges -->
       <div class="product-badges">
         {% if product.is_on_sale and product.discount_percent > 0 %}

@@ -1,21 +1,30 @@
+from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import requests
+from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from django.http import Http404
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
 from django.views.defaults import server_error
+from PIL import Image
 
 from .middleware import (
     CanonicalHostRedirectMiddleware,
     LoginRateLimitMiddleware,
     VercelCDNCacheMiddleware,
 )
-from .media_views import _clean_media_path
+from .media_views import (
+    _build_thumbnail,
+    _clean_media_path,
+    _requested_thumbnail_width,
+    serve_media_file,
+)
 from .services import fetch_exchange_rates, get_store_whatsapp_url
 from .storage import PersistentMediaStorage
+from .templatetags.media import media_thumbnail
 from .utils import image_url_if_exists
 
 
@@ -170,6 +179,63 @@ class MediaPathSecurityTests(SimpleTestCase):
 
         with self.assertRaises(ValueError):
             storage._clean_name('products/../../.env')
+
+
+class MediaThumbnailTests(SimpleTestCase):
+    def test_media_filter_only_changes_supported_local_media_urls(self):
+        self.assertEqual(
+            media_thumbnail('/media/categories/perfumes.png', 160),
+            '/media/categories/perfumes.png?w=160',
+        )
+        self.assertEqual(
+            media_thumbnail('/static/img/default.jpg', 160),
+            '/static/img/default.jpg',
+        )
+        self.assertEqual(
+            media_thumbnail('https://example.com/media/photo.jpg', 160),
+            'https://example.com/media/photo.jpg',
+        )
+
+    def test_thumbnail_keeps_png_transparency_and_resizes(self):
+        source = BytesIO()
+        Image.new('RGBA', (1080, 1080), (210, 30, 90, 128)).save(source, format='PNG')
+        original = source.getvalue()
+
+        data, content_type = _build_thumbnail(ContentFile(original), 160)
+
+        with Image.open(BytesIO(data)) as thumbnail:
+            self.assertEqual(thumbnail.size, (160, 160))
+            self.assertEqual(thumbnail.mode, 'RGBA')
+        self.assertEqual(content_type, 'image/png')
+        self.assertLess(len(data), len(original))
+
+    def test_rejects_unapproved_thumbnail_width(self):
+        request = RequestFactory().get('/media/categories/perfumes.png?w=9999')
+
+        with self.assertRaises(Http404):
+            _requested_thumbnail_width(request)
+
+    @patch('core.media_views._try_lazy_copy')
+    @patch('core.media_views.default_storage')
+    def test_media_view_serves_immutable_thumbnail_without_changing_source(
+        self,
+        storage_mock,
+        _lazy_copy_mock,
+    ):
+        source = BytesIO()
+        Image.new('RGB', (1080, 1080), (210, 30, 90)).save(source, format='JPEG', quality=95)
+        original = source.getvalue()
+        storage_mock.open.return_value = ContentFile(original, name='categories/perfumes.jpg')
+        request = RequestFactory().get('/media/categories/perfumes.jpg?w=160')
+
+        response = serve_media_file(request, 'categories/perfumes.jpg')
+        data = b''.join(response.streaming_content)
+
+        with Image.open(BytesIO(data)) as thumbnail:
+            self.assertEqual(thumbnail.size, (160, 160))
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+        self.assertIn('immutable', response['Cache-Control'])
+        self.assertLess(len(data), len(original))
 
 
 class ExchangeRateCronTests(SimpleTestCase):
