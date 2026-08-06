@@ -244,3 +244,26 @@ O Preview do commit foi `https://essencek-7idi7codg-marcos-paulos-projects-7e938
 O desktop final registrou Performance 93, Acessibilidade 100, Boas praticas 100, FCP 0,673 s, LCP 0,931 s, TBT 0 ms, CLS 0 e 1,039 MB transferidos. A variacao do score de Performance entre execucoes desktop e sensivel a animacao visual e a simulacao de rede; os tempos de LCP, bytes transferidos e ausencia de bloqueio permanecem os sinais comparaveis. O SEO 63 no Preview decorre exclusivamente do `X-Robots-Tag: noindex` aplicado pela Vercel a deployments de Preview.
 
 Foram adicionados quatro testes unitarios para URL, limites, transparencia, resposta HTTP e cache de miniaturas. A suite completa passou com 92 testes em 66,769 s; `check`, `check --deploy` com ambiente isolado, `makemigrations --check`, compilacao, Bandit, `pip-audit` e `collectstatic` passaram. Os relatorios Lighthouse foram gravados em `C:\EssenceKBackups\e2e-browser-20260805-224753`. No Windows, a CLI do Lighthouse pode avisar `EPERM` apenas ao limpar sua pasta temporaria depois de gravar o JSON; os relatorios foram confirmados e nao restaram processos headless do ensaio.
+
+## Complemento de navegacao e desempenho - 2026-08-06
+
+A captura recebida nesta data corresponde a producao, que permanece no commit antigo. As bolinhas dessa versao apontavam para consultas genericas como `?category=perfumes` e `?category=beleza-coreana`; esses slugs nao correspondem as categorias reais do catalogo e a busca de perfumes podia retornar vazia.
+
+Os commits `13af6c2`, `0636aaf` e `134e146` corrigem a branch do PR sem alterar o banco:
+
+- `Perfumes` agrega perfumes arabes, de nicho e para cabelo/corpo;
+- `Beleza Asiatica` agrega skincare coreano e japones;
+- URLs antigas continuam funcionais por compatibilidade e as rotas novas sao canonicas;
+- `Decanter` e `Eletronicos` continuam ocultos enquanto nao houver produto publico em cada grupo;
+- os cinco atalhos visiveis recebem destino real e os rotulos cabem integralmente nas bolinhas.
+
+O Preview atualizado foi validado em leitura no alias estavel. Os cinco cliques da Home abriram, respectivamente, `/ofertas/`, `/categoria/perfumes/`, `/categoria/beleza-asiatica/`, `/destaques/` e `/pronta-entrega/`, todos com `200` e pelo menos um card. A verificacao de layout confirmou largura e altura de 64 px, sem overflow de texto. A suite completa do codigo passou com 93 testes em 62,814 s; apos o refinamento exclusivamente visual, os 7 testes de navegacao passaram novamente.
+
+Medicoes HTTP com query unica, sem alterar estado:
+
+| Rota | Producao antiga | Preview atualizado |
+| --- | ---: | ---: |
+| Home | 13,122 s | 0,450 s |
+| Catalogo | 9,259 s | 0,430 s |
+
+A producao continua lenta porque ainda executa o codigo anterior: inicializacao pesada com migracao no caminho da requisicao, funcao fora da regiao do banco Neon e sem cache publico seguro ou miniaturas responsivas. Para levar a melhora ao dominio publico e necessario autorizar explicitamente a promocao controlada do PR `#11`, confirmar as variaveis de producao, executar a migration pendente `orders/0006_alter_order_payment_method_alter_order_status.py` durante manutencao e validar somente leitura apos o deploy. Nenhuma dessas acoes foi executada nesta atualizacao.
