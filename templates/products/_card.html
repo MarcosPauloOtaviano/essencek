@@ -48,14 +48,17 @@
       <button class="btn btn-disabled" disabled>Esgotado</button>
     {% elif product.is_pre_order %}
       <a href="{{ product.get_absolute_url }}" class="btn btn-preorder">Encomendar</a>
+    {% elif product.is_fractioned and product.has_variants %}
+      <a href="{{ product.get_absolute_url }}" class="btn btn-primary">Escolher opção</a>
     {% else %}
-      <form action="{% url 'cart:add' product.pk %}" method="post" class="add-to-cart-form">
-        {% csrf_token %}
-        <input type="hidden" name="quantity" value="1">
-        <button type="submit" class="btn btn-primary btn-add-cart">
+      <div class="add-to-cart-form">
+        <a href="{{ product.get_absolute_url }}"
+           class="btn btn-primary btn-add-cart quick-add-cart"
+           data-cart-add-url="{% url 'cart:add' product.pk %}"
+           aria-label="Adicionar {{ product.name }} ao carrinho">
           <i class="fas fa-shopping-bag"></i> Adicionar
-        </button>
-      </form>
+        </a>
+      </div>
     {% endif %}
   </div>
 </div>

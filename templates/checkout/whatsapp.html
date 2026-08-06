@@ -1,14 +1,59 @@
 {% extends 'base.html' %}
-{% block title %}Pedido criado{% endblock %}
+{% load money %}
+{% block title %}Finalizar pelo WhatsApp{% endblock %}
 {% block content %}
 <div class="container">
   <div class="success-page">
-    <div class="success-icon"><i class="fas fa-check"></i></div>
-    <h1>Pedido criado</h1>
-    <p>Seu pedido <strong>{{ order.order_number }}</strong> foi criado. Acompanhe os detalhes na área Meus pedidos.</p>
+    <div class="success-icon"><i class="fab fa-whatsapp"></i></div>
+    <h1>Pedido registrado</h1>
+    <p class="success-subtitle">O pedido <strong>{{ order.order_number }}</strong> aguarda confirmação da EssenceK pelo WhatsApp.</p>
+
+    <div class="order-confirmation-card">
+      {% for item in order.items.all %}
+      <div class="confirmation-item">
+        <span>{{ item.quantity }}x {{ item.product_name }}{% if item.display_variant_label %} · {{ item.display_variant_label }}{% endif %}</span>
+        <strong>{{ item.subtotal|brl }}</strong>
+      </div>
+      {% endfor %}
+      <div class="confirmation-total">
+        <span>Total</span>
+        <strong>{{ order.total|brl }}</strong>
+      </div>
+    </div>
+
+    <p>Disponibilidade, entrega e pagamento serão confirmados no atendimento. Abrir o WhatsApp não marca o pedido como pago.</p>
     <div class="success-actions">
+      {% if whatsapp_url %}
+      <a href="{{ whatsapp_url }}" id="whatsappCheckoutLink" class="btn btn-primary" rel="noopener noreferrer">
+        <i class="fab fa-whatsapp"></i> Finalizar pedido pelo WhatsApp
+      </a>
+      <button type="button" class="btn btn-secondary" id="copyWhatsAppMessage">
+        <i class="fas fa-copy"></i> Copiar resumo
+      </button>
+      {% else %}
+      <div class="alert alert-error" role="alert">O telefone de atendimento não está configurado. Seu pedido foi salvo; entre em contato pela página de atendimento.</div>
+      {% endif %}
       <a href="{% url 'my_orders' %}" class="btn btn-outline">Ver meus pedidos</a>
     </div>
+    <textarea id="whatsappMessage" hidden readonly>{{ whatsapp_message }}</textarea>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('copyWhatsAppMessage')?.addEventListener('click', async function() {
+  const message = document.getElementById('whatsappMessage').value;
+  try {
+    await navigator.clipboard.writeText(message);
+    showToast('Resumo copiado.', 'success');
+  } catch {
+    showToast('Não foi possível copiar automaticamente.', 'error');
+  }
+});
+{% if auto_open and whatsapp_url %}
+window.setTimeout(function() {
+  window.location.assign(document.getElementById('whatsappCheckoutLink').href);
+}, 700);
+{% endif %}
+</script>
 {% endblock %}

@@ -29,7 +29,7 @@
     <!-- Sidebar Filters -->
     <aside class="catalog-sidebar" id="catalogSidebar">
       <div class="filter-sidebar-header">
-        <h3>Filtros</h3>
+        <h2>Filtros</h2>
         <button class="filter-close-mobile" id="filterClose" aria-label="Fechar filtros">
           <i class="fas fa-times"></i>
         </button>
@@ -37,15 +37,15 @@
 
       <form method="get" class="filter-form" id="filterForm">
         <div class="filter-section">
-          <h3 class="filter-title">Buscar</h3>
+          <h2 class="filter-title">Buscar</h2>
           <div class="search-field">
             <input type="text" name="q" value="{{ query }}" placeholder="Nome ou marca..." class="filter-input">
-            <button type="submit" class="filter-search-btn"><i class="fas fa-search"></i></button>
+            <button type="submit" class="filter-search-btn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
           </div>
         </div>
 
         <div class="filter-section">
-          <h3 class="filter-title">Categorias</h3>
+          <h2 class="filter-title">Categorias</h2>
           <ul class="filter-list filter-tree">
             <li>
               <a href="{{ all_categories_url }}"
@@ -121,7 +121,7 @@
         </div>
 
         <div class="filter-section">
-          <h3 class="filter-title">Disponibilidade</h3>
+          <h2 class="filter-title">Disponibilidade</h2>
           <ul class="filter-list">
             <li>
               <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}&{% endif %}"
@@ -136,7 +136,7 @@
           </ul>
         </div>
         <div class="filter-section">
-          <h3 class="filter-title">Filtros rápidos</h3>
+          <h2 class="filter-title">Filtros rápidos</h2>
           <ul class="filter-list">
             <li>
               <a href="?on_sale=1{% if selected_category %}&category={{ selected_category }}{% endif %}"
@@ -164,6 +164,7 @@
 
     <!-- Product Grid -->
     <div class="catalog-main">
+      <h2 class="visually-hidden">Resultados</h2>
       <div class="catalog-toolbar">
         <span class="results-count">{{ products.paginator.count }} produto{{ products.paginator.count|pluralize:"s" }} encontrado{{ products.paginator.count|pluralize:"s" }}</span>
       </div>
@@ -179,7 +180,7 @@
         {% if products.has_other_pages %}
         <div class="pagination">
           {% if products.has_previous %}
-            <a href="?page={{ products.previous_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}" class="page-btn">&laquo;</a>
+            <a href="?page={{ products.previous_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}" class="page-btn" aria-label="Página anterior">&laquo;</a>
           {% endif %}
           {% for num in products.paginator.page_range %}
             {% if products.number == num %}
@@ -189,7 +190,7 @@
             {% endif %}
           {% endfor %}
           {% if products.has_next %}
-            <a href="?page={{ products.next_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}" class="page-btn">&raquo;</a>
+            <a href="?page={{ products.next_page_number }}{% if pagination_query %}&{{ pagination_query }}{% endif %}" class="page-btn" aria-label="Próxima página">&raquo;</a>
           {% endif %}
         </div>
         {% endif %}

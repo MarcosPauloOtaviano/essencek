@@ -16,7 +16,7 @@
           <div class="form-row">
             {% for field in form %}
             <div class="form-group {% if field.name == 'email' or field.name == 'full_name' %}full{% endif %}">
-              <label>{{ field.label }}</label>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
               {% render_field field class="form-control" %}
               {% if field.errors %}<span class="field-error">{{ field.errors.0 }}</span>{% endif %}
             </div>

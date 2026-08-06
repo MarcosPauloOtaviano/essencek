@@ -1,5 +1,29 @@
 // Jane Miranda — Main JS
 
+function updateCartBadge(count) {
+  const normalizedCount = Math.max(0, Number(count) || 0);
+  const cartBtn = document.querySelector('.cart-btn[href*="carrinho"]');
+  if (!cartBtn) return;
+
+  let badge = cartBtn.querySelector('.cart-badge');
+  if (normalizedCount === 0) {
+    badge?.remove();
+  } else {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'cart-badge';
+      cartBtn.appendChild(badge);
+    }
+    badge.textContent = normalizedCount;
+  }
+
+  const itemLabel = normalizedCount === 1 ? 'item' : 'itens';
+  cartBtn.setAttribute(
+    'aria-label',
+    normalizedCount ? `Abrir carrinho, ${normalizedCount} ${itemLabel}` : 'Abrir carrinho'
+  );
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Mobile nav toggle
   const toggle = document.getElementById('navToggle');
@@ -16,6 +40,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  const socialFloat = document.querySelector('.social-float');
+  const quickNav = document.querySelector('.quick-nav-section');
+  if (socialFloat && quickNav && 'IntersectionObserver' in window) {
+    const quickNavObserver = new IntersectionObserver(entries => {
+      const quickNavIsVisible = entries.some(entry => entry.isIntersecting);
+      socialFloat.classList.toggle(
+        'social-float--away-from-quick-nav',
+        quickNavIsVisible && window.matchMedia('(max-width: 768px)').matches
+      );
+    }, { threshold: 0.1 });
+    quickNavObserver.observe(quickNav);
+  }
 
   // Showcase banner carousel
   const slides = document.querySelectorAll('.showcase-slide');
@@ -37,50 +74,108 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
   }
 
-  // Add to cart AJAX
-  document.querySelectorAll('.add-to-cart-form').forEach(form => {
+  const setAddControlBusy = (control, busy, originalText) => {
+    if ('disabled' in control) control.disabled = busy;
+    control.setAttribute('aria-disabled', busy ? 'true' : 'false');
+    control.classList.toggle('is-busy', busy);
+    control.innerHTML = busy ? '<i class="fas fa-spinner fa-spin"></i>' : originalText;
+  };
+
+  const showAddSuccess = (control, originalText, data) => {
+    updateCartBadge(data.cart_count);
+    control.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
+    control.classList.add('btn-success-flash');
+    setTimeout(() => {
+      setAddControlBusy(control, false, originalText);
+      control.classList.remove('btn-success-flash');
+    }, 1800);
+    showToast(data.message || 'Produto adicionado ao carrinho!', 'success');
+  };
+
+  const readJsonResponse = async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Resposta inesperada do servidor.');
+    }
+    return response.json();
+  };
+
+  // Product pages keep their regular POST forms as a non-JavaScript fallback.
+  document.querySelectorAll('form.add-to-cart-form').forEach(form => {
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const btn = form.querySelector('button[type="submit"]');
       const originalText = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      setAddControlBusy(btn, true, originalText);
       try {
         const fd = new FormData(form);
         const res = await fetch(form.action, {
           method: 'POST', body: fd,
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        const data = await res.json();
-        if (data.success) {
-          // Update cart badge
-          const badge = document.querySelector('.cart-badge');
-          if (badge) { badge.textContent = data.cart_count; }
-          else {
-            const cartBtn = document.querySelector('.cart-btn');
-            if (cartBtn) {
-              const span = document.createElement('span');
-              span.className = 'cart-badge';
-              span.textContent = data.cart_count;
-              cartBtn.appendChild(span);
-            }
-          }
-          btn.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
-          btn.classList.add('btn-success-flash');
-          setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            btn.classList.remove('btn-success-flash');
-          }, 1800);
-          showToast(data.message || 'Produto adicionado ao carrinho!', 'success');
+        const data = await readJsonResponse(res);
+        if (res.ok && data.success) {
+          showAddSuccess(btn, originalText, data);
         } else {
-          btn.innerHTML = originalText;
-          btn.disabled = false;
+          setAddControlBusy(btn, false, originalText);
           showToast(data.error || 'Erro ao adicionar.', 'error');
         }
       } catch {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        setAddControlBusy(btn, false, originalText);
+        showToast('Não foi possível adicionar o produto. Tente novamente.', 'error');
+      }
+    });
+  });
+
+  // Catalog cards request CSRF only when quick-add is used, keeping public HTML cacheable.
+  let csrfTokenPromise;
+  const getCartCsrfToken = async () => {
+    if (!csrfTokenPromise) {
+      const csrfUrl = document.body.dataset.cartCsrfUrl;
+      csrfTokenPromise = fetch(csrfUrl, {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      }).then(async response => {
+        const data = await readJsonResponse(response);
+        if (!response.ok || !data.csrf_token) throw new Error('Token CSRF indisponível.');
+        return data.csrf_token;
+      }).catch(error => {
+        csrfTokenPromise = null;
+        throw error;
+      });
+    }
+    return csrfTokenPromise;
+  };
+
+  document.querySelectorAll('.quick-add-cart').forEach(link => {
+    link.addEventListener('click', async event => {
+      event.preventDefault();
+      if (link.getAttribute('aria-disabled') === 'true') return;
+      const originalText = link.innerHTML;
+      setAddControlBusy(link, true, originalText);
+      try {
+        const csrfToken = await getCartCsrfToken();
+        const body = new FormData();
+        body.append('quantity', '1');
+        const response = await fetch(link.dataset.cartAddUrl, {
+          method: 'POST',
+          body,
+          credentials: 'same-origin',
+          headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        const data = await readJsonResponse(response);
+        if (response.ok && data.success) {
+          showAddSuccess(link, originalText, data);
+        } else {
+          setAddControlBusy(link, false, originalText);
+          showToast(data.error || 'Erro ao adicionar.', 'error');
+        }
+      } catch {
+        setAddControlBusy(link, false, originalText);
+        showToast('Não foi possível adicionar o produto. Tente novamente.', 'error');
       }
     });
   });

@@ -13,32 +13,32 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next_url }}">
       <div class="form-group">
-        <label>{{ form.full_name.label }}</label>
+        <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
         {% render_field form.full_name class="form-control" %}
         {% if form.full_name.errors %}<span class="field-error">{{ form.full_name.errors.0 }}</span>{% endif %}
       </div>
       <div class="form-group">
-        <label>{{ form.email.label }}</label>
+        <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
         {% render_field form.email class="form-control" %}
         {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
       </div>
       <div class="form-group">
-        <label>{{ form.cpf.label }}</label>
+        <label for="{{ form.cpf.id_for_label }}">{{ form.cpf.label }}</label>
         {% render_field form.cpf class="form-control" %}
         {% if form.cpf.errors %}<span class="field-error">{{ form.cpf.errors.0 }}</span>{% endif %}
       </div>
       <div class="form-group">
-        <label>{{ form.whatsapp.label }}</label>
+        <label for="{{ form.whatsapp.id_for_label }}">{{ form.whatsapp.label }}</label>
         {% render_field form.whatsapp class="form-control" %}
         {% if form.whatsapp.errors %}<span class="field-error">{{ form.whatsapp.errors.0 }}</span>{% endif %}
       </div>
       <div class="form-group">
-        <label>{{ form.password1.label }}</label>
+        <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
         {% render_field form.password1 class="form-control" %}
         {% if form.password1.errors %}<span class="field-error">{{ form.password1.errors.0 }}</span>{% endif %}
       </div>
       <div class="form-group">
-        <label>{{ form.password2.label }}</label>
+        <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
         {% render_field form.password2 class="form-control" %}
         {% if form.password2.errors %}<span class="field-error">{{ form.password2.errors.0 }}</span>{% endif %}
       </div>

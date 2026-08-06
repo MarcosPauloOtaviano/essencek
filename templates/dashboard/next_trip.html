@@ -8,19 +8,19 @@
     {% csrf_token %}
     <div class="form-row">
       <div class="form-group">
-        <label>{{ form.trip_date.label }}</label>
+        <label for="{{ form.trip_date.id_for_label }}">{{ form.trip_date.label }}</label>
         {% render_field form.trip_date class="dash-input" %}
       </div>
       <div class="form-group">
-        <label>{{ form.order_deadline.label }}</label>
+        <label for="{{ form.order_deadline.id_for_label }}">{{ form.order_deadline.label }}</label>
         {% render_field form.order_deadline class="dash-input" %}
       </div>
       <div class="form-group full">
-        <label>{{ form.message.label }}</label>
+        <label for="{{ form.message.id_for_label }}">{{ form.message.label }}</label>
         {% render_field form.message class="dash-textarea" %}
       </div>
       <div class="form-group full">
-        <label>{{ form.notes.label }} <small>(interno)</small></label>
+        <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }} <small>(interno)</small></label>
         {% render_field form.notes class="dash-textarea" %}
       </div>
       <div class="form-group">
@@ -35,7 +35,7 @@
 </div>
 {% if trip %}
 <div class="dash-card mt-2">
-  <h3>Configuração atual</h3>
+  <h2>Configuração atual</h2>
   <p><strong>Viagem:</strong> {{ trip.trip_date|date:"d/m/Y" }}</p>
   <p><strong>Limite de encomendas:</strong> {{ trip.order_deadline|date:"d/m/Y" }}</p>
   <p><strong>Status:</strong> {% if trip.is_active %}<span class="badge-active">Ativo</span>{% else %}<span class="badge-inactive">Inativo</span>{% endif %}</p>

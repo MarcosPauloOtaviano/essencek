@@ -11,13 +11,13 @@
   <div class="order-detail-main">
     <!-- Items -->
     <div class="dash-card">
-      <h3>Itens do pedido</h3>
+      <h2>Itens do pedido</h2>
       <table class="dash-table">
         <thead><tr><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Preço unit.</th><th>Subtotal</th><th>Status item</th></tr></thead>
         <tbody>
           {% for item in order.items.all %}
           <tr>
-            <td><span class="order-item-product"><img src="{{ item.display_image_url }}" alt="{{ item.product_name }}" class="order-item-thumb">{{ item.product_name }}</span>{% if item.display_variant_label %}<br><small>{{ item.display_variant_label }}</small>{% endif %}{% if item.product_brand %}<br><small>{{ item.product_brand }}</small>{% endif %}</td>
+            <td><span class="order-item-product"><img src="{{ item.display_image_url }}" alt="" class="order-item-thumb">{{ item.product_name }}</span>{% if item.display_variant_label %}<br><small>{{ item.display_variant_label }}</small>{% endif %}{% if item.product_brand %}<br><small>{{ item.product_brand }}</small>{% endif %}</td>
             <td>{% if item.is_pre_order %}<span class="badge badge-pre-order">Encomenda</span>{% else %}<span class="badge badge-available">Pronta entrega</span>{% endif %}</td>
             <td>{{ item.quantity }}</td>
             <td><strong>{{ item.unit_price|brl }}</strong>{% if item.display_unit_price_usd %}<br><small>≈ {{ item.display_unit_price_usd|usd }}</small>{% endif %}</td>
@@ -36,22 +36,22 @@
 
     <!-- Tracking -->
     <div class="dash-card">
-      <h3><i class="fas fa-shipping-fast"></i> Rastreamento</h3>
+      <h2><i class="fas fa-shipping-fast"></i> Rastreamento</h2>
       <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="update_tracking">
         <div class="form-row">
           <div class="form-group">
-            <label>Transportadora</label>
-            <input type="text" name="carrier" value="{{ order.carrier }}" class="dash-input" placeholder="Ex: Correios">
+            <label for="orderCarrier">Transportadora</label>
+            <input type="text" id="orderCarrier" name="carrier" value="{{ order.carrier }}" class="dash-input" placeholder="Ex: Correios">
           </div>
           <div class="form-group">
-            <label>Código de rastreio</label>
-            <input type="text" name="tracking_code" value="{{ order.tracking_code }}" class="dash-input" placeholder="Ex: AA123456789BR">
+            <label for="orderTrackingCode">Código de rastreio</label>
+            <input type="text" id="orderTrackingCode" name="tracking_code" value="{{ order.tracking_code }}" class="dash-input" placeholder="Ex: AA123456789BR">
           </div>
           <div class="form-group full">
-            <label>Link de rastreio</label>
-            <input type="url" name="tracking_url" value="{{ order.tracking_url }}" class="dash-input" placeholder="https://...">
+            <label for="orderTrackingUrl">Link de rastreio</label>
+            <input type="url" id="orderTrackingUrl" name="tracking_url" value="{{ order.tracking_url }}" class="dash-input" placeholder="https://...">
           </div>
         </div>
         <button type="submit" class="btn-dash btn-dash-primary"><i class="fas fa-save"></i> Salvar rastreamento e marcar como enviado</button>
@@ -60,22 +60,22 @@
 
     <!-- Notes -->
     <div class="dash-card">
-      <h3>Status e observações internas</h3>
+      <h2>Status e observações internas</h2>
       <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="update_status">
         <div class="form-row">
           <div class="form-group">
-            <label>Status do pedido</label>
-            <select name="status" class="dash-select">
+            <label for="orderStatus">Status do pedido</label>
+            <select name="status" id="orderStatus" class="dash-select">
               {% for val, label in status_choices %}
               <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="form-group full">
-            <label>Observações internas</label>
-            <textarea name="internal_notes" class="dash-textarea" rows="3">{{ order.internal_notes }}</textarea>
+            <label for="orderInternalNotes">Observações internas</label>
+            <textarea name="internal_notes" id="orderInternalNotes" class="dash-textarea" rows="3">{{ order.internal_notes }}</textarea>
           </div>
         </div>
         <button type="submit" class="btn-dash btn-dash-primary"><i class="fas fa-save"></i> Salvar</button>
@@ -86,7 +86,7 @@
   <div class="order-detail-sidebar">
     <!-- Customer -->
     <div class="dash-card">
-      <h3><i class="fas fa-user"></i> Cliente</h3>
+      <h2><i class="fas fa-user"></i> Cliente</h2>
       <p><strong>{{ order.customer_name }}</strong></p>
       <p>{{ order.customer_email }}</p>
       <p><strong>Telefone:</strong> {{ order.customer_whatsapp }}</p>
@@ -94,7 +94,7 @@
 
     <!-- Payment -->
     <div class="dash-card">
-      <h3><i class="fas fa-credit-card"></i> Pagamento</h3>
+      <h2><i class="fas fa-credit-card"></i> Pagamento</h2>
       <p><strong>Método:</strong> {{ order.get_payment_method_display }}</p>
       <p><strong>Status:</strong> {{ order.payment_status }}</p>
       {% if order.payment_confirmed_at %}
@@ -119,7 +119,7 @@
 
     <!-- Payment Attempts -->
     <div class="dash-card">
-      <h3><i class="fas fa-history"></i> Tentativas de pagamento</h3>
+      <h2><i class="fas fa-history"></i> Tentativas de pagamento</h2>
       {% for p in order.payments.all %}
       <div class="dash-payment-attempt {% if p.is_active %}attempt-active{% else %}attempt-inactive{% endif %}">
         <p><strong>#{{ forloop.revcounter }}</strong> — {{ p.get_status_display }}
@@ -135,7 +135,7 @@
 
     <!-- Address -->
     <div class="dash-card">
-      <h3><i class="fas fa-map-marker-alt"></i> Endereço</h3>
+      <h2><i class="fas fa-map-marker-alt"></i> Endereço</h2>
       <p>{{ order.address }}, {{ order.address_number }}{% if order.address_complement %} — {{ order.address_complement }}{% endif %}</p>
       <p>{{ order.neighborhood }}</p>
       <p>{{ order.city }}/{{ order.state }}</p>
@@ -144,7 +144,7 @@
 
     <!-- Dates -->
     <div class="dash-card">
-      <h3><i class="fas fa-calendar"></i> Datas</h3>
+      <h2><i class="fas fa-calendar"></i> Datas</h2>
       <p><strong>Criado:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
       {% if order.shipped_at %}<p><strong>Enviado:</strong> {{ order.shipped_at|date:"d/m/Y H:i" }}</p>{% endif %}
       {% if order.delivered_at %}<p><strong>Entregue:</strong> {{ order.delivered_at|date:"d/m/Y H:i" }}</p>{% endif %}

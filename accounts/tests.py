@@ -141,3 +141,15 @@ class UserIdentityValidationTests(TestCase):
         )
 
         self.assertRedirects(response, reverse('home'), fetch_redirect_response=False)
+
+    def test_logout_rejects_get_and_accepts_post(self):
+        user = self.create_user()
+        self.client.force_login(user)
+
+        get_response = self.client.get(reverse('logout'))
+        self.assertEqual(get_response.status_code, 405)
+        self.assertIn('_auth_user_id', self.client.session)
+
+        post_response = self.client.post(reverse('logout'))
+        self.assertRedirects(post_response, reverse('home'), fetch_redirect_response=False)
+        self.assertNotIn('_auth_user_id', self.client.session)

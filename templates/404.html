@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Página não encontrada{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="empty-state" role="status">
+    <i class="fas fa-search" aria-hidden="true"></i>
+    <h1>Página não encontrada</h1>
+    <p>O endereço informado não existe ou não está mais disponível.</p>
+    <a href="{% url 'home' %}" class="btn btn-primary">Voltar para a loja</a>
+  </div>
+</div>
+{% endblock %}

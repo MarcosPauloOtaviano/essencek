@@ -5,7 +5,7 @@
 <div class="container">
   <div class="page-header">
     <h1 class="page-title">Pedido {{ order.order_number }}</h1>
-    <nav class="breadcrumb"><a href="{% url 'my_orders' %}">Meus pedidos</a> / <span>{{ order.order_number }}</span></nav>
+    <nav class="breadcrumb" aria-label="Trilha de navegação"><a href="{% url 'my_orders' %}">Meus pedidos</a> / <span>{{ order.order_number }}</span></nav>
   </div>
   <div class="account-layout">
     {% include 'accounts/_sidebar.html' %}
@@ -14,18 +14,18 @@
         <div class="order-detail-header">
           <div>
             <p><strong>Data:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
-            <p><strong>Pagamento:</strong> {{ order.get_payment_method_display }}</p>
+            <p><strong>Finalização:</strong> {{ order.get_payment_method_display }}</p>
           </div>
           <span class="order-status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
         </div>
 
-        <h3>Itens do pedido</h3>
+        <h2>Itens do pedido</h2>
         <table class="order-items-table">
           <thead><tr><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Preço</th><th>Subtotal</th><th>Status</th></tr></thead>
           <tbody>
             {% for item in order.items.all %}
             <tr>
-              <td><span class="order-item-product"><img src="{{ item.display_image_url }}" alt="{{ item.product_name }}" class="order-item-thumb">{{ item.product_name }}</span>{% if item.display_variant_label %}<br><small>{{ item.display_variant_label }}</small>{% endif %}{% if item.product_brand %} <small>({{ item.product_brand }})</small>{% endif %}</td>
+              <td><span class="order-item-product"><img src="{{ item.display_image_url }}" alt="" class="order-item-thumb">{{ item.product_name }}</span>{% if item.display_variant_label %}<br><small>{{ item.display_variant_label }}</small>{% endif %}{% if item.product_brand %} <small>({{ item.product_brand }})</small>{% endif %}</td>
               <td>{% if item.is_pre_order %}<span class="badge badge-pre-order">Encomenda</span>{% else %}<span class="badge badge-available">Pronta entrega</span>{% endif %}</td>
               <td>{{ item.quantity }}</td>
               <td><strong>{{ item.unit_price|brl }}</strong>{% if item.display_unit_price_usd %}<br><small>≈ {{ item.display_unit_price_usd|usd }}</small>{% endif %}</td>
@@ -44,6 +44,16 @@
 
         <!-- Payment section -->
         <div class="payment-section-card">
+          {% if order.payment_method == 'whatsapp' %}
+          <h3><i class="fab fa-whatsapp"></i> Confirmação pelo WhatsApp</h3>
+          <div class="payment-pending-notice">
+            <i class="fas fa-info-circle"></i>
+            <p>Este pedido aguarda confirmação de disponibilidade, entrega e pagamento pela equipe da EssenceK.</p>
+          </div>
+          <a href="{% url 'orders:whatsapp' order.order_number %}" class="btn btn-primary">
+            <i class="fab fa-whatsapp"></i> Abrir resumo no WhatsApp
+          </a>
+          {% else %}
           <h3><i class="fas fa-credit-card"></i> Pagamento</h3>
           <div class="payment-info-grid">
             <p><strong>Status:</strong>
@@ -96,6 +106,7 @@
             <p>Pagamento confirmado. Seu pedido está sendo preparado.</p>
           </div>
           {% endif %}
+          {% endif %}
         </div>
 
         {% if order.tracking_code %}
@@ -112,9 +123,14 @@
         {% endif %}
 
         <div class="order-address">
+          {% if order.shipping_service == 'Retirada na loja' %}
+          <h3><i class="fas fa-store"></i> Retirada na loja</h3>
+          <p>A equipe confirmará o local e o horário pelo WhatsApp.</p>
+          {% else %}
           <h3><i class="fas fa-map-marker-alt"></i> Endereço de entrega</h3>
           <p>{{ order.address }}, {{ order.address_number }}{% if order.address_complement %} — {{ order.address_complement }}{% endif %}</p>
           <p>{{ order.neighborhood }} — {{ order.city }}/{{ order.state }} — CEP {{ order.cep }}</p>
+          {% endif %}
         </div>
 
         <div class="order-actions">

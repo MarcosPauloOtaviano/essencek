@@ -38,6 +38,9 @@
                 {% if order.display_total_usd %}<small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}
               </span>
               <div class="order-actions">
+                {% if order.payment_method == 'whatsapp' and order.payment_status != 'confirmed' %}
+                <a href="{% url 'orders:whatsapp' order.order_number %}" class="btn btn-primary btn-sm"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                {% endif %}
                 <a href="{% url 'order_detail' order.order_number %}" class="btn btn-secondary btn-sm">Ver detalhes</a>
               </div>
             </div>

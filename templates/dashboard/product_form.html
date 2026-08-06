@@ -13,7 +13,7 @@
   {% csrf_token %}
   {% if form_error_summary %}
   <div class="dash-card dash-form-errors">
-    <h3><i class="fas fa-exclamation-circle"></i> Não foi possível salvar</h3>
+    <h2><i class="fas fa-exclamation-circle"></i> Não foi possível salvar</h2>
     <p>Corrija os itens abaixo e tente novamente.</p>
     <ul>
       {% for error in form_error_summary %}
@@ -26,11 +26,11 @@
     <!-- Main fields -->
     <div class="dash-form-main">
       <div class="dash-card">
-        <h3><i class="fas fa-barcode"></i> Identificação do produto</h3>
+        <h2><i class="fas fa-barcode"></i> Identificação do produto</h2>
         <p class="field-note" style="margin-bottom:12px">Escaneie o código de barras ou digite nome, marca ou termo do produto para buscar no cadastro e nos catálogos configurados.</p>
         <div class="form-row">
           <div class="form-group">
-            <label>Código, nome ou marca</label>
+            <label for="productLookupInput">Código, nome ou marca</label>
             <div style="display:flex;gap:8px">
               <input type="text" class="dash-input" id="productLookupInput" placeholder="7891234567890, Good Girl, serum...">
               <button type="button" class="btn-dash btn-dash-secondary" id="gtinSearchBtn" onclick="gtinLookup()" style="white-space:nowrap">
@@ -39,7 +39,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label>&nbsp;</label>
+            <span aria-hidden="true">&nbsp;</span>
             <button type="button" class="btn-dash btn-dash-ghost" id="gtinCameraBtn" onclick="startGtinScanner()" style="white-space:nowrap">
               <i class="fas fa-camera"></i> Escanear câmera
             </button>
@@ -47,7 +47,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>GTIN / EAN salvo no produto</label>
+            <label for="gtinInput">GTIN / EAN salvo no produto</label>
             {% render_field form.gtin class="dash-input" id="gtinInput" placeholder="7891234567890" %}
             {% if form.gtin.errors %}<span class="field-error">{{ form.gtin.errors.0 }}</span>{% endif %}
           </div>
@@ -65,49 +65,49 @@
       </div>
 
       <div class="dash-card">
-        <h3>Informações básicas</h3>
+        <h2>Informações básicas</h2>
         <div class="form-row">
           <div class="form-group full">
-            <label>Nome do produto *</label>
+            <label for="{{ form.name.id_for_label }}">Nome do produto *</label>
             {% render_field form.name class="dash-input" %}
             {% if form.name.errors %}<span class="field-error">{{ form.name.errors.0 }}</span>{% endif %}
           </div>
           <div class="form-group">
-            <label>Marca</label>
+            <label for="{{ form.brand_fk.id_for_label }}">Marca</label>
             {% render_field form.brand_fk class="dash-select" %}
             <small class="field-note"><a href="{% url 'dashboard:brand_add' %}" target="_blank">+ Nova marca</a></small>
           </div>
           <div class="form-group">
-            <label>Categoria</label>
+            <label for="{{ form.category.id_for_label }}">Categoria</label>
             {% render_field form.category class="dash-select" %}
           </div>
           <div class="form-group full">
-            <label>Descrição curta</label>
+            <label for="{{ form.short_description.id_for_label }}">Descrição curta</label>
             {% render_field form.short_description class="dash-input" %}
           </div>
           <div class="form-group full">
-            <label>Descrição completa</label>
+            <label for="{{ form.description.id_for_label }}">Descrição completa</label>
             {% render_field form.description class="dash-textarea" %}
           </div>
         </div>
       </div>
 
       <div class="dash-card">
-        <h3>Preços em reais</h3>
+        <h2>Preços em reais</h2>
         <div class="form-row">
           <div class="form-group">
-            <label>Preço de venda em reais *</label>
+            <label for="{{ form.price.id_for_label }}">Preço de venda em reais *</label>
             {% render_field form.price class="dash-input" placeholder="199.90" %}
             {% if form.price.errors %}<span class="field-error">{{ form.price.errors.0 }}</span>{% endif %}
             <small class="field-note">Este é o preço oficial exibido ao cliente e cobrado no pagamento.</small>
           </div>
           <div class="form-group">
-            <label>Preço promocional em reais</label>
+            <label for="{{ form.sale_price.id_for_label }}">Preço promocional em reais</label>
             {% render_field form.sale_price class="dash-input" placeholder="179.90" %}
             {% if form.sale_price.errors %}<span class="field-error">{{ form.sale_price.errors.0 }}</span>{% endif %}
           </div>
           <div class="form-group">
-            <label>Preço de custo em reais <small>(interno)</small></label>
+            <label for="{{ form.cost_price.id_for_label }}">Preço de custo em reais <small>(interno)</small></label>
             {% render_field form.cost_price class="dash-input" placeholder="120.00" %}
             {% if form.cost_price.errors %}<span class="field-error">{{ form.cost_price.errors.0 }}</span>{% endif %}
             <small class="field-note">Visível apenas no painel. Nunca exibido ao cliente.</small>
@@ -116,22 +116,22 @@
       </div>
 
       <div class="dash-card">
-        <h3>Dimensões para frete</h3>
+        <h2>Dimensões para frete</h2>
         <div class="form-row">
           <div class="form-group">
-            <label>Peso (kg)</label>
+            <label for="{{ form.weight.id_for_label }}">Peso (kg)</label>
             {% render_field form.weight class="dash-input" %}
           </div>
           <div class="form-group">
-            <label>Altura (cm)</label>
+            <label for="{{ form.height.id_for_label }}">Altura (cm)</label>
             {% render_field form.height class="dash-input" %}
           </div>
           <div class="form-group">
-            <label>Largura (cm)</label>
+            <label for="{{ form.width.id_for_label }}">Largura (cm)</label>
             {% render_field form.width class="dash-input" %}
           </div>
           <div class="form-group">
-            <label>Comprimento (cm)</label>
+            <label for="{{ form.length.id_for_label }}">Comprimento (cm)</label>
             {% render_field form.length class="dash-input" %}
           </div>
         </div>
@@ -139,7 +139,7 @@
 
       <!-- Perfume type & Variants -->
       <div class="dash-card" id="variantsCard">
-        <h3><i class="fas fa-flask"></i> Tipo de perfume e variações</h3>
+        <h2><i class="fas fa-flask"></i> Tipo de perfume e variações</h2>
         <div class="form-row">
           <div class="form-group">
             <label class="toggle-label">
@@ -151,9 +151,9 @@
         </div>
 
         <div id="variantFormsetArea">
-          <h4 style="margin:16px 0 8px;font-size:0.95rem;color:#555">
+          <h3 style="margin:16px 0 8px;font-size:0.95rem;color:#555">
             <i class="fas fa-vials"></i> Volumes / variações
-          </h4>
+          </h3>
           <p class="field-note" style="margin-bottom:12px">Cada volume tem preço, estoque e status próprios.</p>
           <p class="field-note variant-disabled-note">Essa área só é usada para decanter. Produtos lacrados, eletrônicos e beleza coreana podem ignorar estes campos.</p>
 
@@ -186,37 +186,37 @@
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Nome da variação *</label>
+                  <label for="{{ vform.name.id_for_label }}">Nome da variação *</label>
                   {% render_field vform.name class="dash-input" placeholder="Ex: 10ml, 20ml" %}
                   {% if vform.name.errors %}<span class="field-error">{{ vform.name.errors.0 }}</span>{% endif %}
                 </div>
                 <div class="form-group">
-                  <label>Volume (ml)</label>
+                  <label for="{{ vform.volume_ml.id_for_label }}">Volume (ml)</label>
                   {% render_field vform.volume_ml class="dash-input" placeholder="10" %}
                 </div>
                 <div class="form-group">
-                  <label>Preço em reais *</label>
+                  <label for="{{ vform.price.id_for_label }}">Preço em reais *</label>
                   {% render_field vform.price class="dash-input" placeholder="89.90" %}
                   {% if vform.price.errors %}<span class="field-error">{{ vform.price.errors.0 }}</span>{% endif %}
                 </div>
                 <div class="form-group">
-                  <label>Preço promocional</label>
+                  <label for="{{ vform.promotional_price.id_for_label }}">Preço promocional</label>
                   {% render_field vform.promotional_price class="dash-input" placeholder="79.90" %}
                 </div>
                 <div class="form-group">
-                  <label>Preço de custo <small>(interno)</small></label>
+                  <label for="{{ vform.cost_price.id_for_label }}">Preço de custo <small>(interno)</small></label>
                   {% render_field vform.cost_price class="dash-input" placeholder="40.00" %}
                 </div>
                 <div class="form-group">
-                  <label>Estoque</label>
+                  <label for="{{ vform.stock.id_for_label }}">Estoque</label>
                   {% render_field vform.stock class="dash-input" placeholder="0" %}
                 </div>
                 <div class="form-group">
-                  <label>SKU</label>
+                  <label for="{{ vform.sku.id_for_label }}">SKU</label>
                   {% render_field vform.sku class="dash-input" %}
                 </div>
                 <div class="form-group">
-                  <label>GTIN</label>
+                  <label for="{{ vform.gtin.id_for_label }}">GTIN</label>
                   {% render_field vform.gtin class="dash-input" %}
                 </div>
                 <div class="form-group">
@@ -243,7 +243,8 @@
       </div>
 
       <div class="dash-card">
-        <h3>Observações internas</h3>
+        <h2>Observações internas</h2>
+        <label for="{{ form.internal_notes.id_for_label }}" class="visually-hidden">Observações internas</label>
         {% render_field form.internal_notes class="dash-textarea" rows="3" %}
         <small class="field-note">Nunca exibido ao cliente.</small>
       </div>
@@ -252,13 +253,13 @@
     <!-- Sidebar -->
     <div class="dash-form-sidebar">
       <div class="dash-card">
-        <h3>Status e visibilidade</h3>
+        <h2>Status e visibilidade</h2>
         <div class="form-group">
-          <label>Status público</label>
+          <label for="{{ form.status.id_for_label }}">Status público</label>
           {% render_field form.status class="dash-select" %}
         </div>
         <div class="form-group">
-          <label>Estoque real</label>
+          <label for="{{ form.stock.id_for_label }}">Estoque real</label>
           {% render_field form.stock class="dash-input" %}
         </div>
         <div class="toggle-group">
@@ -283,9 +284,9 @@
 
       <!-- GTIN captured image -->
       <div class="dash-card" id="capturedImageCard" style="display:none">
-        <h3><i class="fas fa-magic"></i> Foto encontrada automaticamente</h3>
+        <h2><i class="fas fa-magic"></i> Foto encontrada automaticamente</h2>
         <div style="text-align:center;padding:8px 0">
-          <img id="capturedImagePreview" src="" alt="Preview"
+          <img id="capturedImagePreview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Prévia da foto encontrada"
                style="max-width:100%;max-height:280px;border-radius:8px;border:2px solid #4caf50">
         </div>
         <p class="field-note" style="text-align:center;margin-top:4px">
@@ -303,7 +304,7 @@
       <!-- Image search -->
       {% if product %}
       <div class="dash-card">
-        <h3><i class="fas fa-images"></i> Buscar foto real</h3>
+        <h2><i class="fas fa-images"></i> Buscar foto real</h2>
         <p class="field-note" style="margin-bottom:8px">Busque imagens nas bases de dados de produtos usando GTIN, nome ou marca.</p>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input type="text" class="dash-input" id="imageSearchInput" placeholder="GTIN, nome ou marca..."
@@ -318,7 +319,7 @@
 
       <!-- Images -->
       <div class="dash-card">
-        <h3>Fotos do produto</h3>
+        <h2>Fotos do produto</h2>
         {% if product %}
           <div class="product-images-grid" id="existingImages">
             {% for img in product.images.all %}
@@ -502,7 +503,7 @@ function setCapturedImage(url) {
 
 function clearCapturedImage() {
   document.getElementById('capturedImageCard').style.display = 'none';
-  document.getElementById('capturedImagePreview').src = '';
+  document.getElementById('capturedImagePreview').src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
   document.getElementById('capturedImageUrl').value = '';
 }
 
@@ -660,40 +661,40 @@ function highlightRequiredFields() {
       <div class="variant-form-header"><strong>Variação ${idx + 1}</strong></div>
       <div class="form-row">
         <div class="form-group">
-          <label>Nome da variação *</label>
-          <input type="text" name="variants-${idx}-name" class="dash-input" placeholder="Ex: 10ml, 20ml">
+          <label for="id_variants-${idx}-name">Nome da variação *</label>
+          <input type="text" id="id_variants-${idx}-name" name="variants-${idx}-name" class="dash-input" placeholder="Ex: 10ml, 20ml">
         </div>
         <div class="form-group">
-          <label>Volume (ml)</label>
-          <input type="number" name="variants-${idx}-volume_ml" class="dash-input" placeholder="10">
+          <label for="id_variants-${idx}-volume_ml">Volume (ml)</label>
+          <input type="number" id="id_variants-${idx}-volume_ml" name="variants-${idx}-volume_ml" class="dash-input" placeholder="10">
         </div>
         <div class="form-group">
-          <label>Preço em reais *</label>
-          <input type="number" name="variants-${idx}-price" class="dash-input" placeholder="89.90" step="0.01">
+          <label for="id_variants-${idx}-price">Preço em reais *</label>
+          <input type="number" id="id_variants-${idx}-price" name="variants-${idx}-price" class="dash-input" placeholder="89.90" step="0.01">
         </div>
         <div class="form-group">
-          <label>Preço promocional</label>
-          <input type="number" name="variants-${idx}-promotional_price" class="dash-input" placeholder="79.90" step="0.01">
+          <label for="id_variants-${idx}-promotional_price">Preço promocional</label>
+          <input type="number" id="id_variants-${idx}-promotional_price" name="variants-${idx}-promotional_price" class="dash-input" placeholder="79.90" step="0.01">
         </div>
         <div class="form-group">
-          <label>Preço de custo <small>(interno)</small></label>
-          <input type="number" name="variants-${idx}-cost_price" class="dash-input" placeholder="40.00" step="0.01">
+          <label for="id_variants-${idx}-cost_price">Preço de custo <small>(interno)</small></label>
+          <input type="number" id="id_variants-${idx}-cost_price" name="variants-${idx}-cost_price" class="dash-input" placeholder="40.00" step="0.01">
         </div>
         <div class="form-group">
-          <label>Estoque</label>
-          <input type="number" name="variants-${idx}-stock" class="dash-input" placeholder="0" value="0">
+          <label for="id_variants-${idx}-stock">Estoque</label>
+          <input type="number" id="id_variants-${idx}-stock" name="variants-${idx}-stock" class="dash-input" placeholder="0" value="0">
         </div>
         <div class="form-group">
-          <label>SKU</label>
-          <input type="text" name="variants-${idx}-sku" class="dash-input">
+          <label for="id_variants-${idx}-sku">SKU</label>
+          <input type="text" id="id_variants-${idx}-sku" name="variants-${idx}-sku" class="dash-input">
         </div>
         <div class="form-group">
-          <label>GTIN</label>
-          <input type="text" name="variants-${idx}-gtin" class="dash-input">
+          <label for="id_variants-${idx}-gtin">GTIN</label>
+          <input type="text" id="id_variants-${idx}-gtin" name="variants-${idx}-gtin" class="dash-input">
         </div>
         <div class="form-group">
           <label class="toggle-label">
-            <input type="checkbox" name="variants-${idx}-is_active" checked> Ativo
+            <input type="checkbox" id="id_variants-${idx}-is_active" name="variants-${idx}-is_active" checked> Ativo
           </label>
         </div>
       </div>

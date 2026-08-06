@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="container">
-  <nav class="breadcrumb">
+  <nav class="breadcrumb" aria-label="Trilha de navegação">
     <a href="{% url 'home' %}">Home</a> /
     <a href="{% url 'products:list' %}">Produtos</a> /
     {% if product.category %}<a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a> / {% endif %}
@@ -84,7 +84,7 @@
 
       <!-- Actions -->
       <div class="product-detail-actions">
-        {% if product.status == 'out_of_stock' %}
+        {% if not product_available %}
           <div class="out-of-stock-notice">
             <i class="fas fa-times-circle"></i>
             <p>Produto esgotado. <a href="{% url 'contact' %}">Entre em contato</a> para saber da próxima reposição.</p>
@@ -101,28 +101,35 @@
               <label>Escolha o volume:</label>
               <div class="variant-options">
                 {% for variant in variants %}
-                <label class="variant-option {% if variant.stock <= 0 %}variant-option-disabled{% endif %}">
+                <label class="variant-option {% if not product.is_pre_order and variant.stock <= 0 %}variant-option-disabled{% endif %}">
                   <input type="radio" name="variant_id" value="{{ variant.pk }}"
                          data-brl="{{ variant.price_brl|brl }}"
                          data-usd="{% if variant.current_price_usd %}{{ variant.current_price_usd|usd }}{% endif %}"
                          data-stock="{{ variant.stock }}"
-                         {% if forloop.first %}checked{% endif %}
-                         {% if variant.stock <= 0 %}disabled{% endif %}
+                         data-max="99"
+                         {% if first_variant and variant.pk == first_variant.pk %}checked{% endif %}
+                         {% if not product.is_pre_order and variant.stock <= 0 %}disabled{% endif %}
                          onchange="selectVariant(this)">
                   <span>{{ variant.name }}</span>
                   <strong>{{ variant.price_brl|brl }}</strong>
-                  {% if variant.current_price_usd %}<small>≈ {{ variant.current_price_usd|usd }} · {{ variant.stock }} un.</small>{% else %}<small>{{ variant.stock }} un.</small>{% endif %}
+                  {% if product.is_pre_order %}
+                    <small>Sob encomenda, sujeito a confirmação</small>
+                  {% elif variant.current_price_usd %}
+                    <small>≈ {{ variant.current_price_usd|usd }} · {{ variant.stock }} un.</small>
+                  {% else %}
+                    <small>{{ variant.stock }} un.</small>
+                  {% endif %}
                 </label>
                 {% endfor %}
               </div>
             </div>
             {% endif %}
             <div class="quantity-selector">
-              <label>Quantidade:</label>
+              <label for="qty">Quantidade:</label>
               <div class="qty-control">
-                <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
-                <input type="number" name="quantity" id="qty" value="1" min="1" max="{% if first_variant %}{{ first_variant.stock }}{% else %}10{% endif %}" class="qty-input">
-                <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                <button type="button" class="qty-btn" aria-label="Diminuir quantidade" onclick="changeQty(-1)"><i class="fas fa-minus" aria-hidden="true"></i></button>
+                <input type="number" name="quantity" id="qty" value="1" min="1" max="99" class="qty-input">
+                <button type="button" class="qty-btn" aria-label="Aumentar quantidade" onclick="changeQty(1)"><i class="fas fa-plus" aria-hidden="true"></i></button>
               </div>
             </div>
             <div class="action-buttons">
@@ -144,7 +151,8 @@
                          data-brl="{{ variant.price_brl|brl }}"
                          data-usd="{% if variant.current_price_usd %}{{ variant.current_price_usd|usd }}{% endif %}"
                          data-stock="{{ variant.stock }}"
-                         {% if forloop.first %}checked{% endif %}
+                         data-max="{{ variant.stock }}"
+                         {% if first_variant and variant.pk == first_variant.pk %}checked{% endif %}
                          {% if variant.stock <= 0 %}disabled{% endif %}
                          onchange="selectVariant(this)">
                   <span>{{ variant.name }}</span>
@@ -156,11 +164,11 @@
             </div>
             {% endif %}
             <div class="quantity-selector">
-              <label>Quantidade:</label>
+              <label for="qty">Quantidade:</label>
               <div class="qty-control">
-                <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+                <button type="button" class="qty-btn" aria-label="Diminuir quantidade" onclick="changeQty(-1)"><i class="fas fa-minus" aria-hidden="true"></i></button>
                 <input type="number" name="quantity" id="qty" value="1" min="1" max="{% if first_variant %}{{ first_variant.stock }}{% else %}{{ product.stock|default:99 }}{% endif %}" class="qty-input">
-                <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                <button type="button" class="qty-btn" aria-label="Aumentar quantidade" onclick="changeQty(1)"><i class="fas fa-plus" aria-hidden="true"></i></button>
               </div>
             </div>
             <div class="action-buttons">
@@ -184,10 +192,10 @@
 
       <!-- Shipping Calculator -->
       <div class="shipping-calculator">
-        <h4><i class="fas fa-truck"></i> Calcular frete</h4>
+        <h2><i class="fas fa-truck"></i> Calcular frete</h2>
         <div class="cep-form">
-          <input type="text" id="cepInput" placeholder="00000-000" maxlength="9" class="cep-input">
-          <button onclick="calcShipping()" class="btn btn-secondary">Calcular</button>
+          <input type="text" id="cepInput" aria-label="CEP para cálculo de frete" placeholder="00000-000" maxlength="9" class="cep-input">
+          <button type="button" onclick="calcShipping()" class="btn btn-secondary">Calcular</button>
         </div>
         <div id="shippingResult" class="shipping-result"></div>
       </div>
@@ -207,7 +215,7 @@
         {% endif %}
         <div class="notice notice-default">
           <i class="fas fa-lock"></i>
-          Pagamento 100% seguro via Pix ou cartão de crédito.
+          Pedido e opções de pagamento confirmados diretamente pelo WhatsApp.
         </div>
       </div>
     </div>
@@ -235,7 +243,7 @@
         <ol>
           <li>Adicione o produto ao carrinho e finalize o pedido.</li>
           <li>Nossa equipe confirmará a disponibilidade e o prazo.</li>
-          <li>Após confirmação, você receberá o link de pagamento.</li>
+          <li>Após confirmação, a equipe enviará as opções de pagamento pelo WhatsApp.</li>
           <li>O produto será trazido na próxima viagem mensal.</li>
           <li>Após chegada, será embalado e enviado para você.</li>
         </ol>
@@ -283,7 +291,7 @@ function selectVariant(input) {
   if (priceBrl) priceBrl.textContent = input.dataset.brl;
   if (priceUsd) priceUsd.textContent = input.dataset.usd ? `≈ ${input.dataset.usd} no câmbio do dia` : '';
   if (qty) {
-    qty.max = input.dataset.stock || '99';
+    qty.max = input.dataset.max || '99';
     qty.value = Math.min(parseInt(qty.value || '1'), parseInt(qty.max || '99'));
   }
   if (buyNowVariant) buyNowVariant.value = input.value;
@@ -296,27 +304,58 @@ function showTab(id, btn) {
   btn.classList.add('active');
 }
 
+function appendShippingMessage(container, message, className = '') {
+  const paragraph = document.createElement('p');
+  if (className) paragraph.className = className;
+  paragraph.textContent = message;
+  container.replaceChildren(paragraph);
+}
+
+function renderProductShipping(container, options, note) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'shipping-options';
+  options.forEach(opt => {
+    const row = document.createElement('div');
+    row.className = 'shipping-option';
+    const label = document.createElement('span');
+    label.className = 'ship-label';
+    label.textContent = `${opt.label} — ${opt.carrier || 'Transportadora'}`;
+    const price = document.createElement('span');
+    price.className = 'ship-price';
+    price.textContent = Number(opt.price).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+    const days = document.createElement('span');
+    days.className = 'ship-days';
+    days.textContent = `${opt.days} dias úteis`;
+    row.append(label, price, days);
+    wrapper.appendChild(row);
+  });
+  container.replaceChildren(wrapper);
+  if (note) {
+    const small = document.createElement('small');
+    small.textContent = note;
+    container.appendChild(small);
+  }
+}
+
 function calcShipping() {
   const cep = document.getElementById('cepInput').value.replace(/\D/g,'');
   const result = document.getElementById('shippingResult');
-  if (cep.length !== 8) { result.innerHTML = '<p class="error">CEP inválido.</p>'; return; }
-  result.innerHTML = '<p>Calculando...</p>';
-  fetch(`/carrinho/calcular-frete/?cep=${cep}`)
+  if (cep.length !== 8) { appendShippingMessage(result, 'CEP inválido.', 'error'); return; }
+  appendShippingMessage(result, 'Calculando...');
+  fetch(`{% url 'cart:shipping' %}?cep=${cep}&product_id={{ product.pk }}`)
     .then(r => r.json())
     .then(data => {
-      if (data.error) { result.innerHTML = `<p class="error">${data.error}</p>`; return; }
-      let html = '<div class="shipping-options">';
-      data.options.forEach(opt => {
-        html += `<div class="shipping-option">
-          <span class="ship-label">${opt.label} — ${opt.carrier}</span>
-          <span class="ship-price">R$ ${opt.price.toFixed(2).replace('.', ',')}</span>
-          <span class="ship-days">${opt.days} dias úteis</span>
-        </div>`;
-      });
-      html += `</div><small>${data.note}</small>`;
-      result.innerHTML = html;
+      if (data.error) { appendShippingMessage(result, data.error, 'error'); return; }
+      if (!Array.isArray(data.options) || data.options.length === 0) {
+        appendShippingMessage(result, 'Nenhuma opção de frete disponível agora.', 'error');
+        return;
+      }
+      renderProductShipping(result, data.options, data.note || '');
     })
-    .catch(() => result.innerHTML = '<p class="error">Erro ao calcular frete.</p>');
+    .catch(() => appendShippingMessage(result, 'Erro ao calcular frete.', 'error'));
 }
 
 // Format CEP input

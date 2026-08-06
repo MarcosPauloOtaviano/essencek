@@ -7,7 +7,7 @@
 <div class="container">
   <div class="page-header">
     <h1 class="page-title">Carrinho</h1>
-    <nav class="breadcrumb"><a href="{% url 'home' %}">Home</a> / <span>Carrinho</span></nav>
+    <nav class="breadcrumb" aria-label="Trilha de navegação"><a href="{% url 'home' %}">Home</a> / <span>Carrinho</span></nav>
   </div>
 
   {% if items %}
@@ -32,7 +32,7 @@
             <th>Preço</th>
             <th>Quantidade</th>
             <th>Subtotal</th>
-            <th></th>
+            <th><span class="visually-hidden">Ações</span></th>
           </tr>
         </thead>
         <tbody>
@@ -50,6 +50,9 @@
                     </span>
                   {% endif %}
                   <span class="cart-status-badge {{ item.product.get_status_display_class }}">{{ item.product.get_status_display }}</span>
+                  {% if not item.is_available %}
+                    <span class="cart-unavailable-notice">Indisponível nessa quantidade. Ajuste ao estoque atual ou remova o item.</span>
+                  {% endif %}
                 </div>
               </div>
             </td>
@@ -63,10 +66,10 @@
               <form action="{% url 'cart:update' item.pk %}" method="post" class="qty-form">
                 {% csrf_token %}
                 <div class="qty-control">
-                  <button type="button" class="qty-btn" onclick="updateQty({{ item.pk }}, -1)">−</button>
+                  <button type="button" class="qty-btn" aria-label="Diminuir quantidade de {{ item.product.name }}" onclick="updateQty({{ item.pk }}, -1)"><i class="fas fa-minus" aria-hidden="true"></i></button>
                   <input type="number" name="quantity" id="qty-{{ item.pk }}" value="{{ item.quantity }}"
-                         min="1" max="{% if item.variant %}{{ item.variant.stock }}{% else %}99{% endif %}" class="qty-input" onchange="submitQty({{ item.pk }})">
-                  <button type="button" class="qty-btn" onclick="updateQty({{ item.pk }}, 1)">+</button>
+                         min="1" max="{% if item.product.is_pre_order %}99{% elif item.variant %}{{ item.variant.stock }}{% else %}{{ item.product.stock }}{% endif %}" class="qty-input" aria-label="Quantidade de {{ item.product.name }}" onchange="submitQty({{ item.pk }})">
+                  <button type="button" class="qty-btn" aria-label="Aumentar quantidade de {{ item.product.name }}" onclick="updateQty({{ item.pk }}, 1)"><i class="fas fa-plus" aria-hidden="true"></i></button>
                 </div>
               </form>
             </td>
@@ -79,7 +82,7 @@
             <td class="cart-remove">
               <form action="{% url 'cart:remove' item.pk %}" method="post">
                 {% csrf_token %}
-                <button type="submit" class="remove-btn" title="Remover">
+                <button type="submit" class="remove-btn" title="Remover" aria-label="Remover {{ item.product.name }} do carrinho">
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </form>
@@ -92,14 +95,14 @@
 
     <div class="cart-summary">
       <div class="summary-card">
-        <h3>Resumo do pedido</h3>
+        <h2>Resumo do pedido</h2>
 
         <!-- Shipping Calculator -->
         <div class="summary-shipping">
-          <h4><i class="fas fa-truck"></i> Calcular frete</h4>
+          <h3><i class="fas fa-truck"></i> Calcular frete</h3>
           <div class="cep-form">
-            <input type="text" id="cepInput" placeholder="00000-000" maxlength="9" class="cep-input">
-            <button onclick="calcShipping()" class="btn btn-secondary btn-sm">Calcular</button>
+            <input type="text" id="cepInput" aria-label="CEP para cálculo de frete" placeholder="00000-000" maxlength="9" class="cep-input">
+            <button type="button" onclick="calcShipping()" class="btn btn-secondary btn-sm">Calcular</button>
           </div>
           <div id="shippingResult"></div>
         </div>
@@ -111,21 +114,24 @@
             {% if cart.subtotal_usd %}<small id="cartSubtotalUsd">≈ {{ cart.subtotal_usd|usd }}</small>{% endif %}
           </span>
         </div>
-        <div class="summary-line" id="shippingLine" style="display:none">
+        <div class="summary-line" id="shippingLine"{% if not selected_shipping_service %} style="display:none"{% endif %}>
           <span>Frete</span>
-          <span id="shippingCost">R$ 0,00</span>
+          <span id="shippingCost">{{ selected_shipping_cost|brl }}</span>
         </div>
         <div class="summary-line summary-total">
           <span>Total</span>
           <span class="summary-money">
-            <strong id="cartTotal">{{ cart.subtotal|brl }}</strong>
+            <strong id="cartTotal">{{ cart_total|brl }}</strong>
             {% if cart.subtotal_usd %}<small id="cartTotalUsd">≈ {{ cart.subtotal_usd|usd }}</small>{% endif %}
           </span>
         </div>
 
-        {% if user.is_authenticated %}
+        {% if cart.has_unavailable_items %}
+          <div class="alert alert-error" role="alert">Revise os itens indisponíveis antes de finalizar.</div>
+          <button type="button" class="btn btn-disabled btn-large btn-block" disabled>Finalização indisponível</button>
+        {% elif user.is_authenticated %}
           <a href="{% url 'orders:checkout' %}" class="btn btn-primary btn-large btn-block">
-            Finalizar compra <i class="fas fa-arrow-right"></i>
+            Finalizar pelo WhatsApp <i class="fab fa-whatsapp"></i>
           </a>
         {% else %}
           <a href="{% url 'login' %}?next={% url 'orders:checkout' %}" class="btn btn-primary btn-large btn-block">
@@ -156,9 +162,9 @@
 
 {% block extra_js %}
 <script>
-const subtotal = Number('{{ cart.subtotal|floatformat:2 }}'.replace(',', '.'));
-const subtotalUsd = Number('{% if cart.subtotal_usd %}{{ cart.subtotal_usd|floatformat:2 }}{% else %}0{% endif %}'.replace(',', '.'));
-let shippingCost = 0;
+let shippingCost = Number('{{ selected_shipping_cost|floatformat:2 }}'.replace(',', '.')) || 0;
+let shippingSelectionVersion = 0;
+const cartQtyState = {};
 
 function formatBrl(value) {
   return `R$ ${value.toFixed(2).replace('.', ',')}`;
@@ -170,30 +176,80 @@ function formatUsd(value) {
 
 function updateQty(itemId, delta) {
   const input = document.getElementById(`qty-${itemId}`);
-  const newVal = Math.max(1, parseInt(input.value || 1) + delta);
+  const max = parseInt(input.max || '99');
+  const newVal = Math.min(max, Math.max(1, parseInt(input.value || 1) + delta));
   input.value = newVal;
   submitQty(itemId);
 }
 
 function submitQty(itemId) {
-  const qty = parseInt(document.getElementById(`qty-${itemId}`).value);
+  const input = document.getElementById(`qty-${itemId}`);
+  const max = parseInt(input.max || '99');
+  const qty = Math.min(max, Math.max(1, parseInt(input.value || '1')));
+  input.value = qty;
+  const state = cartQtyState[itemId] || { inFlight: false, pending: false, confirmed: Number(input.defaultValue) };
+  cartQtyState[itemId] = state;
+  state.desired = qty;
+  if (state.inFlight) {
+    state.pending = true;
+    return;
+  }
+  sendQty(itemId, state);
+}
+
+async function sendQty(itemId, state) {
+  const input = document.getElementById(`qty-${itemId}`);
+  const qty = state.desired;
   const form = document.querySelector(`#row-${itemId} .qty-form`);
   const fd = new FormData(form);
   fd.set('quantity', qty);
-  fetch(form.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        const brlNode = document.getElementById(`subtotal-brl-${itemId}`);
-        const usdNode = document.getElementById(`subtotal-usd-${itemId}`);
-        if (brlNode) brlNode.textContent = formatBrl(data.subtotal);
-        if (usdNode && data.subtotal_usd !== null) usdNode.textContent = `≈ ${formatUsd(data.subtotal_usd)}`;
-        document.getElementById('cartSubtotal').textContent = formatBrl(data.cart_subtotal);
-        const cartSubtotalUsd = document.getElementById('cartSubtotalUsd');
-        if (cartSubtotalUsd && data.cart_subtotal_usd !== null) cartSubtotalUsd.textContent = `≈ ${formatUsd(data.cart_subtotal_usd)}`;
-        updateTotal(data.cart_subtotal);
-      }
+  state.inFlight = true;
+  state.pending = false;
+  try {
+    const response = await fetch(form.action, {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      input.value = data.current_quantity || state.confirmed || 1;
+      state.confirmed = Number(input.value);
+      state.desired = state.confirmed;
+      state.pending = false;
+      showToast(data.error || 'Não foi possível atualizar a quantidade.', 'error');
+      return;
+    }
+
+    state.confirmed = qty;
+    updateCartBadge(data.cart_count);
+    const brlNode = document.getElementById(`subtotal-brl-${itemId}`);
+    const usdNode = document.getElementById(`subtotal-usd-${itemId}`);
+    if (brlNode) brlNode.textContent = formatBrl(data.subtotal);
+    if (usdNode && data.subtotal_usd !== null) usdNode.textContent = `≈ ${formatUsd(data.subtotal_usd)}`;
+    document.getElementById('cartSubtotal').textContent = formatBrl(data.cart_subtotal);
+    const cartSubtotalUsd = document.getElementById('cartSubtotalUsd');
+    if (cartSubtotalUsd && data.cart_subtotal_usd !== null) cartSubtotalUsd.textContent = `≈ ${formatUsd(data.cart_subtotal_usd)}`;
+    resetShippingAfterCartChange();
+    updateTotal(data.cart_subtotal);
+  } catch {
+    input.value = state.confirmed || 1;
+    state.desired = Number(input.value);
+    state.pending = false;
+    showToast('Não foi possível atualizar o carrinho. Tente novamente.', 'error');
+  } finally {
+    state.inFlight = false;
+    if (state.pending && state.desired !== state.confirmed) {
+      sendQty(itemId, state);
+    }
+  }
+}
+
+function resetShippingAfterCartChange() {
+  shippingSelectionVersion += 1;
+  shippingCost = 0;
+  document.getElementById('shippingLine').style.display = 'none';
+  setShippingMessage('O carrinho mudou. Calcule o frete novamente.');
 }
 
 function updateTotal(newSubtotal) {
@@ -201,49 +257,108 @@ function updateTotal(newSubtotal) {
   document.getElementById('cartTotal').textContent = formatBrl(total);
 }
 
-function calcShipping() {
-  const cep = document.getElementById('cepInput').value.replace(/\D/g,'');
-  const result = document.getElementById('shippingResult');
-  if (cep.length !== 8) { result.innerHTML = '<p class="error">CEP inválido.</p>'; return; }
-  result.innerHTML = '<p>Calculando...</p>';
-  fetch(`/carrinho/calcular-frete/?cep=${cep}`)
-    .then(r => r.json())
-    .then(data => {
-      if (data.error) { result.innerHTML = `<p class="error">${data.error}</p>`; return; }
-      let html = '<div class="shipping-options">';
-      data.options.forEach((opt, i) => {
-        html += `<label class="shipping-option">
-          <input type="radio" name="shipping_opt" value="${opt.price}" ${i===0?'checked':''} onchange="selectShipping('${opt.service}', ${opt.price})">
-          <span>${opt.label} — R$ ${opt.price.toFixed(2).replace('.',',')} (${opt.days} dias úteis)</span>
-        </label>`;
-      });
-      html += '</div>';
-      result.innerHTML = html;
-      if (data.options.length > 0) selectShipping(data.options[0].service, data.options[0].price);
-    });
+function cartSubtotalValue() {
+  return parseFloat(
+    document.getElementById('cartSubtotal').textContent
+      .replace('≈ ', '')
+      .replace('R$ ', '')
+      .replace('.', '')
+      .replace(',', '.')
+  ) || 0;
 }
 
-function selectShipping(service, price) {
-  shippingCost = price;
-  document.getElementById('shippingLine').style.display = 'flex';
-  document.getElementById('shippingCost').textContent = formatBrl(price);
-  const sub = parseFloat(document.getElementById('cartSubtotal').textContent.replace('≈ ','').replace('R$ ','').replace('.','').replace(',','.'));
-  document.getElementById('cartTotal').textContent = formatBrl(sub + price);
+function setShippingMessage(message, className = '', replace = true) {
+  const result = document.getElementById('shippingResult');
+  const paragraph = document.createElement('p');
+  if (className) paragraph.className = className;
+  paragraph.textContent = message;
+  if (replace) result.replaceChildren(paragraph);
+  else result.appendChild(paragraph);
+}
+
+function clearShippingDisplay() {
+  shippingSelectionVersion += 1;
+  shippingCost = 0;
+  document.getElementById('shippingLine').style.display = 'none';
+  updateTotal(cartSubtotalValue());
+}
+
+function renderShippingOptions(options, note) {
+  const result = document.getElementById('shippingResult');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'shipping-options';
+  options.forEach((opt, index) => {
+    const label = document.createElement('label');
+    label.className = 'shipping-option';
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'shipping_opt';
+    radio.value = String(opt.price);
+    radio.checked = index === 0;
+    radio.addEventListener('change', () => selectShipping(String(opt.service), Number(opt.price)));
+    const text = document.createElement('span');
+    text.textContent = `${opt.label} — ${formatBrl(Number(opt.price))} (${opt.days} dias úteis)`;
+    label.append(radio, text);
+    wrapper.appendChild(label);
+  });
+  result.replaceChildren(wrapper);
+  if (note) {
+    const small = document.createElement('small');
+    small.textContent = note;
+    result.appendChild(small);
+  }
+}
+
+function calcShipping() {
+  const cep = document.getElementById('cepInput').value.replace(/\D/g,'');
+  if (cep.length !== 8) { setShippingMessage('CEP inválido.', 'error'); return; }
+  setShippingMessage('Calculando...');
+  fetch(`{% url 'cart:shipping' %}?cep=${cep}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { setShippingMessage(data.error, 'error'); return; }
+      if (!Array.isArray(data.options) || data.options.length === 0) {
+        clearShippingDisplay();
+        setShippingMessage('Nenhuma opção de frete disponível agora.', 'error');
+        return;
+      }
+      clearShippingDisplay();
+      renderShippingOptions(data.options, data.note || '');
+      selectShipping(String(data.options[0].service), Number(data.options[0].price));
+    })
+    .catch(() => setShippingMessage('Não foi possível calcular o frete agora.', 'error'));
+}
+
+async function selectShipping(service, price) {
+  const selectionVersion = ++shippingSelectionVersion;
   const fd = new FormData();
   fd.set('service', service);
   fd.set('price', price);
-  fetch(`{% url 'cart:select_shipping' %}`, {
-    method: 'POST',
-    body: fd,
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest',
-      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+  try {
+    const response = await fetch(`{% url 'cart:select_shipping' %}`, {
+      method: 'POST',
+      body: fd,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    });
+    const data = await response.json();
+    if (selectionVersion !== shippingSelectionVersion) return;
+    if (!response.ok || data.error) {
+      clearShippingDisplay();
+      setShippingMessage(data.error || 'Frete inválido.', 'error', false);
+      return;
     }
-  }).then(r => r.json()).then(data => {
-    if (data.error) {
-      document.getElementById('shippingResult').insertAdjacentHTML('beforeend', `<p class="error">${data.error}</p>`);
-    }
-  });
+    shippingCost = price;
+    document.getElementById('shippingLine').style.display = 'flex';
+    document.getElementById('shippingCost').textContent = formatBrl(price);
+    updateTotal(cartSubtotalValue());
+  } catch {
+    if (selectionVersion !== shippingSelectionVersion) return;
+    clearShippingDisplay();
+    showToast('Não foi possível selecionar o frete.', 'error');
+  }
 }
 
 document.getElementById('cepInput')?.addEventListener('input', function() {

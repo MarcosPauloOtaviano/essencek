@@ -26,7 +26,7 @@
   <div class="kpi-card kpi-pending">
     <div class="kpi-icon"><i class="fas fa-clock"></i></div>
     <div class="kpi-body">
-      <span class="kpi-label">Aguardando pagamento</span>
+      <span class="kpi-label">Aguardando confirmação</span>
       <span class="kpi-value">{{ awaiting_payment }}</span>
     </div>
   </div>
@@ -91,11 +91,11 @@
 <!-- Charts & Top Products -->
 <div class="dash-charts-row">
   <div class="dash-chart-card">
-    <h3>Vendas dos últimos 6 meses</h3>
+    <h2>Vendas dos últimos 6 meses</h2>
     <canvas id="revenueChart" height="120"></canvas>
   </div>
   <div class="dash-chart-card">
-    <h3>Produtos mais vendidos</h3>
+    <h2>Produtos mais vendidos</h2>
     {% if top_products %}
     <table class="dash-table">
       <thead><tr><th>Produto</th><th>Qtd vendida</th></tr></thead>
@@ -113,7 +113,7 @@
 
 <!-- Quick Actions -->
 <div class="quick-actions">
-  <h3>Ações rápidas</h3>
+  <h2>Ações rápidas</h2>
   <div class="quick-actions-grid">
     <a href="{% url 'dashboard:product_add' %}" class="quick-action-btn">
       <i class="fas fa-plus"></i> Novo produto

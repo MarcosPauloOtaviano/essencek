@@ -4,7 +4,7 @@
 <div class="container">
   <div class="page-header">
     <h1 class="page-title"><i class="fas fa-plane-departure"></i> Próxima Viagem</h1>
-    <nav class="breadcrumb"><a href="{% url 'home' %}">Home</a> / <span>Próxima Viagem</span></nav>
+    <nav class="breadcrumb" aria-label="Trilha de navegação"><a href="{% url 'home' %}">Home</a> / <span>Próxima Viagem</span></nav>
   </div>
 
   {% if next_trip and next_trip.is_active %}
@@ -14,7 +14,7 @@
         <span class="trip-date-label">Data da viagem</span>
         <span class="trip-date-value">{{ next_trip.trip_date|date:"d/m/Y" }}</span>
       </div>
-      <div class="trip-divider">→</div>
+      <div class="trip-divider" aria-hidden="true"><i class="fas fa-arrow-right"></i></div>
       <div class="trip-date-item urgent">
         <span class="trip-date-label">Encomendar até</span>
         <span class="trip-date-value">{{ next_trip.order_deadline|date:"d/m/Y" }}</span>

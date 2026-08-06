@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Serviço indisponível{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="empty-state" role="alert">
+    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+    <h1>Não foi possível concluir agora</h1>
+    <p>Tente novamente em alguns instantes. Nenhum pedido é considerado concluído sem a tela de confirmação.</p>
+    <a href="{% url 'home' %}" class="btn btn-primary">Voltar para a loja</a>
+  </div>
+</div>
+{% endblock %}

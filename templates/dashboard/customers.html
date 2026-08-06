@@ -21,7 +21,7 @@
         <td>{{ c.city|default:"—" }}{% if c.state %}/{{ c.state }}{% endif %}</td>
         <td>{{ c.date_joined|date:"d/m/Y" }}</td>
         <td>
-          <a href="{% url 'admin:accounts_user_change' c.pk %}" class="btn-dash btn-dash-sm" title="Editar no admin">
+          <a href="{% url 'admin:accounts_user_change' c.pk %}" class="btn-dash btn-dash-sm" title="Editar no admin" aria-label="Editar cliente {{ c.full_name|default:c.email }} no admin">
             <i class="fas fa-edit"></i>
           </a>
         </td>

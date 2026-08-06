@@ -13,12 +13,12 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next_url }}">
       <div class="form-group">
-        <label>E-mail</label>
+        <label for="{{ form.username.id_for_label }}">E-mail</label>
         {% render_field form.username class="form-control" %}
         {% if form.username.errors %}<span class="field-error">{{ form.username.errors.0 }}</span>{% endif %}
       </div>
       <div class="form-group">
-        <label>Senha</label>
+        <label for="{{ form.password.id_for_label }}">Senha</label>
         {% render_field form.password class="form-control" %}
         {% if form.password.errors %}<span class="field-error">{{ form.password.errors.0 }}</span>{% endif %}
       </div>

@@ -6,6 +6,8 @@
 
 {% block content %}
 
+<h1 class="visually-hidden">Essence K Importados</h1>
+
 <!-- Showcase Banner: logo first, then admin-managed slides -->
 <section class="showcase-section">
   <div class="container">
@@ -57,6 +59,7 @@
 </section>
 
 <!-- Category Carousel -->
+{% if categories %}
 <section class="section categories-carousel-section">
   <div class="container">
     <div class="section-header">
@@ -67,48 +70,35 @@
     <div class="categories-carousel-track">
       {% for cat in categories %}
       <a href="{{ cat.get_absolute_url }}" class="category-slide">
-        <img src="{{ cat.display_image_url }}" alt="{{ cat.name }}" class="category-slide-img">
+        <img src="{{ cat.display_image_url }}" alt="" class="category-slide-img" loading="lazy" decoding="async">
         <span class="category-slide-name">{{ cat.name }}</span>
       </a>
       {% endfor %}
       {% for cat in categories %}
-      <a href="{{ cat.get_absolute_url }}" class="category-slide" aria-hidden="true">
-        <img src="{{ cat.display_image_url }}" alt="{{ cat.name }}" class="category-slide-img" loading="lazy">
+      <a href="{{ cat.get_absolute_url }}" class="category-slide" aria-hidden="true" tabindex="-1">
+        <img src="{{ cat.display_image_url }}" alt="" class="category-slide-img" loading="lazy" decoding="async">
         <span class="category-slide-name">{{ cat.name }}</span>
       </a>
       {% endfor %}
     </div>
   </div>
 </section>
+{% endif %}
 
 <!-- Quick Nav (circle buttons) — repositioned after categories -->
+{% if quick_nav %}
 <section class="quick-nav-section">
   <div class="container">
     <div class="quick-nav-row">
-      <a href="{% url 'products:list' %}?on_sale=1" class="quick-nav-item">
-        <div class="quick-nav-circle">OFERTAS</div>
+      {% for item in quick_nav %}
+      <a href="{{ item.url }}" class="quick-nav-item" aria-label="{{ item.aria_label }}">
+        <div class="quick-nav-circle">{{ item.label }}</div>
       </a>
-      <a href="{% url 'products:list' %}?category=perfumes" class="quick-nav-item">
-        <div class="quick-nav-circle">PERFUMES</div>
-      </a>
-      <a href="{% url 'products:list' %}?category=beleza-coreana" class="quick-nav-item">
-        <div class="quick-nav-circle">K-BEAUTY</div>
-      </a>
-      <a href="{% url 'products:list' %}?category=decanter" class="quick-nav-item">
-        <div class="quick-nav-circle">DECANTER</div>
-      </a>
-      <a href="{% url 'products:list' %}?category=eletronicos" class="quick-nav-item">
-        <div class="quick-nav-circle">ELETRO</div>
-      </a>
-      <a href="{% url 'products:list' %}?featured=1" class="quick-nav-item">
-        <div class="quick-nav-circle">DESTAQUES</div>
-      </a>
-      <a href="{% url 'products:list' %}?status=available" class="quick-nav-item">
-        <div class="quick-nav-circle">PRONTA ENTREGA</div>
-      </a>
+      {% endfor %}
     </div>
   </div>
 </section>
+{% endif %}
 
 <!-- Featured Products -->
 {% if featured %}
@@ -116,7 +106,7 @@
   <div class="container">
     <div class="section-header">
       <h2 class="section-title">Destaques</h2>
-      <a href="{% url 'products:list' %}?featured=1" class="section-link">Ver todos</a>
+      <a href="{% url 'featured_products' %}" class="section-link">Ver todos</a>
     </div>
     <div class="products-grid">
       {% for product in featured %}
@@ -133,7 +123,7 @@
   <div class="container">
     <div class="section-header">
       <h2 class="section-title"><span class="sale-tag">PROMOÇÃO</span> Ofertas especiais</h2>
-      <a href="{% url 'products:list' %}?on_sale=1" class="section-link">Ver todas as promoções</a>
+      <a href="{% url 'offers' %}" class="section-link">Ver todas as promoções</a>
     </div>
     <div class="products-grid">
       {% for product in on_sale %}
@@ -151,7 +141,7 @@
     <div class="section-header">
       <h2 class="section-title">Pronta Entrega</h2>
       <p class="section-subtitle">Disponível agora, enviamos assim que o pagamento for confirmado</p>
-      <a href="{% url 'products:list' %}?status=available" class="section-link">Ver todos</a>
+      <a href="{% url 'available_products' %}" class="section-link">Ver todos</a>
     </div>
     <div class="products-grid">
       {% for product in in_stock %}
@@ -202,7 +192,7 @@
       <div class="feature-card">
         <i class="fas fa-lock"></i>
         <h3>Compra Segura</h3>
-        <p>Pagamento via Pix ou cartão com total segurança.</p>
+        <p>Pedido, entrega e pagamento confirmados pelo WhatsApp.</p>
       </div>
       <div class="feature-card">
         <i class="fab fa-instagram"></i>

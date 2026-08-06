@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body data-cart-csrf-url="{% url 'cart:csrf' %}">
 
 <!-- Header -->
 <header class="site-header">
@@ -30,7 +30,10 @@
           {% if user.is_authenticated %}
             <a href="{% url 'my_orders' %}"><i class="fas fa-box"></i> Meus pedidos</a>
             <a href="{% url 'profile' %}"><i class="fas fa-user"></i> {{ user.full_name|truncatechars:15 }}</a>
-            <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Sair</a>
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
+              {% csrf_token %}
+              <button type="submit" class="logout-button"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </form>
           {% else %}
             <a href="{% url 'login' %}"><i class="fas fa-user"></i> Entrar</a>
             <a href="{% url 'register' %}">Criar conta</a>
@@ -57,7 +60,7 @@
         <form action="{% url 'products:list' %}" method="get" class="search-form">
           <input type="text" name="q" placeholder="O que você está buscando?"
                  value="{{ request.GET.q }}" class="search-input">
-          <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+          <button type="submit" class="search-btn" aria-label="Buscar"><i class="fas fa-search"></i></button>
         </form>
 
         <div class="header-actions">
@@ -76,7 +79,7 @@
             <i class="fas fa-user"></i>
           </a>
           {% endif %}
-          <a href="{% url 'cart:detail' %}" class="cart-btn">
+          <a href="{% url 'cart:detail' %}" class="cart-btn" aria-label="Abrir carrinho{% if cart_count > 0 %}, {{ cart_count }} {% if cart_count == 1 %}item{% else %}itens{% endif %}{% endif %}">
             <i class="fas fa-shopping-bag"></i>
             {% if cart_count > 0 %}
               <span class="cart-badge">{{ cart_count }}</span>
@@ -87,16 +90,15 @@
     </div>
   </div>
 
-  <nav class="main-nav">
+  <nav class="main-nav" aria-label="Navegação principal">
     <div class="container">
       <ul class="nav-list" id="navList">
+        {% for nav_item in site_navigation %}
+        <li><a href="{{ nav_item.url }}" class="{{ nav_item.class }}">{{ nav_item.label }}</a></li>
+        {% empty %}
         <li><a href="{% url 'home' %}">Home</a></li>
         <li><a href="{% url 'products:list' %}">Todos os produtos</a></li>
-        <li><a href="{% url 'products:list' %}?category=perfumes">Perfumes</a></li>
-        <li><a href="{% url 'products:list' %}?category=beleza-coreana">K-Beauty</a></li>
-        <li><a href="{% url 'products:list' %}?category=eletronicos">Eletrônicos</a></li>
-        <li><a href="{% url 'products:list' %}?category=decanter">Decanter</a></li>
-        <li><a href="{% url 'products:list' %}?on_sale=1" class="nav-sale">Promoções</a></li>
+        {% endfor %}
         {% if user.is_authenticated %}
           {% if user.is_staff %}
           <li class="mobile-nav-account mobile-nav-admin">
@@ -105,7 +107,12 @@
           {% endif %}
           <li class="mobile-nav-account"><a href="{% url 'my_orders' %}"><i class="fas fa-box"></i> Meus pedidos</a></li>
           <li class="mobile-nav-account"><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Meu perfil</a></li>
-          <li class="mobile-nav-account"><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+          <li class="mobile-nav-account">
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
+              {% csrf_token %}
+              <button type="submit" class="logout-button"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </form>
+          </li>
         {% else %}
           <li class="mobile-nav-account"><a href="{% url 'login' %}"><i class="fas fa-user"></i> Entrar</a></li>
           <li class="mobile-nav-account"><a href="{% url 'register' %}"><i class="fas fa-user-plus"></i> Criar conta</a></li>
@@ -118,16 +125,16 @@
 
 <!-- Messages -->
 {% if messages %}
-<div class="messages-wrapper">
+<section class="messages-wrapper" aria-label="Avisos">
   <div class="container">
     {% for message in messages %}
       <div class="alert alert-{{ message.tags }} alert-dismissible">
         {{ message }}
-        <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+        <button class="alert-close" type="button" aria-label="Fechar aviso" onclick="this.parentElement.remove()">×</button>
       </div>
     {% endfor %}
   </div>
-</div>
+</section>
 {% endif %}
 
 <!-- Main content -->
@@ -147,21 +154,21 @@
             <a href="https://www.instagram.com/essencekimportados/" target="_blank" rel="noopener" aria-label="Instagram Shop Paraguai">
               <i class="fab fa-instagram"></i>
             </a>
-            <a href="https://wa.me/5535999073391" target="_blank" rel="noopener" aria-label="WhatsApp">
+            <a href="{{ store_whatsapp_url }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
               <i class="fab fa-whatsapp"></i>
             </a>
           </div>
         </div>
         <div class="footer-links">
-          <h4>Comprar</h4>
+          <h2>Comprar</h2>
           <ul>
             <li><a href="{% url 'products:list' %}">Todos os produtos</a></li>
-            <li><a href="{% url 'products:list' %}?on_sale=1">Promoções</a></li>
+            <li><a href="{% url 'offers' %}">Promoções</a></li>
             <li><a href="{% url 'products:list' %}?status=pre_order">Sob encomenda</a></li>
           </ul>
         </div>
         <div class="footer-links">
-          <h4>Ajuda</h4>
+          <h2>Ajuda</h2>
           <ul>
             <li><a href="{% url 'about' %}">Sobre</a></li>
             <li><a href="{% url 'contact' %}">Contato</a></li>
@@ -172,12 +179,17 @@
           </ul>
         </div>
         <div class="footer-links">
-          <h4>Conta</h4>
+          <h2>Conta</h2>
           <ul>
             {% if user.is_authenticated %}
               <li><a href="{% url 'my_orders' %}">Meus pedidos</a></li>
               <li><a href="{% url 'profile' %}">Meu perfil</a></li>
-              <li><a href="{% url 'logout' %}">Sair</a></li>
+              <li>
+                <form action="{% url 'logout' %}" method="post" class="logout-form">
+                  {% csrf_token %}
+                  <button type="submit" class="logout-button">Sair</button>
+                </form>
+              </li>
             {% else %}
               <li><a href="{% url 'login' %}">Entrar</a></li>
               <li><a href="{% url 'register' %}">Criar conta</a></li>
@@ -199,16 +211,16 @@
 </footer>
 
 <!-- Floating social buttons -->
-<div class="social-float">
+<aside class="social-float" aria-label="Redes sociais">
   <a href="https://www.instagram.com/essencekimportados/"
      class="float-btn instagram-float" target="_blank" rel="noopener" aria-label="Seguir no Instagram">
     <i class="fab fa-instagram"></i>
   </a>
-  <a href="https://wa.me/5535999073391"
-     class="float-btn whatsapp-float" target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
+  <a href="{{ store_whatsapp_url }}"
+     class="float-btn whatsapp-float" target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp">
     <i class="fab fa-whatsapp"></i>
   </a>
-</div>
+</aside>
 
 {% load static %}
 <script src="{% static 'js/main.js' %}"></script>

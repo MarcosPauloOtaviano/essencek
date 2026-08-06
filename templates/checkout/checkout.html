@@ -7,7 +7,7 @@
 <div class="container">
   <div class="page-header">
     <h1 class="page-title">Finalizar Pedido</h1>
-    <nav class="breadcrumb"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'cart:detail' %}">Carrinho</a> / <span>Checkout</span></nav>
+    <nav class="breadcrumb" aria-label="Trilha de navegação"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'cart:detail' %}">Carrinho</a> / <span>Checkout</span></nav>
   </div>
 
   {% if cart.has_pre_order and cart.has_in_stock %}
@@ -17,15 +17,26 @@
   </div>
   {% endif %}
 
-  {% if payment_is_simulated %}
-  <div class="alert alert-info">
-    <i class="fas fa-vial"></i>
-    Pagamentos estão em modo teste/simulação. Nenhum valor será cobrado até configurar as credenciais reais do gateway.
-  </div>
+  {% if whatsapp_checkout_only %}
+    <div class="alert alert-info">
+      <i class="fab fa-whatsapp"></i>
+      O pedido será registrado com os preços atuais e enviado para confirmação pelo WhatsApp. Nenhum pagamento é considerado concluído nesta etapa.
+    </div>
+  {% elif payment_is_simulated %}
+    <div class="alert alert-info">
+      <i class="fas fa-vial"></i>
+      Pagamentos estão em modo de teste. Nenhum valor real será cobrado.
+    </div>
   {% endif %}
 
   <form method="post" class="checkout-form" id="checkoutForm">
     {% csrf_token %}
+    {{ form.checkout_token }}
+    {% if form.non_field_errors %}
+      <div class="alert alert-error" role="alert">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
     <div class="checkout-layout">
       <!-- Left: Form -->
       <div class="checkout-fields">
@@ -34,17 +45,17 @@
           <h2 class="checkout-section-title"><i class="fas fa-user"></i> Dados pessoais</h2>
           <div class="form-row">
             <div class="form-group full">
-              <label>{{ form.customer_name.label }}</label>
+              <label for="{{ form.customer_name.id_for_label }}">{{ form.customer_name.label }}</label>
               {% render_field form.customer_name class="form-control" %}
               {% if form.customer_name.errors %}<span class="field-error">{{ form.customer_name.errors.0 }}</span>{% endif %}
             </div>
             <div class="form-group">
-              <label>{{ form.customer_email.label }}</label>
+              <label for="{{ form.customer_email.id_for_label }}">{{ form.customer_email.label }}</label>
               {% render_field form.customer_email class="form-control" %}
               {% if form.customer_email.errors %}<span class="field-error">{{ form.customer_email.errors.0 }}</span>{% endif %}
             </div>
             <div class="form-group">
-              <label>{{ form.customer_whatsapp.label }}</label>
+              <label for="{{ form.customer_whatsapp.id_for_label }}">{{ form.customer_whatsapp.label }}</label>
               {% render_field form.customer_whatsapp class="form-control" placeholder="(11) 99999-9999" %}
               {% if form.customer_whatsapp.errors %}<span class="field-error">{{ form.customer_whatsapp.errors.0 }}</span>{% endif %}
             </div>
@@ -79,65 +90,68 @@
           <h2 class="checkout-section-title"><i class="fas fa-map-marker-alt"></i> Endereço de entrega</h2>
           <div class="form-row">
             <div class="form-group">
-              <label>{{ form.cep.label }}</label>
+              <label for="checkoutCep">{{ form.cep.label }}</label>
               {% render_field form.cep class="form-control" id="checkoutCep" %}
               {% if form.cep.errors %}<span class="field-error">{{ form.cep.errors.0 }}</span>{% endif %}
             </div>
             <div class="form-group full">
-              <label>{{ form.address.label }}</label>
+              <label for="checkoutAddress">{{ form.address.label }}</label>
               {% render_field form.address class="form-control" id="checkoutAddress" %}
               {% if form.address.errors %}<span class="field-error">{{ form.address.errors.0 }}</span>{% endif %}
             </div>
             <div class="form-group">
-              <label>{{ form.address_number.label }}</label>
+              <label for="{{ form.address_number.id_for_label }}">{{ form.address_number.label }}</label>
               {% render_field form.address_number class="form-control" %}
             </div>
             <div class="form-group">
-              <label>{{ form.address_complement.label }}</label>
+              <label for="{{ form.address_complement.id_for_label }}">{{ form.address_complement.label }}</label>
               {% render_field form.address_complement class="form-control" %}
             </div>
             <div class="form-group">
-              <label>{{ form.neighborhood.label }}</label>
+              <label for="checkoutNeighborhood">{{ form.neighborhood.label }}</label>
               {% render_field form.neighborhood class="form-control" id="checkoutNeighborhood" %}
             </div>
             <div class="form-group">
-              <label>{{ form.city.label }}</label>
+              <label for="checkoutCity">{{ form.city.label }}</label>
               {% render_field form.city class="form-control" id="checkoutCity" %}
             </div>
             <div class="form-group">
-              <label>{{ form.state.label }}</label>
+              <label for="checkoutState">{{ form.state.label }}</label>
               {% render_field form.state class="form-control" id="checkoutState" %}
               {% if form.state.errors %}<span class="field-error">{{ form.state.errors.0 }}</span>{% endif %}
             </div>
           </div>
         </div>
 
-        <!-- Payment -->
+        {% if not whatsapp_checkout_only %}
         <div class="checkout-section">
           <h2 class="checkout-section-title"><i class="fas fa-credit-card"></i> Forma de pagamento</h2>
           <div class="payment-options">
             {% for widget in form.payment_method %}
             <label class="payment-option" for="{{ widget.id_for_label }}">
               {{ widget.tag }}
-              <div class="payment-option-content">
+              <span class="payment-option-content">
                 {% if widget.data.value == 'pix' %}
-                  <i class="fas fa-qrcode payment-icon"></i>
+                  <i class="fas fa-qrcode payment-icon" aria-hidden="true"></i>
                   <span class="payment-name">Pix</span>
-                  <span class="payment-desc">{% if payment_is_simulated %}Modo teste — não cobra valor real{% else %}Pagamento instantâneo — aprovação automática{% endif %}</span>
-                {% elif widget.data.value == 'credit_card' %}
-                  <i class="fas fa-credit-card payment-icon"></i>
+                  <span class="payment-desc">Pagamento instantâneo</span>
+                {% else %}
+                  <i class="fas fa-credit-card payment-icon" aria-hidden="true"></i>
                   <span class="payment-name">Cartão de crédito</span>
-                  <span class="payment-desc">{% if payment_is_simulated %}Modo teste — link simulado{% else %}Em até 12x — sujeito a aprovação{% endif %}</span>
+                  <span class="payment-desc">Pagamento pelo gateway configurado</span>
                 {% endif %}
-              </div>
+              </span>
             </label>
             {% endfor %}
           </div>
+          {% if form.payment_method.errors %}<span class="field-error">{{ form.payment_method.errors.0 }}</span>{% endif %}
         </div>
+        {% endif %}
 
         <!-- Notes -->
         <div class="checkout-section">
           <h2 class="checkout-section-title"><i class="fas fa-comment"></i> Observações (opcional)</h2>
+          <label for="{{ form.customer_notes.id_for_label }}" class="visually-hidden">Observações do pedido</label>
           {% render_field form.customer_notes class="form-control" %}
         </div>
       </div>
@@ -145,7 +159,7 @@
       <!-- Right: Summary -->
       <div class="checkout-summary">
         <div class="summary-card sticky-summary">
-          <h3>Resumo do pedido</h3>
+          <h2>Resumo do pedido</h2>
           <div class="summary-items">
             {% for item in items %}
             <div class="summary-item">
@@ -171,14 +185,16 @@
               {% if cart.subtotal_usd %}<small>≈ {{ cart.subtotal_usd|usd }}</small>{% endif %}
             </span>
           </div>
-          <div class="summary-line">
+          <div class="summary-line" id="checkoutShippingLine">
             <span>Frete</span>
-            <span>A calcular</span>
+            <span id="checkoutShippingCost">
+              {% if selected_shipping_service %}{{ selected_shipping_cost|brl }}{% else %}<a href="{% url 'cart:detail' %}">Calcular no carrinho</a>{% endif %}
+            </span>
           </div>
           <div class="summary-line summary-total">
             <span>Total</span>
             <span class="summary-money">
-              <strong>{{ cart.subtotal|brl }}</strong>
+              <strong id="checkoutTotal">{{ checkout_total|brl }}</strong>
               {% if cart.subtotal_usd %}<small>≈ {{ cart.subtotal_usd|usd }}</small>{% endif %}
             </span>
           </div>
@@ -187,8 +203,12 @@
             Seus dados são usados apenas para processar este pedido. Consulte nossa
             <a href="{% url 'privacy' %}">Política de Privacidade</a>.
           </div>
-          <button type="submit" class="btn btn-primary btn-large btn-block">
-            Confirmar pedido <i class="fas fa-arrow-right"></i>
+          <button type="submit" class="btn btn-primary btn-large btn-block" id="checkoutSubmit">
+            {% if whatsapp_checkout_only %}
+              Finalizar pedido pelo WhatsApp <i class="fab fa-whatsapp" aria-hidden="true"></i>
+            {% else %}
+              Finalizar pedido <i class="fas fa-lock" aria-hidden="true"></i>
+            {% endif %}
           </button>
         </div>
       </div>
@@ -222,10 +242,30 @@ document.getElementById('checkoutCep')?.addEventListener('blur', function() {
   if (!radios.length || !section) return;
   function toggle() {
     var picked = document.querySelector('input[name="shipping_method"]:checked');
-    section.style.display = (picked && picked.value === 'pickup') ? 'none' : '';
+    var isPickup = picked && picked.value === 'pickup';
+    section.style.display = isPickup ? 'none' : '';
+    var shippingCost = Number('{{ selected_shipping_cost|floatformat:2 }}'.replace(',', '.')) || 0;
+    var subtotal = Number('{{ cart.subtotal|floatformat:2 }}'.replace(',', '.')) || 0;
+    var shippingNode = document.getElementById('checkoutShippingCost');
+    var totalNode = document.getElementById('checkoutTotal');
+    if (isPickup && shippingNode) shippingNode.textContent = 'R$ 0,00';
+    if (!isPickup && shippingNode && '{{ selected_shipping_service|escapejs }}') {
+      shippingNode.textContent = `R$ ${shippingCost.toFixed(2).replace('.', ',')}`;
+    }
+    if (totalNode) {
+      var total = subtotal + (isPickup ? 0 : shippingCost);
+      totalNode.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    }
   }
   radios.forEach(function(r) { r.addEventListener('change', toggle); });
   toggle();
 })();
+
+document.getElementById('checkoutForm')?.addEventListener('submit', function() {
+  const button = document.getElementById('checkoutSubmit');
+  if (!button || button.disabled) return;
+  button.disabled = true;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando pedido...';
+});
 </script>
 {% endblock %}

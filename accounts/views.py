@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from .forms import RegisterForm, LoginForm, ProfileForm
 from orders.models import Order
 
@@ -53,6 +54,7 @@ def login_view(request):
     return render(request, 'accounts/login.html', {'form': form, 'next_url': _safe_next_url(request)})
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     messages.info(request, 'Você saiu da sua conta.')

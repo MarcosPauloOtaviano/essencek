@@ -6,7 +6,7 @@
 <div class="dash-filters">
   <form method="get" class="dash-filter-form">
     <input type="text" name="q" value="{{ q }}" placeholder="Número, nome ou telefone..." class="dash-input">
-    <select name="status" class="dash-select">
+    <select name="status" class="dash-select" aria-label="Filtrar por status">
       <option value="">Todos os status</option>
       {% for val, label in status_choices %}
       <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
