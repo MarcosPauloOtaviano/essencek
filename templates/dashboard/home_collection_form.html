@@ -1,0 +1,28 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load widget_tweaks %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>{{ title }}</h1>
+  <a href="{% url 'dashboard:home_collections' %}" class="btn-dash btn-dash-ghost"><i class="fas fa-arrow-left"></i> Voltar</a>
+</div>
+<div class="dash-card">
+  <form method="post" enctype="multipart/form-data" class="dash-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="dash-info-note dash-error-note">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-row">
+      <div class="form-group"><label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>{% render_field form.title class="dash-input" %}{{ form.title.errors }}</div>
+      <div class="form-group"><label for="{{ form.route_slug.id_for_label }}">{{ form.route_slug.label }}</label>{% render_field form.route_slug class="dash-input" %}<small class="field-note">{{ form.route_slug.help_text }}</small>{{ form.route_slug.errors }}</div>
+      <div class="form-group"><label for="{{ form.key.id_for_label }}">{{ form.key.label }}</label>{% render_field form.key class="dash-input" %}<small class="field-note">{{ form.key.help_text }}</small>{{ form.key.errors }}</div>
+      <div class="form-group"><label for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>{% render_field form.kind class="dash-select" %}{{ form.kind.errors }}</div>
+      <div class="form-group"><label for="{{ form.parent.id_for_label }}">{{ form.parent.label }}</label>{% render_field form.parent class="dash-select" %}{{ form.parent.errors }}</div>
+      <div class="form-group"><label for="{{ form.order.id_for_label }}">{{ form.order.label }}</label>{% render_field form.order class="dash-input" %}{{ form.order.errors }}</div>
+      <div class="form-group full"><label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>{% render_field form.description class="dash-textarea" %}{{ form.description.errors }}</div>
+      <div class="form-group"><label for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>{% render_field form.image %}{{ form.image.errors }}</div>
+      <div class="form-group full"><label>{{ form.categories.label }}</label><div class="collection-category-selector">{{ form.categories }}</div><small class="field-note">Use somente quando a regra for "Categorias vinculadas".</small>{{ form.categories.errors }}</div>
+      <div class="form-group full toggle-group"><label class="toggle-label">{% render_field form.is_home_visible %} {{ form.is_home_visible.label }}</label><label class="toggle-label">{% render_field form.is_active %} {{ form.is_active.label }}</label></div>
+    </div>
+    <button type="submit" class="btn-dash btn-dash-primary"><i class="fas fa-save"></i> Salvar</button>
+  </form>
+</div>
+{% endblock %}

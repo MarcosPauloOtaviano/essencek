@@ -1,8 +1,9 @@
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Prefetch, Q
+from django.templatetags.static import static
 from django.urls import reverse
 from urllib.parse import urlencode
 
-from .models import Product, Category
+from .models import HomeCollection, Product, Category
 
 
 CATEGORY_GROUPS = {
@@ -64,6 +65,142 @@ def valid_sale_q():
         & Q(sale_price__lt=F('price'))
         & ~Q(status=Product.STATUS_OUT_OF_STOCK)
     )
+
+
+def _prefetched_related(instance, name):
+    cached = getattr(instance, '_prefetched_objects_cache', {}).get(name)
+    return list(cached) if cached is not None else list(getattr(instance, name).all())
+
+
+def _category_ids_with_descendants(category_ids, categories):
+    category_ids = set(category_ids)
+    changed = True
+    while changed:
+        changed = False
+        for category in categories:
+            if category.parent_id in category_ids and category.pk not in category_ids:
+                category_ids.add(category.pk)
+                changed = True
+    return sorted(category_ids)
+
+
+def collection_category_ids(collection, categories=None):
+    """Return the real category ids covered by a configured collection."""
+    if collection.kind != HomeCollection.KIND_CATEGORY:
+        return []
+
+    categories = list(categories if categories is not None else active_category_queryset())
+    related_collections = [collection, *_prefetched_related(collection, 'children')]
+    linked_ids = {
+        category.pk
+        for related_collection in related_collections
+        for category in _prefetched_related(related_collection, 'categories')
+        if category.is_active
+    }
+    return _category_ids_with_descendants(linked_ids, categories)
+
+
+def collection_product_queryset(collection, categories=None):
+    products = Product.objects.filter(is_active=True)
+    if collection.kind == HomeCollection.KIND_OFFERS:
+        return products.filter(valid_sale_q())
+    if collection.kind == HomeCollection.KIND_FEATURED:
+        return products.filter(is_featured=True)
+    if collection.kind == HomeCollection.KIND_AVAILABLE:
+        return products.filter(status=Product.STATUS_AVAILABLE)
+
+    category_ids = collection_category_ids(collection, categories)
+    return products.filter(category_id__in=category_ids) if category_ids else products.none()
+
+
+def _collection_cover_url(collection):
+    from core.utils import image_url_if_exists
+
+    configured_image = image_url_if_exists(collection.image)
+    if configured_image:
+        return configured_image
+
+    candidate_collections = [collection, *_prefetched_related(collection, 'children')]
+    for candidate in candidate_collections:
+        for category in _prefetched_related(candidate, 'categories'):
+            image_url = image_url_if_exists(category.image)
+            if image_url:
+                return image_url
+
+    return static('img/defaults/default-perfumes.jpg')
+
+
+def build_collection_cards(collections, categories=None):
+    """Decorate configured collections for templates without changing catalog data."""
+    collections = list(collections)
+    if not collections:
+        return []
+
+    categories = list(categories if categories is not None else active_category_queryset())
+    category_by_id = {category.pk: category for category in categories}
+    category_counts = {
+        row['category_id']: row['count']
+        for row in Product.objects.filter(is_active=True, category_id__in=category_by_id)
+        .values('category_id')
+        .annotate(count=Count('pk'))
+    }
+    visibility = catalog_visibility()
+    static_counts = {
+        HomeCollection.KIND_OFFERS: visibility['offers'],
+        HomeCollection.KIND_FEATURED: visibility['featured'],
+        HomeCollection.KIND_AVAILABLE: visibility['available'],
+    }
+
+    for collection in collections:
+        children = _prefetched_related(collection, 'children')
+        category_ids = collection_category_ids(collection, categories)
+        collection.product_count = (
+            static_counts.get(collection.kind)
+            if collection.kind in static_counts
+            else sum(category_counts.get(category_id, 0) for category_id in category_ids)
+        )
+        collection.subcollection_count = len(children)
+        collection.cover_image_url = _collection_cover_url(collection)
+        collection.is_catalog_empty = collection.product_count == 0
+        if children:
+            collection.card_meta = f'{len(children)} opcoes'
+        elif collection.product_count:
+            collection.card_meta = f'{collection.product_count} produto' + (
+                's' if collection.product_count != 1 else ''
+            )
+        else:
+            collection.card_meta = 'Catalogo em preparacao'
+
+    return collections
+
+
+def home_collections():
+    child_collections = HomeCollection.objects.filter(is_active=True).prefetch_related('categories')
+    collections = (
+        HomeCollection.objects.filter(is_active=True, is_home_visible=True, parent__isnull=True)
+        .prefetch_related('categories', Prefetch('children', queryset=child_collections))
+        .order_by('order', 'title')
+    )
+    return build_collection_cards(collections)
+
+
+def get_home_collection(route_slug):
+    child_collections = HomeCollection.objects.filter(is_active=True).prefetch_related('categories')
+    return (
+        HomeCollection.objects.filter(is_active=True, route_slug__iexact=route_slug)
+        .prefetch_related('categories', Prefetch('children', queryset=child_collections))
+        .first()
+    )
+
+
+def category_collection_canonical_url(category):
+    collection = (
+        HomeCollection.objects.filter(is_active=True, categories=category)
+        .exclude(route_slug__iexact=category.slug)
+        .order_by('parent_id', 'order')
+        .first()
+    )
+    return collection.get_absolute_url() if collection else ''
 
 
 def catalog_url(**params):

@@ -35,13 +35,25 @@
         </button>
       </div>
 
-      <form method="get" class="filter-form" id="filterForm">
+      <form method="get" action="{{ filter_action }}" class="filter-form" id="filterForm">
         <div class="filter-section">
           <h2 class="filter-title">Buscar</h2>
           <div class="search-field">
             <input type="text" name="q" value="{{ query }}" placeholder="Nome ou marca..." class="filter-input">
             <button type="submit" class="filter-search-btn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
           </div>
+        </div>
+
+        <div class="filter-section">
+          <h2 class="filter-title">Faixa de preco</h2>
+          <div class="filter-price-fields">
+            <label><span>Minimo</span><input type="number" name="min_price" min="0" step="0.01" value="{{ selected_min_price }}" class="filter-input"></label>
+            <label><span>Maximo</span><input type="number" name="max_price" min="0" step="0.01" value="{{ selected_max_price }}" class="filter-input"></label>
+          </div>
+          <input type="hidden" name="sort" value="{{ selected_sort }}">
+          {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+          {% if selected_brand %}<input type="hidden" name="brand" value="{{ selected_brand }}">{% endif %}
+          {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
         </div>
 
         <div class="filter-section">
@@ -124,12 +136,12 @@
           <h2 class="filter-title">Disponibilidade</h2>
           <ul class="filter-list">
             <li>
-              <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}&{% endif %}"
+                <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}&{% endif %}{% if selected_min_price %}min_price={{ selected_min_price }}&{% endif %}{% if selected_max_price %}max_price={{ selected_max_price }}&{% endif %}sort={{ selected_sort }}"
                  class="filter-link {% if not selected_status %}active{% endif %}">Todos</a>
             </li>
             {% for val, label in status_choices %}
             <li>
-              <a href="?status={{ val }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+                <a href="?status={{ val }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if query %}&q={{ query }}{% endif %}{% if selected_min_price %}&min_price={{ selected_min_price }}{% endif %}{% if selected_max_price %}&max_price={{ selected_max_price }}{% endif %}&sort={{ selected_sort }}"
                  class="filter-link {% if selected_status == val %}active{% endif %}">{{ label }}</a>
             </li>
             {% endfor %}
@@ -139,19 +151,19 @@
           <h2 class="filter-title">Filtros rápidos</h2>
           <ul class="filter-list">
             <li>
-              <a href="?on_sale=1{% if selected_category %}&category={{ selected_category }}{% endif %}"
+                <a href="?on_sale=1{% if selected_category %}&category={{ selected_category }}{% endif %}&sort={{ selected_sort }}"
                  class="filter-link"><i class="fas fa-tag"></i> Promoções</a>
             </li>
             <li>
-              <a href="?featured=1{% if selected_category %}&category={{ selected_category }}{% endif %}"
+                <a href="?featured=1{% if selected_category %}&category={{ selected_category }}{% endif %}&sort={{ selected_sort }}"
                  class="filter-link"><i class="fas fa-star"></i> Destaques</a>
             </li>
           </ul>
         </div>
 
-        {% if selected_category or selected_brand or selected_perfume_type or selected_status or query %}
+        {% if has_active_filters %}
         <div class="filter-section">
-          <a href="{% url 'products:list' %}" class="filter-clear-btn">
+          <a href="{{ clear_filters_url }}" class="filter-clear-btn">
             <i class="fas fa-times"></i> Limpar todos os filtros
           </a>
         </div>
@@ -167,7 +179,36 @@
       <h2 class="visually-hidden">Resultados</h2>
       <div class="catalog-toolbar">
         <span class="results-count">{{ products.paginator.count }} produto{{ products.paginator.count|pluralize:"s" }} encontrado{{ products.paginator.count|pluralize:"s" }}</span>
+        <form method="get" action="{{ filter_action }}" class="catalog-sort-form">
+          {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+          {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+          {% if selected_brand %}<input type="hidden" name="brand" value="{{ selected_brand }}">{% endif %}
+          {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+          {% if selected_min_price %}<input type="hidden" name="min_price" value="{{ selected_min_price }}">{% endif %}
+          {% if selected_max_price %}<input type="hidden" name="max_price" value="{{ selected_max_price }}">{% endif %}
+          <label for="catalogSort">Ordenar</label>
+          <select id="catalogSort" name="sort" class="catalog-sort-select" onchange="this.form.submit()">
+            {% for value, label in sort_options %}
+            <option value="{{ value }}"{% if selected_sort == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </form>
       </div>
+
+      {% if collection_subcollections %}
+      <section class="catalog-subcollections" aria-label="Subdivisoes de {{ collection.title }}">
+        <h3>Escolha uma opcao</h3>
+        <div class="catalog-subcollection-grid">
+          {% for subcollection in collection_subcollections %}
+          <a href="{{ subcollection.get_absolute_url }}" class="catalog-subcollection-card{% if subcollection.is_catalog_empty %} catalog-subcollection-card--preparing{% endif %}">
+            <img src="{{ subcollection.cover_image_url }}" alt="" width="180" height="120" loading="lazy" decoding="async">
+            <span><strong>{{ subcollection.title }}</strong><small>{{ subcollection.card_meta }}</small></span>
+            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
 
       {% if products %}
         <div class="products-grid">
@@ -196,10 +237,16 @@
         {% endif %}
       {% else %}
         <div class="empty-state">
-          <i class="fas fa-search"></i>
+          <i class="fas {% if collection %}fa-box-open{% else %}fa-search{% endif %}"></i>
+          {% if collection %}
+          <h2>{{ collection.title }} esta em preparacao</h2>
+          <p>{% if collection.description %}{{ collection.description }}{% else %}Esta colecao e valida, mas ainda nao possui produtos disponiveis no catalogo.{% endif %}</p>
+          <a href="{% url 'products:list' %}" class="btn btn-primary">Ver todos os produtos</a>
+          {% else %}
           <h2>Nenhum produto encontrado</h2>
-          <p>Tente outros filtros ou entre em contato pela página de atendimento.</p>
+          <p>Tente outros filtros ou entre em contato pela pagina de atendimento.</p>
           <a href="{% url 'products:list' %}" class="btn btn-primary">Ver todos</a>
+          {% endif %}
         </div>
       {% endif %}
     </div>

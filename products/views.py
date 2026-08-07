@@ -1,6 +1,9 @@
+from decimal import Decimal, InvalidOperation
+
+from django.http import Http404, HttpResponsePermanentRedirect
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
-from django.db.models import Prefetch, Q
+from django.db.models import Case, DecimalField, F, Prefetch, Q, When
 from django.urls import reverse
 
 from .gtin_service import normalize_gtin
@@ -10,11 +13,15 @@ from .services import (
     attach_category_totals,
     build_filter_tree,
     build_breadcrumbs,
+    build_collection_cards,
     catalog_url,
     canonical_category_group,
+    category_collection_canonical_url,
     category_group_from_legacy_slug,
     category_ids_for_group,
+    collection_product_queryset,
     find_category_by_slug,
+    get_home_collection,
     get_category_group_label,
     is_category_group,
     valid_sale_q,
@@ -26,6 +33,41 @@ QUICK_FILTERS = {
     'destaques': 'Destaques',
     'pronta-entrega': 'Pronta Entrega',
 }
+
+SORT_OPTIONS = (
+    ('recent', 'Mais recentes'),
+    ('featured', 'Destaques primeiro'),
+    ('price_asc', 'Menor preco'),
+    ('price_desc', 'Maior preco'),
+)
+
+
+def _decimal_query_value(value):
+    if not value:
+        return None
+    try:
+        parsed = Decimal(value)
+    except (InvalidOperation, TypeError):
+        return None
+    return parsed if parsed >= 0 else None
+
+
+def _current_price_expression():
+    return Case(
+        When(valid_sale_q(), then=F('sale_price')),
+        default=F('price'),
+        output_field=DecimalField(max_digits=10, decimal_places=2),
+    )
+
+
+def _order_catalog_products(products, selected_sort):
+    if selected_sort == 'featured':
+        return products.order_by('-is_featured', '-updated_at', '-pk')
+    if selected_sort == 'price_asc':
+        return products.annotate(catalog_price=_current_price_expression()).order_by('catalog_price', '-pk')
+    if selected_sort == 'price_desc':
+        return products.annotate(catalog_price=_current_price_expression()).order_by('-catalog_price', '-pk')
+    return products.order_by('-created_at', '-pk')
 
 
 def _category_and_children_ids(category, categories):
@@ -55,8 +97,18 @@ def product_list(request, category_key='', quick_filter=''):
     featured = request.GET.get('featured', '')
     brand_slug = request.GET.get('brand', '')
     perfume_type = request.GET.get('perfume_type', '')
+    min_price = _decimal_query_value(request.GET.get('min_price', '').strip())
+    max_price = _decimal_query_value(request.GET.get('max_price', '').strip())
+    selected_sort = request.GET.get('sort', 'recent')
+    if selected_sort not in dict(SORT_OPTIONS):
+        selected_sort = 'recent'
 
-    if category_key:
+    collection = get_home_collection(category_key) if category_key else get_home_collection(category_slug)
+    collection_subcollections = []
+
+    if collection:
+        category_group = ''
+    elif category_key:
         if is_category_group(category_key):
             category_group = canonical_category_group(category_key)
             category_slug = ''
@@ -90,18 +142,41 @@ def product_list(request, category_key='', quick_filter=''):
 
     all_categories = attach_category_totals(active_category_queryset())
 
-    if category_group:
+    active_category = None
+    if collection:
+        collection_subcollections = build_collection_cards(
+            list(collection.children.all()), all_categories,
+        )
+        products = collection_product_queryset(collection, all_categories)
+        if category_slug:
+            active_category = find_category_by_slug(all_categories, category_slug)
+            if active_category:
+                products = products.filter(
+                    category_id__in=_category_and_children_ids(active_category, all_categories),
+                )
+            else:
+                products = products.none()
+    elif category_group:
         category_ids = category_ids_for_group(all_categories, category_group)
         products = products.filter(category_id__in=category_ids) if category_ids else products.none()
 
-    if category_slug:
+    if category_slug and not collection:
         cat = find_category_by_slug(all_categories, category_slug)
         if cat:
+            if category_key:
+                canonical_url = category_collection_canonical_url(cat)
+                if canonical_url:
+                    query_string = request.META.get('QUERY_STRING', '')
+                    redirect_url = f'{canonical_url}?{query_string}' if query_string else canonical_url
+                    return HttpResponsePermanentRedirect(redirect_url)
+            active_category = cat
             products = products.filter(
                 category_id__in=_category_and_children_ids(cat, all_categories),
             )
         else:
-            products = products.filter(category__slug__iexact=category_slug)
+            if category_key:
+                raise Http404('Colecao nao encontrada.')
+            products = products.none()
     if brand_slug:
         products = products.filter(
             Q(brand_fk__slug=brand_slug)
@@ -117,6 +192,14 @@ def product_list(request, category_key='', quick_filter=''):
         products = products.filter(valid_sale_q())
     if featured:
         products = products.filter(is_featured=True)
+    if min_price is not None or max_price is not None:
+        products = products.annotate(catalog_price=_current_price_expression())
+        if min_price is not None:
+            products = products.filter(catalog_price__gte=min_price)
+        if max_price is not None:
+            products = products.filter(catalog_price__lte=max_price)
+
+    products = _order_catalog_products(products, selected_sort)
 
     paginator = Paginator(products, 24)
     products_page = paginator.get_page(request.GET.get('page', 1))
@@ -126,9 +209,10 @@ def product_list(request, category_key='', quick_filter=''):
         if getattr(category, 'total_active_product_count', 0) > 0
     ]
 
-    filter_tree, active_category, active_root_slug = build_filter_tree(
+    filter_tree, filter_active_category, active_root_slug = build_filter_tree(
         filter_categories, category_slug, brand_slug, perfume_type, query,
     )
+    active_category = active_category or filter_active_category
 
     active_brand = Brand.objects.filter(slug=brand_slug, is_active=True).first() if brand_slug else None
     active_brand_name = (
@@ -146,6 +230,11 @@ def product_list(request, category_key='', quick_filter=''):
             {'label': 'Produtos', 'url': reverse('products:list')},
             {'label': QUICK_FILTERS[quick_filter], 'url': ''},
         ]
+    elif collection:
+        breadcrumb_items = [
+            {'label': 'Produtos', 'url': reverse('products:list')},
+            {'label': collection.title, 'url': ''},
+        ]
     elif category_group:
         breadcrumb_items = [
             {'label': 'Produtos', 'url': reverse('products:list')},
@@ -158,6 +247,7 @@ def product_list(request, category_key='', quick_filter=''):
 
     page_title_parts = [p for p in [
         QUICK_FILTERS.get(quick_filter, ''),
+        collection.title if collection else '',
         get_category_group_label(category_group) if category_group else '',
         active_category.name if active_category else '',
         active_brand_name,
@@ -177,6 +267,10 @@ def product_list(request, category_key='', quick_filter=''):
         'selected_status': status,
         'selected_brand': brand_slug,
         'selected_perfume_type': perfume_type,
+        'selected_sort': selected_sort,
+        'sort_options': SORT_OPTIONS,
+        'selected_min_price': request.GET.get('min_price', '').strip(),
+        'selected_max_price': request.GET.get('max_price', '').strip(),
         'active_category': active_category,
         'active_brand_name': active_brand_name,
         'active_root_slug': active_root_slug,
@@ -184,8 +278,15 @@ def product_list(request, category_key='', quick_filter=''):
         'breadcrumb_items': breadcrumb_items,
         'page_title': ' - '.join(page_title_parts) or 'Produtos',
         'all_categories_url': catalog_url(q=query),
-        'clear_filters_url': reverse('products:list'),
+        'clear_filters_url': request.path if (collection or category_key) else reverse('products:list'),
+        'has_active_filters': any([
+            category_slug, brand_slug, perfume_type, status, query, on_sale, featured,
+            min_price is not None, max_price is not None, selected_sort != 'recent',
+        ]),
         'pagination_query': pagination_params.urlencode(),
+        'collection': collection,
+        'collection_subcollections': collection_subcollections,
+        'filter_action': request.path,
     })
 
 

@@ -1,7 +1,15 @@
 from django import forms
 from django.utils.text import slugify
 from core.utils import sanitize_text
-from .models import Product, Category, ProductImage, Brand, ProductVariant, normalize_gtin_value
+from .models import (
+    Brand,
+    Category,
+    HomeCollection,
+    Product,
+    ProductImage,
+    ProductVariant,
+    normalize_gtin_value,
+)
 from .image_utils import (
     ALLOWED_IMAGE_EXTENSIONS,
     MAX_IMAGE_UPLOAD_SIZE,
@@ -159,6 +167,41 @@ class CategoryForm(forms.ModelForm):
         if image:
             validate_product_image_upload(image)
         return image
+
+
+class HomeCollectionForm(forms.ModelForm):
+    class Meta:
+        model = HomeCollection
+        fields = [
+            'key', 'title', 'route_slug', 'kind', 'parent', 'categories',
+            'description', 'image', 'is_active', 'is_home_visible', 'order',
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'categories': forms.CheckboxSelectMultiple(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['parent'].queryset = HomeCollection.objects.order_by('order', 'title')
+        self.fields['categories'].queryset = Category.objects.filter(is_active=True).order_by('order', 'name')
+        self.fields['key'].help_text = 'Identificador interno. Nao altere as colecoes ja configuradas.'
+        self.fields['route_slug'].help_text = 'Usado em /categoria/<slug>/. Mantenha o link divulgado estavel.'
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if image:
+            validate_product_image_upload(image)
+        return image
+
+    def clean(self):
+        cleaned = super().clean()
+        parent = cleaned.get('parent')
+        if parent and self.instance.pk and parent.pk == self.instance.pk:
+            self.add_error('parent', 'Uma colecao nao pode ser pai de si mesma.')
+        if cleaned.get('kind') != HomeCollection.KIND_CATEGORY and cleaned.get('categories'):
+            self.add_error('categories', 'Apenas colecoes por categoria devem vincular categorias.')
+        return cleaned
 
 
 class BrandForm(forms.ModelForm):

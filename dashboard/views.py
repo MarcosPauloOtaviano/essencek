@@ -17,11 +17,11 @@ from core.forms import NextTripForm, ShowcaseTextSlideForm, StoreSettingsForm
 from core.models import ShowcaseSlide, StoreSettings, NextTrip
 from orders.models import Order, PreOrderRequest
 from orders.services import InsufficientStockError, confirm_order_payment
-from products.forms import ProductForm, CategoryForm, BrandForm, ProductVariantFormSet
+from products.forms import BrandForm, CategoryForm, HomeCollectionForm, ProductForm, ProductVariantFormSet
 from products.gtin_service import lookup_product_identifier, normalize_gtin
 from products.image_downloader import download_and_process_image
 from products.image_utils import build_web_product_image
-from products.models import Product, Category, ProductImage, Brand
+from products.models import Brand, Category, HomeCollection, Product, ProductImage
 from .services import get_dashboard_summary, get_reports_data
 
 logger = logging.getLogger('products.gtin')
@@ -403,6 +403,34 @@ def category_edit(request, pk=None):
         'form': form,
         'category': category,
         'title': 'Editar categoria' if category else 'Nova categoria',
+    })
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def home_collection_list(request):
+    collections = (
+        HomeCollection.objects.select_related('parent')
+        .prefetch_related('categories')
+        .order_by('order', 'title')
+    )
+    return render(request, 'dashboard/home_collections.html', {'collections': collections})
+
+
+@staff_member_required(login_url='/conta/entrar/')
+def home_collection_edit(request, pk=None):
+    collection = get_object_or_404(HomeCollection, pk=pk) if pk else None
+    if request.method == 'POST':
+        form = HomeCollectionForm(request.POST, request.FILES, instance=collection)
+        if form.is_valid():
+            saved_collection = form.save()
+            messages.success(request, f'Colecao "{saved_collection.title}" salva!')
+            return redirect('dashboard:home_collections')
+    else:
+        form = HomeCollectionForm(instance=collection)
+    return render(request, 'dashboard/home_collection_form.html', {
+        'form': form,
+        'collection': collection,
+        'title': 'Editar colecao da Home' if collection else 'Nova colecao da Home',
     })
 
 

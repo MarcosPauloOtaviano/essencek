@@ -1,0 +1,30 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Colecoes da Home{% endblock %}
+{% block content %}
+<div class="dash-page-header">
+  <h1>Colecoes da Home</h1>
+  <a href="{% url 'dashboard:home_collection_add' %}" class="btn-dash btn-dash-primary"><i class="fas fa-plus"></i> Nova colecao</a>
+</div>
+<div class="dash-card">
+  <table class="dash-table">
+    <thead><tr><th>Titulo</th><th>Rota</th><th>Regra</th><th>Pai</th><th>Categorias</th><th>Home</th><th>Ativa</th><th>Ordem</th><th>Acoes</th></tr></thead>
+    <tbody>
+      {% for item in collections %}
+      <tr>
+        <td><strong>{{ item.title }}</strong></td>
+        <td><code>/categoria/{{ item.route_slug }}/</code></td>
+        <td>{{ item.get_kind_display }}</td>
+        <td>{{ item.parent.title|default:"-" }}</td>
+        <td>{% for category in item.categories.all %}{{ category.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
+        <td>{% if item.is_home_visible %}<span class="badge-active">Sim</span>{% else %}<span class="badge-inactive">Nao</span>{% endif %}</td>
+        <td>{% if item.is_active %}<span class="badge-active">Sim</span>{% else %}<span class="badge-inactive">Nao</span>{% endif %}</td>
+        <td>{{ item.order }}</td>
+        <td><a href="{% url 'dashboard:home_collection_edit' item.pk %}" class="btn-dash btn-dash-sm" aria-label="Editar colecao {{ item.title }}" title="Editar colecao"><i class="fas fa-edit"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" class="dash-empty">Nenhuma colecao configurada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

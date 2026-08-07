@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.utils.html import format_html
 from .forms import ProductForm
-from .models import Brand, Category, Product, ProductImage, ProductVariant
+from .models import Brand, Category, HomeCollection, Product, ProductImage, ProductVariant
 from .image_utils import validate_product_image_upload
 
 
@@ -23,6 +23,16 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'is_active', 'order']
     list_editable = ['is_active', 'order']
     prepopulated_fields = {'slug': ('name',)}
+
+
+@admin.register(HomeCollection)
+class HomeCollectionAdmin(admin.ModelAdmin):
+    list_display = ['title', 'route_slug', 'kind', 'parent', 'is_home_visible', 'is_active', 'order']
+    list_editable = ['is_home_visible', 'is_active', 'order']
+    list_filter = ['kind', 'is_active', 'is_home_visible']
+    search_fields = ['title', 'key', 'route_slug']
+    filter_horizontal = ['categories']
+    prepopulated_fields = {'key': ('title',), 'route_slug': ('title',)}
 
 
 @admin.register(Brand)

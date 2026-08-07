@@ -85,14 +85,26 @@
 </section>
 {% endif %}
 
-<!-- Quick Nav (circle buttons) — repositioned after categories -->
-{% if quick_nav %}
-<section class="quick-nav-section">
+{% if home_collections %}
+<section class="collection-explorer" aria-labelledby="collection-explorer-title">
   <div class="container">
-    <div class="quick-nav-row">
-      {% for item in quick_nav %}
-      <a href="{{ item.url }}" class="quick-nav-item" aria-label="{{ item.aria_label }}" title="{{ item.hint }}">
-        <div class="quick-nav-circle{% if item.long_label %} quick-nav-circle--long{% endif %}">{{ item.label }}</div>
+    <div class="collection-explorer-header">
+      <div>
+        <p class="collection-explorer-kicker">Descubra a Essence K</p>
+        <h2 id="collection-explorer-title" class="collection-explorer-title">Explore coleções</h2>
+      </div>
+    </div>
+    <div class="collection-explorer-grid">
+      {% for collection in home_collections %}
+      <a href="{{ collection.get_absolute_url }}" class="collection-card{% if collection.is_catalog_empty %} collection-card--preparing{% endif %}">
+        <img src="{{ collection.cover_image_url|media_thumbnail:'480' }}" alt="" class="collection-card-image" width="480" height="300" loading="lazy" decoding="async">
+        <span class="collection-card-overlay"></span>
+        <span class="collection-card-content">
+          <span class="collection-card-title">{{ collection.title }}</span>
+          <span class="collection-card-meta">{{ collection.card_meta }}</span>
+          {% if collection.description %}<span class="collection-card-description">{{ collection.description }}</span>{% endif %}
+        </span>
+        <span class="collection-card-arrow" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
       </a>
       {% endfor %}
     </div>

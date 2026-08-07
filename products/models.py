@@ -1,6 +1,7 @@
 import os
 
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from django.urls import reverse
 from django.templatetags.static import static
@@ -125,6 +126,62 @@ class Category(models.Model):
     @property
     def display_image_url(self):
         return image_url_if_exists(self.image) or default_image_url_for_category(self)
+
+
+class HomeCollection(models.Model):
+    KIND_CATEGORY = 'category'
+    KIND_OFFERS = 'offers'
+    KIND_FEATURED = 'featured'
+    KIND_AVAILABLE = 'available'
+    KIND_CHOICES = [
+        (KIND_CATEGORY, 'Categorias vinculadas'),
+        (KIND_OFFERS, 'Ofertas com desconto valido'),
+        (KIND_FEATURED, 'Produtos em destaque'),
+        (KIND_AVAILABLE, 'Pronta entrega'),
+    ]
+
+    key = models.SlugField('Chave interna', max_length=60, unique=True)
+    title = models.CharField('Titulo', max_length=100)
+    route_slug = models.SlugField('Slug da rota', max_length=80, unique=True)
+    description = models.CharField('Descricao', max_length=180, blank=True)
+    image = models.ImageField('Imagem', upload_to='home-collections/', blank=True, null=True)
+    kind = models.CharField('Regra de produtos', max_length=20, choices=KIND_CHOICES)
+    categories = models.ManyToManyField(
+        Category,
+        blank=True,
+        related_name='home_collections',
+        verbose_name='Categorias vinculadas',
+    )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children',
+        verbose_name='Colecao pai',
+    )
+    is_active = models.BooleanField('Ativa', default=True)
+    is_home_visible = models.BooleanField('Exibir na Home', default=True)
+    order = models.PositiveIntegerField('Ordem', default=0)
+
+    class Meta:
+        verbose_name = 'Colecao da Home'
+        verbose_name_plural = 'Colecoes da Home'
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        if self.parent_id and self.parent_id == self.pk:
+            raise ValidationError({'parent': 'Uma colecao nao pode ser pai de si mesma.'})
+
+    def get_absolute_url(self):
+        return reverse('category_landing', kwargs={'category_key': self.route_slug})
+
+    @property
+    def display_image_url(self):
+        return image_url_if_exists(self.image) or static(DEFAULT_CATEGORY_IMAGE_MAP['perfumes'])
 
 
 class Product(models.Model):

@@ -7,9 +7,8 @@ from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView
 from products.models import Product
 from products.services import (
-    build_quick_nav,
-    catalog_visibility,
-    category_ids_for_group,
+    collection_category_ids,
+    home_collections,
     public_categories_with_products,
     valid_sale_q,
 )
@@ -25,13 +24,15 @@ def home(request):
     pre_order = _base_qs.filter(is_pre_order=True).order_by('-created_at')[:8]
     hero_products = _base_qs.order_by('-is_featured', '-created_at')[:3]
     categories = public_categories_with_products()
-    perfume_category_ids = category_ids_for_group(categories, 'perfumes')
-    asian_beauty_category_ids = category_ids_for_group(categories, 'beleza-asiatica')
-    hero_perfumes = _base_qs.filter(category_id__in=perfume_category_ids).order_by('-is_featured', '-created_at')[:3]
-    hero_kbeauty = _base_qs.filter(category_id__in=asian_beauty_category_ids).order_by('-is_featured', '-created_at')[:3]
+    collection_cards = home_collections()
+    collections_by_key = {collection.key: collection for collection in collection_cards}
+    niche_collection = collections_by_key.get('perfumes-de-nicho')
+    korean_collection = collections_by_key.get('beleza-coreana')
+    niche_category_ids = collection_category_ids(niche_collection, categories) if niche_collection else []
+    korean_category_ids = collection_category_ids(korean_collection, categories) if korean_collection else []
+    hero_perfumes = _base_qs.filter(category_id__in=niche_category_ids).order_by('-is_featured', '-created_at')[:3]
+    hero_kbeauty = _base_qs.filter(category_id__in=korean_category_ids).order_by('-is_featured', '-created_at')[:3]
     new_arrivals = _base_qs.order_by('-created_at')[:6]
-    visibility = catalog_visibility()
-    quick_nav = build_quick_nav(categories, visibility=visibility)
     next_trip = NextTrip.objects.filter(is_active=True).first()
     current_exchange_rate = ExchangeRate.objects.filter(is_active=True).order_by('-updated_at').first()
     try:
@@ -51,7 +52,7 @@ def home(request):
         'hero_kbeauty': hero_kbeauty,
         'new_arrivals': new_arrivals,
         'categories': categories,
-        'quick_nav': quick_nav,
+        'home_collections': collection_cards,
         'next_trip': next_trip,
         'current_exchange_rate': current_exchange_rate,
         'showcase_slides': showcase_slides,

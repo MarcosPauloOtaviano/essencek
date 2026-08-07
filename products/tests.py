@@ -16,7 +16,7 @@ from accounts.models import User
 from .forms import BrandForm, ProductForm
 from .gtin_service import lookup_gtin, lookup_product_identifier, normalize_gtin
 from .image_downloader import download_and_process_image
-from .models import Brand, Category, Product, ProductImage, ProductVariant
+from .models import Brand, Category, HomeCollection, Product, ProductImage, ProductVariant
 from .services import active_category_queryset, build_filter_tree
 
 
@@ -250,6 +250,10 @@ class CatalogNavigationTests(TestCase):
             name='Skincare Coreano',
             slug='Skincare-coreano',
         )
+        self.niche_category = Category.objects.create(
+            name='Perfumes de Nicho',
+            slug='perfumes-importados-nicho',
+        )
         self.japanese_beauty_category = Category.objects.create(
             name='Beleza japonesa',
             slug='beleza-japonesa-tratamento-cabelos',
@@ -259,8 +263,16 @@ class CatalogNavigationTests(TestCase):
             slug='perfumes',
         )
         self.empty_decanter_category = Category.objects.create(
-            name='Decanter vazio',
+            name='Decanter 5 ml',
             slug='Perfume-fracionado-decanter5ml',
+        )
+        self.empty_decanter_ten_category = Category.objects.create(
+            name='Decanter 10 ml',
+            slug='Perfume-fracionado-decanter10ml',
+        )
+        self.empty_supplements_category = Category.objects.create(
+            name='Suplementos',
+            slug='suplementos-saude-bem-estar',
         )
         self.empty_electronics_category = Category.objects.create(
             name='Eletronicos vazio',
@@ -284,6 +296,13 @@ class CatalogNavigationTests(TestCase):
             stock=2,
             status=Product.STATUS_AVAILABLE,
         )
+        self.niche = Product.objects.create(
+            name='Perfume de Nicho Real',
+            category=self.niche_category,
+            price='350.00',
+            stock=2,
+            status=Product.STATUS_AVAILABLE,
+        )
         self.japanese_beauty = Product.objects.create(
             name='Beleza Japonesa Real',
             category=self.japanese_beauty_category,
@@ -301,66 +320,89 @@ class CatalogNavigationTests(TestCase):
             is_on_sale=True,
         )
 
-    def test_home_quick_nav_uses_real_product_groups_and_hides_empty_categories(self):
+        HomeCollection.objects.all().delete()
+        self.offers_collection = HomeCollection.objects.create(
+            key='ofertas', title='Ofertas', route_slug='ofertas', kind=HomeCollection.KIND_OFFERS, order=10,
+        )
+        self.niche_collection = HomeCollection.objects.create(
+            key='perfumes-de-nicho', title='Perfumes de Nicho', route_slug='perfumes-de-nicho',
+            kind=HomeCollection.KIND_CATEGORY, order=20,
+        )
+        self.niche_collection.categories.add(self.niche_category)
+        self.korean_collection = HomeCollection.objects.create(
+            key='beleza-coreana', title='Beleza Coreana', route_slug='beleza-coreana',
+            kind=HomeCollection.KIND_CATEGORY, order=30,
+        )
+        self.korean_collection.categories.add(self.kbeauty_category)
+        self.decanter_collection = HomeCollection.objects.create(
+            key='decanter', title='Decanter', route_slug='decanter', kind=HomeCollection.KIND_CATEGORY, order=40,
+        )
+        self.decanter_five_collection = HomeCollection.objects.create(
+            key='decanter-5ml', title='Decanter 5 ml', route_slug='decanter-5ml',
+            kind=HomeCollection.KIND_CATEGORY, parent=self.decanter_collection,
+            is_home_visible=False, order=41,
+        )
+        self.decanter_five_collection.categories.add(self.empty_decanter_category)
+        self.decanter_ten_collection = HomeCollection.objects.create(
+            key='decanter-10ml', title='Decanter 10 ml', route_slug='decanter-10ml',
+            kind=HomeCollection.KIND_CATEGORY, parent=self.decanter_collection,
+            is_home_visible=False, order=42,
+        )
+        self.decanter_ten_collection.categories.add(self.empty_decanter_ten_category)
+        self.supplements_collection = HomeCollection.objects.create(
+            key='suplementos', title='Suplementos', route_slug='suplementos',
+            kind=HomeCollection.KIND_CATEGORY, order=50,
+        )
+        self.supplements_collection.categories.add(self.empty_supplements_category)
+        HomeCollection.objects.create(
+            key='destaques', title='Destaques', route_slug='destaques',
+            kind=HomeCollection.KIND_FEATURED, order=60,
+        )
+        HomeCollection.objects.create(
+            key='pronta-entrega', title='Pronta Entrega', route_slug='pronta-entrega',
+            kind=HomeCollection.KIND_AVAILABLE, order=70,
+        )
+
+    def test_home_shows_the_seven_configured_collections_including_empty_ones(self):
         response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '/categoria/perfumes/')
-        self.assertContains(response, 'PERFUMES')
-        self.assertContains(response, '/categoria/beleza-asiatica/')
-        self.assertContains(response, 'BELEZA ASIÁTICA')
-        self.assertContains(response, 'OFERTAS')
-        self.assertContains(response, 'DESTAQUES')
-        self.assertContains(response, 'PRONTA ENTREGA')
-        self.assertNotContains(response, 'DECANTER')
+        for collection in (
+            self.offers_collection, self.niche_collection, self.korean_collection,
+            self.decanter_collection, self.supplements_collection,
+        ):
+            self.assertContains(response, collection.get_absolute_url())
+            self.assertContains(response, collection.title)
+        self.assertContains(response, '/categoria/destaques/')
+        self.assertContains(response, '/categoria/pronta-entrega/')
+        self.assertContains(response, 'Catalogo em preparacao')
         self.assertNotContains(response, 'ELETRO')
-        self.assertNotContains(response, 'Perfumes legado vazio')
-        self.assertNotContains(response, 'Decanter vazio')
-        self.assertNotContains(response, 'Eletronicos vazio')
-        self.assertNotContains(response, '?category=perfumes')
-        self.assertNotContains(response, '?category=beleza-coreana')
 
-    def test_category_group_routes_return_expected_products(self):
-        perfume_response = self.client.get(reverse('category_landing', args=['perfumes']))
-        asian_beauty_response = self.client.get(
-            reverse('category_landing', args=['beleza-asiatica'])
-        )
-        legacy_group_response = self.client.get(
-            reverse('category_landing', args=['k-beauty'])
-        )
+    def test_collection_routes_use_only_the_configured_real_categories(self):
+        niche_response = self.client.get(reverse('category_landing', args=['perfumes-de-nicho']))
+        korean_response = self.client.get(reverse('category_landing', args=['beleza-coreana']))
 
-        self.assertEqual(perfume_response.status_code, 200)
-        self.assertContains(perfume_response, 'Perfume Real')
-        self.assertNotContains(perfume_response, 'K Beauty Real')
-        self.assertContains(perfume_response, 'Perfumes')
+        self.assertEqual(niche_response.status_code, 200)
+        self.assertContains(niche_response, 'Perfume de Nicho Real')
+        self.assertNotContains(niche_response, 'Perfume Real')
+        self.assertNotContains(niche_response, 'K Beauty Real')
 
-        self.assertEqual(asian_beauty_response.status_code, 200)
-        self.assertContains(asian_beauty_response, 'K Beauty Real')
-        self.assertContains(asian_beauty_response, 'Beleza Japonesa Real')
-        self.assertNotContains(asian_beauty_response, 'Perfume Real')
-        self.assertContains(asian_beauty_response, 'Beleza Asiática')
+        self.assertEqual(korean_response.status_code, 200)
+        self.assertContains(korean_response, 'K Beauty Real')
+        self.assertNotContains(korean_response, 'Beleza Japonesa Real')
+        self.assertNotContains(korean_response, 'Perfume Real')
 
-        self.assertEqual(legacy_group_response.status_code, 200)
-        self.assertContains(legacy_group_response, 'K Beauty Real')
-        self.assertContains(legacy_group_response, 'Beleza Japonesa Real')
+    def test_decanter_has_two_valid_subcollections_even_before_product_registration(self):
+        response = self.client.get(reverse('category_landing', args=['decanter']))
 
-    def test_legacy_quick_nav_queries_use_real_product_groups(self):
-        perfume_response = self.client.get(
-            reverse('products:list'),
-            {'category': 'perfumes'},
-        )
-        asian_beauty_response = self.client.get(
-            reverse('products:list'),
-            {'category': 'beleza-coreana'},
-        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Decanter 5 ml')
+        self.assertContains(response, 'Decanter 10 ml')
+        self.assertContains(response, 'Decanter esta em preparacao')
+        self.assertContains(response, reverse('category_landing', args=['decanter-5ml']))
+        self.assertContains(response, reverse('category_landing', args=['decanter-10ml']))
 
-        self.assertContains(perfume_response, 'Perfume Real')
-        self.assertNotContains(perfume_response, 'K Beauty Real')
-        self.assertContains(asian_beauty_response, 'K Beauty Real')
-        self.assertContains(asian_beauty_response, 'Beleza Japonesa Real')
-        self.assertNotContains(asian_beauty_response, 'Perfume Real')
-
-    def test_legacy_query_filter_and_exact_category_route_still_work(self):
+    def test_legacy_category_routes_canonicalize_without_losing_the_catalog(self):
         legacy_query_response = self.client.get(
             reverse('products:list'),
             {'category': 'perfume-arabe-feminino'},
@@ -371,8 +413,30 @@ class CatalogNavigationTests(TestCase):
 
         self.assertContains(legacy_query_response, 'Perfume Real')
         self.assertNotContains(legacy_query_response, 'K Beauty Real')
-        self.assertContains(category_route_response, 'K Beauty Real')
-        self.assertNotContains(category_route_response, 'Perfume Real')
+        self.assertEqual(category_route_response.status_code, 301)
+        self.assertEqual(category_route_response['Location'], self.korean_collection.get_absolute_url())
+
+    def test_unknown_collection_route_returns_not_found(self):
+        response = self.client.get(reverse('category_landing', args=['colecao-inexistente']))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_catalog_uses_promotional_price_when_sorting_by_price(self):
+        Product.objects.create(
+            name='Produto com preco promocional menor',
+            category=self.perfume_category,
+            price='300.00',
+            sale_price='50.00',
+            stock=2,
+            status=Product.STATUS_AVAILABLE,
+            is_on_sale=True,
+        )
+
+        response = self.client.get(reverse('products:list'), {'sort': 'price_asc'})
+        product_names = [product.name for product in response.context['products'].object_list]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(product_names[0], 'Produto com preco promocional menor')
 
     def test_offer_route_only_returns_valid_public_sales(self):
         response = self.client.get(reverse('offers'))

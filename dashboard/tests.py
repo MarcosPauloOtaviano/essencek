@@ -2,7 +2,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import User
-from products.models import Brand, Category, Product
+from products.models import Brand, Category, HomeCollection, Product
 
 
 @override_settings(
@@ -91,3 +91,19 @@ class DashboardBrandActionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Perfumes')
         self.assertContains(response, '2 <small>(1 ativos)</small>', html=True)
+
+    def test_home_collection_management_pages_load(self):
+        collection = HomeCollection.objects.create(
+            key='colecao-teste',
+            title='Colecao teste',
+            route_slug='colecao-teste',
+            kind=HomeCollection.KIND_FEATURED,
+        )
+
+        list_response = self.client.get(reverse('dashboard:home_collections'))
+        edit_response = self.client.get(reverse('dashboard:home_collection_edit', args=[collection.pk]))
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertContains(list_response, 'Colecao teste')
+        self.assertEqual(edit_response.status_code, 200)
+        self.assertContains(edit_response, 'name="route_slug"')
