@@ -363,7 +363,7 @@ class CatalogNavigationTests(TestCase):
             kind=HomeCollection.KIND_AVAILABLE, order=70,
         )
 
-    def test_home_shows_the_seven_configured_collections_including_empty_ones(self):
+    def test_home_shows_the_seven_configured_collections_as_clickable_bubbles(self):
         response = self.client.get(reverse('home'))
 
         self.assertEqual(response.status_code, 200)
@@ -375,7 +375,7 @@ class CatalogNavigationTests(TestCase):
             self.assertContains(response, collection.title)
         self.assertContains(response, '/categoria/destaques/')
         self.assertContains(response, '/categoria/pronta-entrega/')
-        self.assertContains(response, 'Catalogo em preparacao')
+        self.assertContains(response, 'class="collection-bubble"', count=7)
         self.assertNotContains(response, 'ELETRO')
 
     def test_collection_routes_use_only_the_configured_real_categories(self):
