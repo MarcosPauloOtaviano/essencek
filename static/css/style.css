@@ -1213,8 +1213,7 @@ select.form-control { cursor: pointer; }
   .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .features-grid { grid-template-columns: repeat(2, 1fr); }
   .categories-grid { grid-template-columns: repeat(3, 1fr); }
-  .social-float { bottom: calc(12px + env(safe-area-inset-bottom)); right: 12px; gap: 8px; transition: opacity var(--transition), transform var(--transition); }
-  .social-float .instagram-float { display: none; }
+  .social-float { bottom: calc(12px + env(safe-area-inset-bottom)); right: 12px; flex-direction: row; gap: 8px; transition: opacity var(--transition), transform var(--transition); }
   .float-btn { width: 44px; height: 44px; font-size: 20px; }
 }
 
