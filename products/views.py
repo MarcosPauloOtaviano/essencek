@@ -67,7 +67,7 @@ def _order_catalog_products(products, selected_sort):
         return products.annotate(catalog_price=_current_price_expression()).order_by('catalog_price', '-pk')
     if selected_sort == 'price_desc':
         return products.annotate(catalog_price=_current_price_expression()).order_by('-catalog_price', '-pk')
-    return products.order_by('-created_at', '-pk')
+    return products.order_by('is_pre_order', '-created_at', '-pk')
 
 
 def _category_and_children_ids(category, categories):

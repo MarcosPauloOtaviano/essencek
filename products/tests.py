@@ -421,6 +421,22 @@ class CatalogNavigationTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    def test_default_catalog_lists_pre_order_products_after_ready_products(self):
+        pre_order = Product.objects.create(
+            name='Produto sob encomenda',
+            category=self.perfume_category,
+            price='250.00',
+            stock=0,
+            status=Product.STATUS_PRE_ORDER,
+            is_pre_order=True,
+        )
+
+        response = self.client.get(reverse('products:list'))
+        listed_products = list(response.context['products'].object_list)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(listed_products[-1].pk, pre_order.pk)
+
     def test_catalog_uses_promotional_price_when_sorting_by_price(self):
         Product.objects.create(
             name='Produto com preco promocional menor',
