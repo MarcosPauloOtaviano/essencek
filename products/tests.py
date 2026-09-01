@@ -13,6 +13,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 
 from accounts.models import User
+from core.models import ShowcaseSlide
 from .forms import BrandForm, ProductForm
 from .gtin_service import lookup_gtin, lookup_product_identifier, normalize_gtin
 from .image_downloader import download_and_process_image
@@ -377,6 +378,35 @@ class CatalogNavigationTests(TestCase):
         self.assertContains(response, '/categoria/pronta-entrega/')
         self.assertContains(response, 'class="collection-bubble"', count=7)
         self.assertNotContains(response, 'ELETRO')
+
+    def test_home_keeps_pre_order_products_only_in_the_pre_order_section(self):
+        pre_order = Product.objects.create(
+            name='Produto em destaque sob encomenda',
+            category=self.niche_category,
+            price='250.00',
+            sale_price='200.00',
+            stock=0,
+            status=Product.STATUS_PRE_ORDER,
+            is_pre_order=True,
+            is_featured=True,
+            is_on_sale=True,
+        )
+        ShowcaseSlide.objects.create(
+            kind=ShowcaseSlide.KIND_PRODUCT,
+            product=pre_order,
+            position=0,
+        )
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        for context_name in (
+            'featured', 'on_sale', 'in_stock', 'hero_products',
+            'hero_perfumes', 'hero_kbeauty', 'new_arrivals',
+        ):
+            self.assertNotIn(pre_order, response.context[context_name])
+        self.assertIn(pre_order, response.context['pre_order'])
+        self.assertNotIn(pre_order, [slide.product for slide in response.context['showcase_slides']])
 
     def test_collection_routes_use_only_the_configured_real_categories(self):
         niche_response = self.client.get(reverse('category_landing', args=['perfumes-de-nicho']))

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.shortcuts import render
@@ -18,11 +19,13 @@ from .models import ExchangeRate, NextTrip, ShowcaseSlide, StoreSettings
 
 def home(request):
     _base_qs = Product.objects.filter(is_active=True).select_related('category', 'brand_fk').prefetch_related('images')
-    featured = _base_qs.filter(is_featured=True).order_by('-created_at')[:8]
-    on_sale = _base_qs.filter(valid_sale_q()).order_by('-created_at')[:8]
-    in_stock = _base_qs.filter(status='available').order_by('-created_at')[:8]
-    pre_order = _base_qs.filter(is_pre_order=True).order_by('-created_at')[:8]
-    hero_products = _base_qs.order_by('-is_featured', '-created_at')[:3]
+    pre_order_filter = Q(is_pre_order=True) | Q(status=Product.STATUS_PRE_ORDER)
+    ready_qs = _base_qs.exclude(pre_order_filter)
+    featured = ready_qs.filter(is_featured=True).order_by('-created_at')[:8]
+    on_sale = ready_qs.filter(valid_sale_q()).order_by('-created_at')[:8]
+    in_stock = ready_qs.filter(status=Product.STATUS_AVAILABLE).order_by('-created_at')[:8]
+    pre_order = _base_qs.filter(pre_order_filter).order_by('-created_at')[:8]
+    hero_products = ready_qs.order_by('-is_featured', '-created_at')[:3]
     categories = public_categories_with_products()
     collection_cards = home_collections()
     collections_by_key = {collection.key: collection for collection in collection_cards}
@@ -30,14 +33,16 @@ def home(request):
     korean_collection = collections_by_key.get('beleza-coreana')
     niche_category_ids = collection_category_ids(niche_collection, categories) if niche_collection else []
     korean_category_ids = collection_category_ids(korean_collection, categories) if korean_collection else []
-    hero_perfumes = _base_qs.filter(category_id__in=niche_category_ids).order_by('-is_featured', '-created_at')[:3]
-    hero_kbeauty = _base_qs.filter(category_id__in=korean_category_ids).order_by('-is_featured', '-created_at')[:3]
-    new_arrivals = _base_qs.order_by('-created_at')[:6]
+    hero_perfumes = ready_qs.filter(category_id__in=niche_category_ids).order_by('-is_featured', '-created_at')[:3]
+    hero_kbeauty = ready_qs.filter(category_id__in=korean_category_ids).order_by('-is_featured', '-created_at')[:3]
+    new_arrivals = ready_qs.order_by('-created_at')[:6]
     next_trip = NextTrip.objects.filter(is_active=True).first()
     current_exchange_rate = ExchangeRate.objects.filter(is_active=True).order_by('-updated_at').first()
     try:
         showcase_slides = list(
-            ShowcaseSlide.objects.filter(is_active=True).select_related('product')[:ShowcaseSlide.MAX_SLIDES]
+            ShowcaseSlide.objects.filter(is_active=True)
+            .exclude(Q(product__is_pre_order=True) | Q(product__status=Product.STATUS_PRE_ORDER))
+            .select_related('product')[:ShowcaseSlide.MAX_SLIDES]
         )
     except Exception:
         showcase_slides = []
