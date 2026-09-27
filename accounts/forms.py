@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from core.pii import make_pii_lookup
 from core.utils import sanitize_text
 from .models import User
 from .validators import (
@@ -38,14 +39,14 @@ class UserIdentityValidationMixin:
     def clean_cpf(self):
         cpf = normalize_cpf(self.cleaned_data.get('cpf'))
         validate_cpf(cpf)
-        if self._users_for_duplicate_check().filter(cpf=cpf).exists():
+        if self._users_for_duplicate_check().filter(cpf_lookup=make_pii_lookup(cpf)).exists():
             raise forms.ValidationError('Já existe uma conta com este CPF.')
         return cpf
 
     def clean_whatsapp(self):
         whatsapp = normalize_whatsapp(self.cleaned_data.get('whatsapp'))
         validate_whatsapp(whatsapp)
-        if self._users_for_duplicate_check().filter(whatsapp=whatsapp).exists():
+        if self._users_for_duplicate_check().filter(whatsapp_lookup=make_pii_lookup(whatsapp)).exists():
             raise forms.ValidationError('Já existe uma conta com este telefone.')
         return whatsapp
 
@@ -105,6 +106,8 @@ class ProfileForm(UserIdentityValidationMixin, forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data['email']
+        user.cpf = self.cleaned_data['cpf']
+        user.whatsapp = self.cleaned_data['whatsapp']
         if commit:
             user.save()
         return user

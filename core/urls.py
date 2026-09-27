@@ -3,6 +3,7 @@ from . import views
 from products.views import product_list
 
 urlpatterns = [
+    path('health/', views.healthcheck, name='healthcheck'),
     path('', views.home, name='home'),
     path('ofertas/', product_list, {'quick_filter': 'ofertas'}, name='offers'),
     path('destaques/', product_list, {'quick_filter': 'destaques'}, name='featured_products'),

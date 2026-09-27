@@ -174,3 +174,19 @@ class StoredMediaFile(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class RateLimitBucket(models.Model):
+    """Shared, privacy-preserving counters used by all serverless instances."""
+
+    key = models.CharField(max_length=64, primary_key=True)
+    count = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField(db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Contador de limite de acesso'
+        verbose_name_plural = 'Contadores de limite de acesso'
+
+    def __str__(self):
+        return self.key[:12]

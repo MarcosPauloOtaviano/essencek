@@ -1,9 +1,16 @@
+import base64
+import hashlib
 from pathlib import Path
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-production')
+SECRET_KEY_FALLBACKS = [
+    key.strip()
+    for key in config('SECRET_KEY_FALLBACKS', default='').split(',')
+    if key.strip()
+]
 SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
 STORE_WHATSAPP = config(
     'STORE_WHATSAPP',
@@ -149,8 +156,13 @@ COSMOS_API_TOKEN = config('COSMOS_API_TOKEN', default='')
 FRENET_TOKEN = config('FRENET_TOKEN', default='')
 FRENET_SENDER_CEP = config('FRENET_SENDER_CEP', default='85851130')
 
-# Fernet encryption for sensitive fields (AES-128/256 via cryptography)
-FERNET_KEYS = [config('FERNET_KEY', default=SECRET_KEY[:43] + '=')]
+# Fernet encryption for sensitive fields. Production always supplies an
+# independent key; the derived value is only a valid local-development fallback.
+_default_fernet_key = base64.urlsafe_b64encode(
+    hashlib.sha256(SECRET_KEY.encode('utf-8')).digest()
+).decode('ascii')
+FERNET_KEYS = [config('FERNET_KEY', default=_default_fernet_key)]
+PII_HASH_KEY = config('PII_HASH_KEY', default=SECRET_KEY)
 
 # Mercado Pago
 PAYMENT_GATEWAY = config('PAYMENT_GATEWAY', default='sandbox')
@@ -165,6 +177,30 @@ MP_MAX_INSTALLMENTS = config('MP_MAX_INSTALLMENTS', default=12, cast=int)
 # Two-factor auth (protects /painel/ admin area)
 TWO_FACTOR_REMEMBER_COOKIE_AGE = 30 * 24 * 3600
 TWO_FACTOR_LOGIN_TIMEOUT = 600
+
+# Shared throttling is enabled by production settings. Development and tests
+# keep the local cache backend to avoid coupling routine work to PostgreSQL.
+SHARED_RATE_LIMIT_ENABLED = False
+GLOBAL_RATE_LIMIT_MAX = config('GLOBAL_RATE_LIMIT_MAX', default=240, cast=int)
+GLOBAL_RATE_LIMIT_WINDOW = config('GLOBAL_RATE_LIMIT_WINDOW', default=60, cast=int)
+
+# Enforcing CSP kept compatible with the current inline template handlers.
+# The remote origins are restricted to services used by the storefront.
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "base-uri 'self'; "
+    "object-src 'none'; "
+    "frame-ancestors 'none'; "
+    "form-action 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+    "img-src 'self' data: blob: https:; "
+    "connect-src 'self' https://viacep.com.br; "
+    "media-src 'self' blob:; "
+    "worker-src 'self' blob:; "
+    "upgrade-insecure-requests"
+)
 
 # Store settings cache key
 STORE_SETTINGS_CACHE_KEY = 'store_settings'
@@ -198,3 +234,17 @@ LOGGING = {
         },
     },
 }
+
+# Error monitoring is enabled only when a DSN is configured. Sensitive request
+# data is never sent by default.
+SENTRY_DSN = config('SENTRY_DSN', default='').strip()
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=config('SENTRY_ENVIRONMENT', default='development'),
+        release=config('VERCEL_GIT_COMMIT_SHA', default='') or None,
+        send_default_pii=False,
+        traces_sample_rate=config('SENTRY_TRACES_SAMPLE_RATE', default=0.05, cast=float),
+    )

@@ -1,10 +1,9 @@
 import logging
-import time
-
 from django.conf import settings
-from django.core.cache import cache
 from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.utils.cache import patch_vary_headers
+
+from .rate_limit import hit as rate_limit_hit, reset as rate_limit_reset
 
 logger = logging.getLogger('django.security')
 
@@ -49,6 +48,9 @@ class SecurityHeadersMiddleware:
         )
         response['Cross-Origin-Opener-Policy'] = 'same-origin'
         response['Cross-Origin-Resource-Policy'] = 'same-origin'
+        policy = getattr(settings, 'CONTENT_SECURITY_POLICY', '')
+        if policy:
+            response['Content-Security-Policy'] = policy
         if request.is_secure():
             response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
         return response
@@ -64,25 +66,22 @@ class LoginRateLimitMiddleware:
     def __call__(self, request):
         if request.method == 'POST' and request.path in ('/conta/entrar/', '/admin/login/'):
             ip = self._client_ip(request)
-            cache_key = f'login_attempts:{ip}'
-            attempts = cache.get(cache_key, [])
-            now = time.time()
-            attempts = [t for t in attempts if now - t < self.window]
-
-            if len(attempts) >= self.max_attempts:
+            blocked, attempts, retry_after = rate_limit_hit(
+                'login', ip, self.max_attempts, self.window
+            )
+            if blocked:
                 logger.warning('Login rate limit exceeded for IP %s', ip)
-                return JsonResponse(
+                response = JsonResponse(
                     {'error': 'Muitas tentativas de login. Aguarde alguns minutos.'},
                     status=429,
                 )
+                response['Retry-After'] = str(retry_after)
+                return response
 
             response = self.get_response(request)
 
             if hasattr(request, 'user') and request.user.is_authenticated:
-                cache.delete(cache_key)
-            elif response.status_code == 200:
-                attempts.append(now)
-                cache.set(cache_key, attempts, self.window)
+                rate_limit_reset('login', ip)
 
             return response
 
@@ -98,27 +97,34 @@ class LoginRateLimitMiddleware:
 
 class GlobalRateLimitMiddleware:
 
+    EXEMPT_PREFIXES = (
+        '/static/', '/media/', '/health/', '/cron/', '/pagamento/webhook/',
+    )
+
     def __init__(self, get_response):
         self.get_response = get_response
         self.max_requests = getattr(settings, 'GLOBAL_RATE_LIMIT_MAX', 60)
         self.window = getattr(settings, 'GLOBAL_RATE_LIMIT_WINDOW', 60)
 
     def __call__(self, request):
-        if request.path.startswith('/static/') or request.path.startswith('/media/'):
+        if request.method == 'OPTIONS' or any(
+            request.path.startswith(prefix) for prefix in self.EXEMPT_PREFIXES
+        ):
             return self.get_response(request)
 
         ip = LoginRateLimitMiddleware._client_ip(request)
-        cache_key = f'global_rl:{ip}'
-        hits = cache.get(cache_key, 0)
-
-        if hits >= self.max_requests:
+        blocked, hits, retry_after = rate_limit_hit(
+            'global', ip, self.max_requests, self.window
+        )
+        if blocked:
             logger.warning('Global rate limit exceeded for IP %s (%d reqs)', ip, hits)
-            return JsonResponse(
+            response = JsonResponse(
                 {'error': 'Muitas requisições. Aguarde um momento.'},
                 status=429,
             )
+            response['Retry-After'] = str(retry_after)
+            return response
 
-        cache.set(cache_key, hits + 1, self.window)
         return self.get_response(request)
 
 

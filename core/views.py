@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import connection
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
@@ -15,6 +16,21 @@ from products.services import (
 )
 from .services import update_all_exchange_rates_from_api
 from .models import ExchangeRate, NextTrip, ShowcaseSlide, StoreSettings
+
+
+@never_cache
+@require_GET
+def healthcheck(request):
+    """Minimal public probe: verifies the app and primary database only."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT 1')
+            cursor.fetchone()
+    except Exception:
+        return JsonResponse({'status': 'unavailable'}, status=503)
+    response = JsonResponse({'status': 'ok'})
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 def home(request):

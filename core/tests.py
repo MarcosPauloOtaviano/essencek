@@ -6,7 +6,7 @@ import requests
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from django.http import Http404
-from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.views.defaults import server_error
 from PIL import Image
@@ -14,8 +14,11 @@ from PIL import Image
 from .middleware import (
     CanonicalHostRedirectMiddleware,
     LoginRateLimitMiddleware,
+    SecurityHeadersMiddleware,
     VercelCDNCacheMiddleware,
 )
+from .models import RateLimitBucket
+from .rate_limit import hit as rate_limit_hit
 from .media_views import (
     _build_thumbnail,
     _clean_media_path,
@@ -110,10 +113,7 @@ class LoginRateLimitMiddlewareTests(SimpleTestCase):
         cache.clear()
 
     def test_successful_login_clears_previous_failures(self):
-        from django.core.cache import cache
-
-        cache_key = 'login_attempts:127.0.0.1'
-        cache.set(cache_key, [1.0], 300)
+        rate_limit_hit('login', '127.0.0.1', 5, 300)
 
         def successful_login(request):
             request.user = SimpleNamespace(is_authenticated=True)
@@ -124,7 +124,44 @@ class LoginRateLimitMiddlewareTests(SimpleTestCase):
 
         middleware(request)
 
-        self.assertIsNone(cache.get(cache_key))
+        blocked, count, _ = rate_limit_hit('login', '127.0.0.1', 5, 300)
+        self.assertFalse(blocked)
+        self.assertEqual(count, 1)
+
+
+class SharedRateLimitTests(TestCase):
+    @override_settings(SHARED_RATE_LIMIT_ENABLED=True)
+    def test_counter_is_persisted_in_database(self):
+        first = rate_limit_hit('test', '203.0.113.10', 1, 60)
+        second = rate_limit_hit('test', '203.0.113.10', 1, 60)
+
+        self.assertFalse(first[0])
+        self.assertTrue(second[0])
+        self.assertEqual(RateLimitBucket.objects.count(), 1)
+
+
+class SecurityHeadersMiddlewareTests(SimpleTestCase):
+    @override_settings(CONTENT_SECURITY_POLICY="default-src 'self'; object-src 'none'")
+    def test_adds_enforcing_content_security_policy(self):
+        middleware = SecurityHeadersMiddleware(lambda request: HttpResponse('ok'))
+
+        response = middleware(self.factory.get('/')) if hasattr(self, 'factory') else middleware(
+            RequestFactory().get('/')
+        )
+
+        self.assertEqual(
+            response['Content-Security-Policy'],
+            "default-src 'self'; object-src 'none'",
+        )
+
+
+class HealthcheckTests(TestCase):
+    def test_healthcheck_verifies_database(self):
+        response = self.client.get(reverse('healthcheck'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'status': 'ok'})
+        self.assertIn('no-store', response['Cache-Control'])
 
 
 class ImageUrlIfExistsTests(SimpleTestCase):

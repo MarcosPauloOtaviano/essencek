@@ -13,8 +13,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
+from accounts.validators import normalize_cpf, normalize_whatsapp
 from core.forms import NextTripForm, ShowcaseTextSlideForm, StoreSettingsForm
 from core.models import ShowcaseSlide, StoreSettings, NextTrip
+from core.pii import make_pii_lookup
 from orders.models import Order, PreOrderRequest
 from orders.services import InsufficientStockError, confirm_order_payment
 from products.forms import BrandForm, CategoryForm, HomeCollectionForm, ProductForm, ProductVariantFormSet
@@ -328,12 +330,16 @@ def order_detail(request, pk):
 @staff_member_required(login_url='/conta/entrar/')
 def customer_list(request):
     customers = User.objects.filter(is_staff=False).order_by('-date_joined')
-    q = request.GET.get('q', '')
+    q = request.GET.get('q', '').strip()
     if q:
-        customers = customers.filter(
-            Q(full_name__icontains=q) | Q(email__icontains=q) |
-            Q(cpf__icontains=q) | Q(whatsapp__icontains=q)
-        )
+        identity_filter = Q(full_name__icontains=q) | Q(email__icontains=q)
+        cpf = normalize_cpf(q)
+        whatsapp = normalize_whatsapp(q)
+        if len(cpf) == 11:
+            identity_filter |= Q(cpf_lookup=make_pii_lookup(cpf))
+        if len(whatsapp) in (10, 11):
+            identity_filter |= Q(whatsapp_lookup=make_pii_lookup(whatsapp))
+        customers = customers.filter(identity_filter)
     return render(request, 'dashboard/customers.html', {'customers': customers, 'q': q})
 
 

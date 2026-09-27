@@ -1,3 +1,4 @@
+from django.db import connection
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -41,6 +42,20 @@ class UserIdentityValidationTests(TestCase):
         self.assertEqual(user.username, 'cliente@example.com')
         self.assertEqual(user.cpf, '52998224725')
         self.assertEqual(user.whatsapp, '11987654321')
+        self.assertNotEqual(user.cpf_lookup, user.cpf)
+        self.assertNotEqual(user.whatsapp_lookup, user.whatsapp)
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                'SELECT cpf, whatsapp, cpf_encrypted, whatsapp_encrypted '
+                'FROM accounts_user WHERE id = %s',
+                [user.pk],
+            )
+            raw_cpf, raw_whatsapp, encrypted_cpf, encrypted_whatsapp = cursor.fetchone()
+        self.assertIsNone(raw_cpf)
+        self.assertIsNone(raw_whatsapp)
+        self.assertNotIn(user.cpf, encrypted_cpf)
+        self.assertNotIn(user.whatsapp, encrypted_whatsapp)
 
     def test_register_form_requires_identity_fields(self):
         form = RegisterForm(data=self.valid_register_data(email='', cpf='', whatsapp=''))

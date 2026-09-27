@@ -12,6 +12,11 @@ DEBUG = False
 
 _configured_secret_key = config('SECRET_KEY', default='')
 SECRET_KEY = _configured_secret_key or 'django-insecure-local-vercel-settings-only'
+SECRET_KEY_FALLBACKS = [
+    key.strip()
+    for key in config('SECRET_KEY_FALLBACKS', default='').split(',')
+    if key.strip()
+]
 
 _vercel_url = os.environ.get('VERCEL_URL', '')
 SITE_URL = config('SITE_URL', default='https://essencekimportados.com.br')
@@ -57,6 +62,10 @@ _is_vercel_environment = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL
 
 if _is_vercel_environment and not _configured_secret_key:
     raise ImproperlyConfigured('Configure SECRET_KEY antes de executar na Vercel.')
+if _is_vercel_environment and (
+    _configured_secret_key.startswith('django-insecure') or len(_configured_secret_key) < 50
+):
+    raise ImproperlyConfigured('Configure uma SECRET_KEY forte antes de executar na Vercel.')
 
 if _database_url:
     DATABASES = {
@@ -132,3 +141,15 @@ SECURE_HSTS_PRELOAD = True
 FERNET_KEYS = [
     config('FERNET_KEY', default='YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='),
 ]
+
+_configured_pii_hash_key = config('PII_HASH_KEY', default='')
+if _is_vercel_environment and len(_configured_pii_hash_key) < 32:
+    raise ImproperlyConfigured('Configure PII_HASH_KEY com pelo menos 32 caracteres na Vercel.')
+PII_HASH_KEY = _configured_pii_hash_key or SECRET_KEY
+
+SHARED_RATE_LIMIT_ENABLED = bool(_database_url)
+
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.set_tag('hosting', 'vercel')
