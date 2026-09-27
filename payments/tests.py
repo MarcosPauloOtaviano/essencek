@@ -85,9 +85,11 @@ class PaymentServiceTests(TestCase):
     WHATSAPP_CHECKOUT_ONLY=False,
     PAYMENT_SANDBOX=False,
     PAYMENT_GATEWAY='mercadopago',
+    SITE_URL='https://example.com',
     MP_ACCESS_TOKEN='production-token',
     MP_PUBLIC_KEY='production-public-key',
     MP_WEBHOOK_SECRET='webhook-secret',
+    MP_WEBHOOK_TOKEN='callback-token',
     MP_USE_SANDBOX_LINK=False,
     FERNET_KEYS=['y_0UztNJ7Z1bTin2n33g6tE2x3BNbpBgiiSy8WEPOXA='],
 )
@@ -239,6 +241,10 @@ class MercadoPagoProductionTests(TestCase):
         )
         self.assertEqual(charged_total, self.order.total)
         self.assertEqual(payload['items'][-1]['title'], 'Frete — Entrega expressa')
+        self.assertEqual(
+            payload['notification_url'],
+            'https://example.com/pagamento/webhook/mercadopago/?token=callback-token',
+        )
 
     def test_signed_webhook_confirms_payment(self):
         payment_id = '123456'
@@ -276,6 +282,36 @@ class MercadoPagoProductionTests(TestCase):
             content_type='application/json',
             HTTP_X_SIGNATURE='ts=1700000000,v1=invalid',
             HTTP_X_REQUEST_ID='request-abc',
+        )
+
+        self.order.refresh_from_db()
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(self.order.payment_status, 'pending')
+
+    @override_settings(MP_WEBHOOK_SECRET='')
+    def test_private_callback_token_reconciles_payment_without_panel_signature(self):
+        body = json.dumps({'type': 'payment', 'data': {'id': '123456'}}).encode()
+        with patch.object(
+            MercadoPagoGateway,
+            '_get_gateway_payment',
+            return_value=self.payment_data(),
+        ):
+            response = self.client.post(
+                f"{reverse('webhook_mp')}?token=callback-token&data.id=123456",
+                data=body,
+                content_type='application/json',
+            )
+
+        self.order.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.order.payment_status, 'confirmed')
+
+    @override_settings(MP_WEBHOOK_SECRET='')
+    def test_wrong_callback_token_is_rejected(self):
+        response = self.client.post(
+            f"{reverse('webhook_mp')}?token=wrong&data.id=123456",
+            data=b'{}',
+            content_type='application/json',
         )
 
         self.order.refresh_from_db()

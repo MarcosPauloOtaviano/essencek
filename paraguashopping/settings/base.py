@@ -160,6 +160,7 @@ PAYMENT_SANDBOX = config('PAYMENT_SANDBOX', default='True', cast=bool)
 MP_ACCESS_TOKEN = config('MP_ACCESS_TOKEN', default='')
 MP_PUBLIC_KEY = config('MP_PUBLIC_KEY', default='')
 MP_WEBHOOK_SECRET = config('MP_WEBHOOK_SECRET', default='')
+MP_WEBHOOK_TOKEN = config('MP_WEBHOOK_TOKEN', default='')
 MP_USE_SANDBOX_LINK = config('MP_USE_SANDBOX_LINK', default='True', cast=bool)
 MP_MAX_INSTALLMENTS = config('MP_MAX_INSTALLMENTS', default=12, cast=int)
 

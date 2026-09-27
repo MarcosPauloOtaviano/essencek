@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
 
 import requests
 from django.conf import settings
@@ -26,6 +27,7 @@ class MercadoPagoGateway(BasePaymentGateway):
         self.access_token = getattr(settings, 'MP_ACCESS_TOKEN', '')
         self.public_key = getattr(settings, 'MP_PUBLIC_KEY', '')
         self.webhook_secret = getattr(settings, 'MP_WEBHOOK_SECRET', '')
+        self.webhook_token = getattr(settings, 'MP_WEBHOOK_TOKEN', '')
         raw_url = getattr(settings, 'SITE_URL', '').rstrip('/')
         is_local = any(h in raw_url for h in ('localhost', '127.0.0.1', '0.0.0.0'))  # nosec B104
         self.site_url = '' if is_local else raw_url
@@ -259,7 +261,7 @@ class MercadoPagoGateway(BasePaymentGateway):
         }
 
         if self.site_url:
-            payload['notification_url'] = self._absolute_url('/pagamento/webhook/mercadopago/')
+            payload['notification_url'] = self._notification_url()
             payload['back_urls'] = {
                 'success': self._absolute_url(f'/checkout/sucesso/{order.order_number}/'),
                 'failure': self._absolute_url(f'/checkout/sucesso/{order.order_number}/'),
@@ -306,7 +308,7 @@ class MercadoPagoGateway(BasePaymentGateway):
         }
 
         if self.site_url:
-            payload['notification_url'] = self._absolute_url('/pagamento/webhook/mercadopago/')
+            payload['notification_url'] = self._notification_url()
 
         response = self._request(
             'post',
@@ -387,6 +389,12 @@ class MercadoPagoGateway(BasePaymentGateway):
             missing.append('MP_ACCESS_TOKEN')
         if not self.public_key:
             missing.append('MP_PUBLIC_KEY')
+        if (
+            not getattr(settings, 'PAYMENT_SANDBOX', True)
+            and not self.webhook_secret
+            and not self.webhook_token
+        ):
+            missing.append('MP_WEBHOOK_SECRET ou MP_WEBHOOK_TOKEN')
         if missing:
             raise PaymentGatewayConfigurationError(
                 f'Configuração incompleta do Mercado Pago: {", ".join(missing)}.'
@@ -394,6 +402,12 @@ class MercadoPagoGateway(BasePaymentGateway):
 
     def _absolute_url(self, path):
         return f'{self.site_url}{path}'
+
+    def _notification_url(self):
+        url = self._absolute_url('/pagamento/webhook/mercadopago/')
+        if self.webhook_token:
+            return f'{url}?{urlencode({"token": self.webhook_token})}'
+        return url
 
     def _payment_id_from_request(self, request, payload):
         data_id = request.GET.get('data.id') or request.GET.get('id')
@@ -407,7 +421,10 @@ class MercadoPagoGateway(BasePaymentGateway):
 
     def _valid_signature(self, request, payload):
         if not self.webhook_secret:
-            logger.error('Mercado Pago webhook rejected: MP_WEBHOOK_SECRET is not configured')
+            supplied_token = request.GET.get('token', '')
+            if self.webhook_token and hmac.compare_digest(self.webhook_token, supplied_token):
+                return True
+            logger.error('Mercado Pago webhook rejected: no valid signature or callback token')
             return False
 
         signature = request.headers.get('X-Signature', '')
