@@ -6,7 +6,7 @@ from .forms import ProfileForm, RegisterForm
 from .models import User
 
 
-@override_settings(STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage')
+@override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
 class UserIdentityValidationTests(TestCase):
     def valid_register_data(self, **overrides):
         data = {

@@ -1,4 +1,5 @@
 import base64
+import re
 
 from cryptography.fernet import Fernet, MultiFernet
 from django.conf import settings
@@ -46,10 +47,11 @@ class EncryptedCharField(models.TextField):
     def from_db_value(self, value, expression, connection):
         if not value:
             return ''
-        try:
-            return decrypt_value(value)
-        except Exception:
+        # Read old phone/CPF rows during the rolling migration only. Invalid
+        # ciphertext must never be returned as if it were a decrypted identity.
+        if re.fullmatch(r'[\d\s()+.\-]{1,20}', value):
             return value
+        return decrypt_value(value)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()

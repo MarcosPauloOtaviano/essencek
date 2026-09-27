@@ -5,6 +5,9 @@ from django.conf import settings
 from django.templatetags.static import static
 
 from core.utils import money
+from core.encryption import EncryptedCharField
+from core.pii import make_pii_lookup
+from accounts.validators import normalize_whatsapp
 from products.models import Product
 
 
@@ -65,7 +68,8 @@ class Order(models.Model):
     # Customer info snapshot
     customer_name = models.CharField('Nome', max_length=200)
     customer_email = models.EmailField('E-mail')
-    customer_whatsapp = models.CharField('Telefone', max_length=20)
+    customer_whatsapp = EncryptedCharField('Telefone', max_length=20)
+    phone_lookup = models.CharField(max_length=64, null=True, blank=True, db_index=True, editable=False)
 
     # Delivery address
     address = models.CharField('Endereço', max_length=255)
@@ -118,6 +122,15 @@ class Order(models.Model):
 
     def __str__(self):
         return f'Pedido {self.order_number}'
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        if update_fields is None or 'customer_whatsapp' in update_fields:
+            self.customer_whatsapp = normalize_whatsapp(self.customer_whatsapp) or ''
+            self.phone_lookup = make_pii_lookup(self.customer_whatsapp)
+            if update_fields is not None:
+                kwargs['update_fields'] = set(update_fields) | {'phone_lookup'}
+        super().save(*args, **kwargs)
 
     RETRYABLE_STATUSES = {STATUS_CREATED, STATUS_AWAITING_PAYMENT}
 
@@ -255,7 +268,8 @@ class PreOrderRequest(models.Model):
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                   related_name='pre_orders', null=True, blank=True)
     customer_name = models.CharField('Nome', max_length=200)
-    whatsapp = models.CharField('Telefone', max_length=20)
+    whatsapp = EncryptedCharField('Telefone', max_length=20)
+    phone_lookup = models.CharField(max_length=64, null=True, blank=True, db_index=True, editable=False)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     product_name = models.CharField('Nome do produto', max_length=200)
     status = models.CharField('Status', max_length=30, choices=STATUS_CHOICES, default='received')
@@ -275,3 +289,12 @@ class PreOrderRequest(models.Model):
 
     def __str__(self):
         return f'Encomenda {self.product_name} — {self.customer_name}'
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        if update_fields is None or 'whatsapp' in update_fields:
+            self.whatsapp = normalize_whatsapp(self.whatsapp) or ''
+            self.phone_lookup = make_pii_lookup(self.whatsapp)
+            if update_fields is not None:
+                kwargs['update_fields'] = set(update_fields) | {'phone_lookup'}
+        super().save(*args, **kwargs)

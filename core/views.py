@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.shortcuts import render
 from django.utils.crypto import constant_time_compare
+from django.utils import timezone
 from django.views.decorators.http import require_GET
 from django.views.generic import TemplateView
 from products.models import Product
@@ -15,7 +16,7 @@ from products.services import (
     valid_sale_q,
 )
 from .services import update_all_exchange_rates_from_api
-from .models import ExchangeRate, NextTrip, ShowcaseSlide, StoreSettings
+from .models import ExchangeRate, NextTrip, ShowcaseSlide, StoreSettings, RateLimitBucket
 
 
 @never_cache
@@ -128,6 +129,8 @@ def update_exchange_rates_cron(request):
         return JsonResponse({'ok': False, 'error': 'Nao autorizado.'}, status=401)
 
     try:
+        if getattr(settings, 'SHARED_RATE_LIMIT_ENABLED', False):
+            RateLimitBucket.objects.filter(expires_at__lt=timezone.now()).delete()
         rates = update_all_exchange_rates_from_api()
     except Exception as exc:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=502)

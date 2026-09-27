@@ -1,8 +1,20 @@
 from django.contrib import admin
+from accounts.validators import normalize_whatsapp
+from core.pii import make_pii_lookup
 from django.utils import timezone
 from django.utils.html import format_html
 from .models import Order, OrderItem, PreOrderRequest
 from .services import confirm_order_payment
+
+
+class PhoneSearchMixin:
+    def get_search_results(self, request, queryset, search_term):
+        original_queryset = queryset
+        result, may_have_duplicates = super().get_search_results(request, queryset, search_term)
+        phone = normalize_whatsapp(search_term) or ''
+        if len(phone) in (10, 11):
+            result |= original_queryset.filter(phone_lookup=make_pii_lookup(phone))
+        return result, may_have_duplicates
 
 
 class OrderItemInline(admin.TabularInline):
@@ -13,11 +25,11 @@ class OrderItemInline(admin.TabularInline):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(PhoneSearchMixin, admin.ModelAdmin):
     list_display = ['order_number', 'customer_name', 'total', 'payment_method',
                     'payment_status', 'status', 'created_at']
     list_filter = ['status', 'payment_method', 'payment_status', 'created_at']
-    search_fields = ['order_number', 'customer_name', 'customer_email', 'customer_whatsapp']
+    search_fields = ['order_number', 'customer_name', 'customer_email']
     readonly_fields = ['order_number', 'customer', 'created_at', 'updated_at']
     inlines = [OrderItemInline]
     actions = ['confirm_payment', 'mark_shipped', 'mark_completed', 'mark_cancelled']
@@ -75,8 +87,8 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 @admin.register(PreOrderRequest)
-class PreOrderRequestAdmin(admin.ModelAdmin):
+class PreOrderRequestAdmin(PhoneSearchMixin, admin.ModelAdmin):
     list_display = ['product_name', 'customer_name', 'whatsapp', 'status', 'agreed_price', 'created_at']
     list_filter = ['status', 'trip']
-    search_fields = ['product_name', 'customer_name', 'whatsapp']
+    search_fields = ['product_name', 'customer_name']
     list_editable = ['status']

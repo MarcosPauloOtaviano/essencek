@@ -12,7 +12,7 @@ from .services import get_dashboard_summary, get_reports_data
 
 @override_settings(
     ALLOWED_HOSTS=['testserver'],
-    STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage',
+    STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}},
 )
 class DashboardBrandActionTests(TestCase):
     def setUp(self):
@@ -116,7 +116,7 @@ class DashboardBrandActionTests(TestCase):
 
 @override_settings(
     ALLOWED_HOSTS=['testserver'],
-    STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage',
+    STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'}, 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}},
 )
 class DashboardPaymentReportTests(TestCase):
     def setUp(self):

@@ -5,7 +5,7 @@
 <div class="dash-page-header"><h1>Pedidos</h1></div>
 <div class="dash-filters">
   <form method="get" class="dash-filter-form">
-    <input type="text" name="q" value="{{ q }}" placeholder="Número, nome ou telefone..." class="dash-input">
+    <input type="text" name="q" value="{{ q }}" placeholder="Pedido, nome ou telefone completo..." class="dash-input">
     <select name="status" class="dash-select" aria-label="Filtrar por status">
       <option value="">Todos os status</option>
       {% for val, label in status_choices %}

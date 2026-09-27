@@ -265,11 +265,14 @@ def order_list(request):
     if payment_status in valid_payment_statuses:
         orders = orders.filter(payment_status=payment_status)
     if q:
-        orders = orders.filter(
+        query = (
             Q(order_number__icontains=q) |
-            Q(customer_name__icontains=q) |
-            Q(customer_whatsapp__icontains=q)
+            Q(customer_name__icontains=q)
         )
+        phone = normalize_whatsapp(q) or ''
+        if len(phone) in (10, 11):
+            query |= Q(phone_lookup=make_pii_lookup(phone))
+        orders = orders.filter(query)
     return render(request, 'dashboard/orders.html', {
         'orders': orders,
         'status_choices': Order.STATUS_CHOICES,
@@ -333,8 +336,8 @@ def customer_list(request):
     q = request.GET.get('q', '').strip()
     if q:
         identity_filter = Q(full_name__icontains=q) | Q(email__icontains=q)
-        cpf = normalize_cpf(q)
-        whatsapp = normalize_whatsapp(q)
+        cpf = normalize_cpf(q) or ''
+        whatsapp = normalize_whatsapp(q) or ''
         if len(cpf) == 11:
             identity_filter |= Q(cpf_lookup=make_pii_lookup(cpf))
         if len(whatsapp) in (10, 11):

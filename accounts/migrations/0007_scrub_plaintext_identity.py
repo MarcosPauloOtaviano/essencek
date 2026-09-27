@@ -6,28 +6,21 @@ def scrub_plaintext_identity(apps, schema_editor):
     from core.pii import make_pii_lookup
 
     User = apps.get_model('accounts', 'User')
-    table = schema_editor.connection.ops.quote_name(User._meta.db_table)
-    with schema_editor.connection.cursor() as cursor:
-        cursor.execute(
-            f'SELECT id, cpf, whatsapp FROM {table} WHERE cpf IS NOT NULL OR whatsapp IS NOT NULL'
-        )
-        rows = cursor.fetchall()
-
-    for user_id, raw_cpf, raw_whatsapp in rows:
-        cpf = normalize_cpf(raw_cpf)
-        whatsapp = normalize_whatsapp(raw_whatsapp)
+    alias = schema_editor.connection.alias
+    for user in User.objects.using(alias).select_for_update().all():
+        cpf = normalize_cpf(user.legacy_cpf or user.cpf_encrypted)
+        whatsapp = normalize_whatsapp(user.legacy_whatsapp or user.whatsapp_encrypted)
         updates = {
             'cpf_lookup': make_pii_lookup(cpf),
             'whatsapp_lookup': make_pii_lookup(whatsapp),
+            'legacy_cpf': None,
+            'legacy_whatsapp': None,
         }
         if cpf:
             updates['cpf_encrypted'] = cpf
         if whatsapp:
             updates['whatsapp_encrypted'] = whatsapp
-        User.objects.filter(pk=user_id).update(**updates)
-
-    with schema_editor.connection.cursor() as cursor:
-        cursor.execute(f'UPDATE {table} SET cpf = NULL, whatsapp = NULL')
+        User.objects.using(alias).filter(pk=user.pk).update(**updates)
 
 
 def restore_plaintext_identity(apps, schema_editor):

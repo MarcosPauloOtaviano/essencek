@@ -2,15 +2,22 @@ import base64
 import hashlib
 from pathlib import Path
 from decouple import config
+from core.key_rotation import ExpiringFallbackKeys
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-production')
+_previous_secret_key = config('SECRET_KEY', default='django-insecure-change-me-in-production')
+SECRET_KEY = config('SECRET_KEY_NEXT', default='') or _previous_secret_key
 SECRET_KEY_FALLBACKS = [
     key.strip()
     for key in config('SECRET_KEY_FALLBACKS', default='').split(',')
     if key.strip()
 ]
+_previous_key_valid_until = config('SECRET_KEY_PREVIOUS_VALID_UNTIL', default=0, cast=int)
+if SECRET_KEY != _previous_secret_key:
+    SECRET_KEY_FALLBACKS = ExpiringFallbackKeys(
+        SECRET_KEY_FALLBACKS, _previous_secret_key, _previous_key_valid_until,
+    )
 SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
 STORE_WHATSAPP = config(
     'STORE_WHATSAPP',
@@ -47,6 +54,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'core.observability.RequestMonitoringMiddleware',
     'core.middleware.VercelCDNCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -101,7 +109,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = Path(config('STATIC_ROOT', default=str(BASE_DIR / 'staticfiles')))
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(config('MEDIA_ROOT', default=str(BASE_DIR / 'media')))
@@ -191,7 +202,7 @@ CONTENT_SECURITY_POLICY = (
     "base-uri 'self'; "
     "object-src 'none'; "
     "frame-ancestors 'none'; "
-    "form-action 'self'; "
+    "form-action 'self' https://*.mercadopago.com.br https://*.mercadopago.com; "
     "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
     "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
@@ -210,18 +221,21 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
+        'safe_json': {'()': 'core.observability.SafeJSONFormatter'},
         'verbose': {
             'format': '[{asctime}] {levelname} {name}: {message}',
             'style': '{',
         },
     },
     'handlers': {
+        'operations': {'class': 'logging.StreamHandler', 'formatter': 'safe_json'},
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
     },
     'loggers': {
+        'store.operations': {'handlers': ['operations'], 'level': 'WARNING', 'propagate': False},
         'products.gtin': {
             'handlers': ['console'],
             'level': 'INFO',
@@ -240,11 +254,15 @@ LOGGING = {
 SENTRY_DSN = config('SENTRY_DSN', default='').strip()
 if SENTRY_DSN:
     import sentry_sdk
+    from core.observability import sanitize_sentry_event
 
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=config('SENTRY_ENVIRONMENT', default='development'),
         release=config('VERCEL_GIT_COMMIT_SHA', default='') or None,
         send_default_pii=False,
-        traces_sample_rate=config('SENTRY_TRACES_SAMPLE_RATE', default=0.05, cast=float),
+        include_local_variables=False,
+        max_request_body_size='never',
+        before_send=sanitize_sentry_event,
+        traces_sample_rate=0,
     )

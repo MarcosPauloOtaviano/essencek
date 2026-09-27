@@ -145,9 +145,7 @@ class SecurityHeadersMiddlewareTests(SimpleTestCase):
     def test_adds_enforcing_content_security_policy(self):
         middleware = SecurityHeadersMiddleware(lambda request: HttpResponse('ok'))
 
-        response = middleware(self.factory.get('/')) if hasattr(self, 'factory') else middleware(
-            RequestFactory().get('/')
-        )
+        response = middleware(RequestFactory().get('/'))
 
         self.assertEqual(
             response['Content-Security-Policy'],

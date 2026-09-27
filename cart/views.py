@@ -146,7 +146,7 @@ def cart_update(request, item_id):
     with transaction.atomic():
         cart = get_cart(request, for_update=True)
         item = get_object_or_404(
-            CartItem.objects.select_for_update().select_related('product', 'variant'),
+            CartItem.objects.select_for_update(of=('self',)).select_related('product', 'variant'),
             pk=item_id,
             cart=cart,
         )

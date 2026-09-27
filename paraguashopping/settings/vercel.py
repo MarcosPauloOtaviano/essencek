@@ -10,13 +10,7 @@ from .base import *
 
 DEBUG = False
 
-_configured_secret_key = config('SECRET_KEY', default='')
-SECRET_KEY = _configured_secret_key or 'django-insecure-local-vercel-settings-only'
-SECRET_KEY_FALLBACKS = [
-    key.strip()
-    for key in config('SECRET_KEY_FALLBACKS', default='').split(',')
-    if key.strip()
-]
+_configured_secret_key = config('SECRET_KEY_NEXT', default='') or config('SECRET_KEY', default='')
 
 _vercel_url = os.environ.get('VERCEL_URL', '')
 SITE_URL = config('SITE_URL', default='https://essencekimportados.com.br')
@@ -114,7 +108,10 @@ USE_DATABASE_MEDIA_STORAGE_ON_VERCEL = config(
 )
 
 if USE_DATABASE_MEDIA_STORAGE_ON_VERCEL:
-    DEFAULT_FILE_STORAGE = 'core.storage.PersistentMediaStorage'
+    STORAGES = {
+        **STORAGES,
+        'default': {'BACKEND': 'core.storage.PersistentMediaStorage'},
+    }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
@@ -138,9 +135,15 @@ SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000, cast=int)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-FERNET_KEYS = [
-    config('FERNET_KEY', default='YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='),
-]
+_configured_fernet_key = config('FERNET_KEY', default='')
+if _is_vercel_environment:
+    from cryptography.fernet import Fernet
+    try:
+        Fernet(_configured_fernet_key.encode())
+    except (ValueError, TypeError) as exc:
+        raise ImproperlyConfigured('Configure uma FERNET_KEY válida na Vercel.') from exc
+if _configured_fernet_key:
+    FERNET_KEYS = [_configured_fernet_key]
 
 _configured_pii_hash_key = config('PII_HASH_KEY', default='')
 if _is_vercel_environment and len(_configured_pii_hash_key) < 32:
@@ -148,6 +151,7 @@ if _is_vercel_environment and len(_configured_pii_hash_key) < 32:
 PII_HASH_KEY = _configured_pii_hash_key or SECRET_KEY
 
 SHARED_RATE_LIMIT_ENABLED = bool(_database_url)
+TRUST_VERCEL_PROXY = _is_vercel_environment
 
 if SENTRY_DSN:
     import sentry_sdk

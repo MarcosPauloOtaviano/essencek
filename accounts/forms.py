@@ -103,6 +103,12 @@ class ProfileForm(UserIdentityValidationMixin, forms.ModelForm):
             'state': forms.TextInput(attrs={'maxlength': '2', 'placeholder': 'SP'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.initial.setdefault('cpf', self.instance.cpf)
+            self.initial.setdefault('whatsapp', self.instance.whatsapp)
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data['email']

@@ -1,4 +1,5 @@
 import logging
+import ipaddress
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.utils.cache import patch_vary_headers
@@ -64,13 +65,16 @@ class LoginRateLimitMiddleware:
         self.window = getattr(settings, 'LOGIN_RATE_LIMIT_WINDOW_SECONDS', 300)
 
     def __call__(self, request):
-        if request.method == 'POST' and request.path in ('/conta/entrar/', '/admin/login/'):
+        login_path = request.path in ('/conta/entrar/', '/admin/login/') or (
+            request.path.startswith('/conta/2fa/') and request.path.endswith('/login/')
+        )
+        if request.method == 'POST' and login_path:
             ip = self._client_ip(request)
             blocked, attempts, retry_after = rate_limit_hit(
                 'login', ip, self.max_attempts, self.window
             )
             if blocked:
-                logger.warning('Login rate limit exceeded for IP %s', ip)
+                logger.warning('Login rate limit exceeded')
                 response = JsonResponse(
                     {'error': 'Muitas tentativas de login. Aguarde alguns minutos.'},
                     status=429,
@@ -89,10 +93,14 @@ class LoginRateLimitMiddleware:
 
     @staticmethod
     def _client_ip(request):
-        forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
-        if forwarded:
-            return forwarded.split(',')[0].strip()
-        return request.META.get('REMOTE_ADDR', 'unknown')
+        candidate = request.META.get('REMOTE_ADDR', '')
+        if getattr(settings, 'TRUST_VERCEL_PROXY', False):
+            candidate = request.META.get('HTTP_X_VERCEL_FORWARDED_FOR') or candidate
+        candidate = candidate.split(',')[0].strip()
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            return 'unknown'
 
 
 class GlobalRateLimitMiddleware:
@@ -117,7 +125,7 @@ class GlobalRateLimitMiddleware:
             'global', ip, self.max_requests, self.window
         )
         if blocked:
-            logger.warning('Global rate limit exceeded for IP %s (%d reqs)', ip, hits)
+            logger.warning('Global rate limit exceeded (%d reqs)', hits)
             response = JsonResponse(
                 {'error': 'Muitas requisições. Aguarde um momento.'},
                 status=429,
