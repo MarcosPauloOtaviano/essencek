@@ -95,5 +95,5 @@ def order_detail(request, order_number):
         'order': order,
         'active_payment': order.active_payment,
         'payment_attempts': order.payments.order_by('-created_at'),
-        'payment_choices': Order.PAYMENT_CHOICES,
+        'payment_choices': Order.ONLINE_PAYMENT_CHOICES,
     })

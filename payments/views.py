@@ -15,8 +15,11 @@ from .services import PaymentService
 MAX_WEBHOOK_BYTES = 64 * 1024
 
 
-def _whatsapp_checkout_only():
-    return getattr(django_settings, 'WHATSAPP_CHECKOUT_ONLY', True)
+def _require_online_payment_method(request, order):
+    if order.payment_method != Order.PAYMENT_WHATSAPP:
+        return None
+    messages.info(request, 'Escolha Pix ou cartão para continuar o pagamento.')
+    return redirect('order_detail', order_number=order.order_number)
 
 
 @login_required
@@ -24,9 +27,9 @@ def payment_pix(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
     if order.payment_status == 'confirmed':
         return redirect('order_detail', order_number=order.order_number)
-    if _whatsapp_checkout_only():
-        messages.info(request, 'A finalização está sendo feita pelo WhatsApp.')
-        return redirect('orders:whatsapp', order_number=order.order_number)
+    redirect_response = _require_online_payment_method(request, order)
+    if redirect_response:
+        return redirect_response
     service = PaymentService()
     payment = service.create_payment(order)
     return render(request, 'checkout/pix.html', {
@@ -41,9 +44,9 @@ def payment_link(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
     if order.payment_status == 'confirmed':
         return redirect('order_detail', order_number=order.order_number)
-    if _whatsapp_checkout_only():
-        messages.info(request, 'A finalização está sendo feita pelo WhatsApp.')
-        return redirect('orders:whatsapp', order_number=order.order_number)
+    redirect_response = _require_online_payment_method(request, order)
+    if redirect_response:
+        return redirect_response
     service = PaymentService()
     payment = service.create_payment(order)
     return render(request, 'checkout/payment_link.html', {
@@ -79,9 +82,6 @@ def retry_payment(request, order_number):
         Order.objects.filter(customer=request.user),
         order_number=order_number,
     )
-    if _whatsapp_checkout_only():
-        messages.info(request, 'A finalização está sendo feita pelo WhatsApp.')
-        return redirect('orders:whatsapp', order_number=order.order_number)
     if not order.can_retry_payment:
         messages.error(request, 'Este pedido não permite nova tentativa de pagamento.')
         return redirect('order_detail', order_number=order.order_number)
@@ -101,10 +101,7 @@ def change_payment_method(request, order_number):
         Order.objects.filter(customer=request.user),
         order_number=order_number,
     )
-    if _whatsapp_checkout_only():
-        messages.info(request, 'A forma de pagamento será combinada pelo WhatsApp.')
-        return redirect('orders:whatsapp', order_number=order.order_number)
-    if not order.can_retry_payment:
+    if not (order.can_retry_payment or order.can_choose_online_payment):
         messages.error(request, 'Este pedido não permite alteração de pagamento.')
         return redirect('order_detail', order_number=order.order_number)
 
@@ -115,7 +112,9 @@ def change_payment_method(request, order_number):
         return redirect('order_detail', order_number=order.order_number)
 
     order.payment_method = new_method
-    order.save(update_fields=['payment_method', 'updated_at'])
+    if order.status in {Order.STATUS_CREATED, Order.STATUS_AWAITING_CONTACT}:
+        order.status = Order.STATUS_AWAITING_PAYMENT
+    order.save(update_fields=['payment_method', 'status', 'updated_at'])
 
     service = PaymentService()
     service.create_payment(order, force_new=True)
@@ -128,8 +127,6 @@ def change_payment_method(request, order_number):
 @csrf_exempt
 @require_POST
 def webhook_mercadopago(request):
-    if _whatsapp_checkout_only():
-        return HttpResponse(status=404)
     try:
         content_length = int(request.META.get('CONTENT_LENGTH') or 0)
     except (TypeError, ValueError):

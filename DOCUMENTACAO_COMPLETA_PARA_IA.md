@@ -1314,7 +1314,6 @@ templates/checkout/checkout.html
 templates/checkout/success.html
 templates/checkout/pix.html
 templates/checkout/payment_link.html
-templates/checkout/whatsapp.html
 ```
 
 Conta:

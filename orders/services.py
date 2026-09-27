@@ -1,10 +1,7 @@
-from urllib.parse import urlencode
-
 from django.db.models import Sum
 from django.db import transaction
 from django.utils import timezone
 
-from core.services import get_store_whatsapp_number
 from products.models import Product, ProductVariant
 from .models import Order
 
@@ -18,14 +15,6 @@ def order_queryset_for_user(user):
     if not user.is_staff:
         qs = qs.filter(customer=user)
     return qs
-
-
-def build_order_whatsapp_url(order):
-    number = get_store_whatsapp_number()
-    if not number:
-        return ''
-    query = urlencode({'text': order.whatsapp_message})
-    return f'https://wa.me/{number}?{query}'
 
 
 def _status_for_stock(stock):

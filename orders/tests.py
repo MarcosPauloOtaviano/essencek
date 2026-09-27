@@ -11,7 +11,6 @@ from .forms import CheckoutForm
 from .models import Order
 from .services import (
     InsufficientStockError,
-    build_order_whatsapp_url,
     confirm_order_payment,
 )
 from .views import CHECKOUT_TOKEN_SESSION_KEY
@@ -123,17 +122,21 @@ class OrderFlowSecurityTests(TestCase):
             'state': 'SP',
             'cep': '01001-000',
             'shipping_method': 'delivery',
+            'payment_method': Order.PAYMENT_PIX,
             'customer_notes': '',
         })
 
         order = Order.objects.get()
-        expected_url = f'{reverse("orders:whatsapp", args=[order.order_number])}?open=1'
-        self.assertRedirects(response, expected_url, fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse('orders:success', args=[order.order_number]),
+            fetch_redirect_response=False,
+        )
         self.assertEqual(order.shipping_cost, Decimal('15.90'))
         self.assertEqual(order.shipping_service, 'PAC')
         self.assertEqual(order.total, Decimal('115.80'))
-        self.assertEqual(order.payment_method, Order.PAYMENT_WHATSAPP)
-        self.assertEqual(order.status, Order.STATUS_AWAITING_CONTACT)
+        self.assertEqual(order.payment_method, Order.PAYMENT_PIX)
+        self.assertEqual(order.status, Order.STATUS_AWAITING_PAYMENT)
         self.assertFalse(cart.items.exists())
 
     def test_checkout_accepts_a_selected_free_shipping_option(self):
@@ -167,6 +170,7 @@ class OrderFlowSecurityTests(TestCase):
             'state': 'SP',
             'cep': '01001-000',
             'shipping_method': 'delivery',
+            'payment_method': Order.PAYMENT_PIX,
             'customer_notes': '',
         })
 
@@ -175,8 +179,7 @@ class OrderFlowSecurityTests(TestCase):
         self.assertEqual(order.shipping_cost, Decimal('0.00'))
         self.assertEqual(order.shipping_service, 'Frete gratis')
 
-    @override_settings(WHATSAPP_CHECKOUT_ONLY=False)
-    def test_disabling_whatsapp_mode_restores_the_gateway_checkout(self):
+    def test_checkout_always_offers_the_official_payment_methods(self):
         product = Product.objects.create(
             name='Produto gateway',
             category=self.category,
@@ -226,6 +229,7 @@ class OrderFlowSecurityTests(TestCase):
             'state': 'sp',
             'cep': '01001-000',
             'shipping_method': 'delivery',
+            'payment_method': Order.PAYMENT_PIX,
             'customer_notes': '',
         })
 
@@ -242,6 +246,7 @@ class OrderFlowSecurityTests(TestCase):
             'customer_email': 'cliente@example.com',
             'customer_whatsapp': '11987654321',
             'shipping_method': 'pickup',
+            'payment_method': Order.PAYMENT_PIX,
             'address': '',
             'address_number': '',
             'address_complement': '',
@@ -273,6 +278,7 @@ class OrderFlowSecurityTests(TestCase):
             'customer_email': 'cliente@example.com',
             'customer_whatsapp': '11987654321',
             'shipping_method': 'delivery',
+            'payment_method': Order.PAYMENT_PIX,
             'address': 'Rua Teste',
             'address_number': '123',
             'address_complement': '',
@@ -307,6 +313,7 @@ class OrderFlowSecurityTests(TestCase):
             'customer_email': 'cliente@example.com',
             'customer_whatsapp': '11987654321',
             'shipping_method': 'pickup',
+            'payment_method': Order.PAYMENT_PIX,
             'customer_notes': '',
         }
 
@@ -320,33 +327,14 @@ class OrderFlowSecurityTests(TestCase):
         self.assertEqual(second.status_code, 302)
         self.assertEqual(Order.objects.count(), 1)
 
-    @override_settings(STORE_WHATSAPP='5535999073391')
-    def test_whatsapp_message_uses_server_side_order_snapshot(self):
-        product = Product.objects.create(
-            name='Produto seguro',
-            category=self.category,
-            price='109.90',
-            stock=5,
-            status=Product.STATUS_AVAILABLE,
-        )
+    def test_legacy_order_can_choose_an_online_payment_method(self):
         order = self.create_order()
         order.payment_method = Order.PAYMENT_WHATSAPP
         order.status = Order.STATUS_AWAITING_CONTACT
         order.save(update_fields=['payment_method', 'status'])
-        order.items.create(
-            product=product,
-            product_name=product.name,
-            unit_price=Decimal('109.90'),
-            quantity=2,
-            is_pre_order=False,
-        )
 
-        url = build_order_whatsapp_url(order)
-
-        self.assertTrue(url.startswith('https://wa.me/5535999073391?'))
-        self.assertIn('Produto+seguro', url)
-        self.assertIn('219%2C80', url)
-        self.assertIn('aguarda+confirma', url)
+        self.assertTrue(order.can_choose_online_payment)
+        self.assertFalse(order.can_retry_payment)
 
     def test_confirm_order_payment_decrements_stock_only_once(self):
         product = Product.objects.create(

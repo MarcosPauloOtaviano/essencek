@@ -1,5 +1,4 @@
 from django import forms
-from django.conf import settings
 from core.utils import sanitize_text
 from .models import Order
 from accounts.validators import only_digits, normalize_email, normalize_whatsapp, validate_whatsapp
@@ -54,22 +53,15 @@ class CheckoutForm(forms.Form):
 
     payment_method = forms.ChoiceField(
         label='Forma de pagamento',
-        choices=[
-            (Order.PAYMENT_PIX, 'Pix'),
-            (Order.PAYMENT_CREDIT_CARD, 'Cartão de crédito'),
-        ],
+        choices=Order.ONLINE_PAYMENT_CHOICES,
         widget=forms.RadioSelect,
+        initial=Order.PAYMENT_PIX,
     )
 
     customer_notes = forms.CharField(
         label='Observações (opcional)', required=False,
         widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Informações adicionais...'})
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if getattr(settings, 'WHATSAPP_CHECKOUT_ONLY', True):
-            self.fields.pop('payment_method')
 
     def clean_customer_name(self):
         name = sanitize_text(self.cleaned_data.get('customer_name') or '')

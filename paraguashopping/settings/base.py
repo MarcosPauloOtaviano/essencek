@@ -9,8 +9,6 @@ STORE_WHATSAPP = config(
     'STORE_WHATSAPP',
     default=config('STORE_PHONE', default='5535999073391'),
 )
-WHATSAPP_CHECKOUT_ONLY = config('WHATSAPP_CHECKOUT_ONLY', default=True, cast=bool)
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

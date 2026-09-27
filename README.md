@@ -11,7 +11,7 @@ Relatorio mais recente: [Auditoria tecnica de 2026-08-05](docs/AUDITORIA_2026-08
 - Banco recomendado em producao: PostgreSQL
 - Frontend: templates Django, HTML, CSS e JavaScript
 - Uploads: pasta `media/`
-- Pagamentos: checkout temporario pelo WhatsApp e Mercado Pago preservado por flag
+- Pagamentos: checkout oficial por Pix e cartao via Mercado Pago, com confirmacao automatica
 - Frete: cotacao Frenet por CEP, com tabela regional de contingencia
 - Cotacao: sistema de cotacao USD/BRL com fallback manual
 
@@ -49,7 +49,6 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 CSRF_TRUSTED_ORIGINS=
 SITE_URL=http://127.0.0.1:8000
 STORE_WHATSAPP=5511999999999
-WHATSAPP_CHECKOUT_ONLY=True
 
 PAYMENT_GATEWAY=sandbox
 PAYMENT_SANDBOX=True
@@ -80,7 +79,6 @@ DB_HOST=host_do_banco
 DB_PORT=5432
 PAYMENT_GATEWAY=mercadopago
 PAYMENT_SANDBOX=False
-WHATSAPP_CHECKOUT_ONLY=True
 MP_USE_SANDBOX_LINK=False
 ```
 
@@ -194,18 +192,12 @@ O comando cria imagens locais principais sem apagar fotos antigas. Fotos reais d
 
 ## Pagamentos
 
-O checkout usa temporariamente o WhatsApp quando `WHATSAPP_CHECKOUT_ONLY=True`. Nesse modo:
-
-- o servidor cria um unico pedido idempotente com uma fotografia dos itens e valores;
-- o cliente recebe um resumo e abre a conversa da loja com uma mensagem gerada no backend;
-- disponibilidade, entrega e pagamento ainda precisam ser confirmados no atendimento;
-- o estoque nao baixa na criacao do pedido; a baixa acontece uma unica vez na confirmacao do pagamento;
-- paginas de Pix/cartao e o webhook do Mercado Pago ficam fechados para evitar cobranca ou confirmacao acidental.
-
-Para reativar o fluxo de gateway, configure `WHATSAPP_CHECKOUT_ONLY=False`. O formulario volta a oferecer Pix/cartao e o app `payments` usa um dos modos abaixo:
+O checkout oferece Pix e cartao e cria um unico pedido idempotente com uma fotografia dos itens e valores. O app `payments` usa um dos modos abaixo:
 
 - `sandbox`: modo de teste. Cria pagamento simulado, nao cobra dinheiro e nao confirma pagamento automaticamente.
-- `mercadopago`: modo real preparado para Pix, cartao/link de pagamento, parcelamento e webhook.
+- `mercadopago`: modo real para Pix, cartao/link de pagamento, parcelamento e webhook.
+
+Em producao, a confirmacao do Mercado Pago atualiza automaticamente o status do pedido. O estoque nao baixa na criacao do pedido: a baixa acontece uma unica vez apos a aprovacao do pagamento. O WhatsApp da loja e usado somente para suporte.
 
 ### Mercado Pago
 

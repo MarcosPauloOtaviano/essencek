@@ -17,12 +17,7 @@
   </div>
   {% endif %}
 
-  {% if whatsapp_checkout_only %}
-    <div class="alert alert-info">
-      <i class="fab fa-whatsapp"></i>
-      O pedido será registrado com os preços atuais e enviado para confirmação pelo WhatsApp. Nenhum pagamento é considerado concluído nesta etapa.
-    </div>
-  {% elif payment_is_simulated %}
+  {% if payment_is_simulated %}
     <div class="alert alert-info">
       <i class="fas fa-vial"></i>
       Pagamentos estão em modo de teste. Nenhum valor real será cobrado.
@@ -123,7 +118,6 @@
           </div>
         </div>
 
-        {% if not whatsapp_checkout_only %}
         <div class="checkout-section">
           <h2 class="checkout-section-title"><i class="fas fa-credit-card"></i> Forma de pagamento</h2>
           <div class="payment-options">
@@ -138,7 +132,7 @@
                 {% else %}
                   <i class="fas fa-credit-card payment-icon" aria-hidden="true"></i>
                   <span class="payment-name">Cartão de crédito</span>
-                  <span class="payment-desc">Pagamento pelo gateway configurado</span>
+                  <span class="payment-desc">Pagamento seguro pelo Mercado Pago</span>
                 {% endif %}
               </span>
             </label>
@@ -146,7 +140,6 @@
           </div>
           {% if form.payment_method.errors %}<span class="field-error">{{ form.payment_method.errors.0 }}</span>{% endif %}
         </div>
-        {% endif %}
 
         <!-- Notes -->
         <div class="checkout-section">
@@ -200,15 +193,11 @@
           </div>
           <div class="lgpd-notice">
             <i class="fas fa-lock"></i>
-            Seus dados são usados apenas para processar este pedido. Consulte nossa
+            Pagamento processado com segurança pelo Mercado Pago. Seus dados são usados apenas para processar este pedido. Consulte nossa
             <a href="{% url 'privacy' %}">Política de Privacidade</a>.
           </div>
           <button type="submit" class="btn btn-primary btn-large btn-block" id="checkoutSubmit">
-            {% if whatsapp_checkout_only %}
-              Finalizar pedido pelo WhatsApp <i class="fab fa-whatsapp" aria-hidden="true"></i>
-            {% else %}
-              Finalizar pedido <i class="fas fa-lock" aria-hidden="true"></i>
-            {% endif %}
+            Confirmar pedido e pagar <i class="fas fa-lock" aria-hidden="true"></i>
           </button>
         </div>
       </div>

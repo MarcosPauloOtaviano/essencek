@@ -61,30 +61,45 @@ class PaymentServiceTests(TestCase):
         self.assertEqual(same_payment.pk, payment.pk)
         self.assertEqual(Payment.objects.count(), 1)
 
-    @override_settings(WHATSAPP_CHECKOUT_ONLY=True)
-    def test_payment_pages_do_not_create_simulated_payment_in_whatsapp_mode(self):
-        order = self.create_order()
+    def test_legacy_order_must_choose_an_online_method_before_payment(self):
+        order = self.create_order(payment_method=Order.PAYMENT_WHATSAPP)
+        order.status = Order.STATUS_AWAITING_CONTACT
+        order.save(update_fields=['status'])
         self.client.login(username='cliente@example.com', password='SenhaForte123!')
 
         response = self.client.get(reverse('payment_pix', args=[order.order_number]))
 
         self.assertRedirects(
             response,
-            reverse('orders:whatsapp', args=[order.order_number]),
+            reverse('order_detail', args=[order.order_number]),
             fetch_redirect_response=False,
         )
         self.assertFalse(Payment.objects.exists())
 
-    @override_settings(WHATSAPP_CHECKOUT_ONLY=True)
-    def test_mercadopago_webhook_is_closed_in_whatsapp_mode(self):
-        response = self.client.post(reverse('webhook_mp'), data=b'{}', content_type='application/json')
+    def test_legacy_order_can_switch_to_pix_without_being_recreated(self):
+        order = self.create_order(payment_method=Order.PAYMENT_WHATSAPP)
+        order.status = Order.STATUS_AWAITING_CONTACT
+        order.save(update_fields=['status'])
+        self.client.login(username='cliente@example.com', password='SenhaForte123!')
 
-        self.assertEqual(response.status_code, 404)
+        response = self.client.post(
+            reverse('change_payment_method', args=[order.order_number]),
+            {'payment_method': Order.PAYMENT_PIX},
+        )
+
+        order.refresh_from_db()
+        self.assertRedirects(
+            response,
+            reverse('payment_pix', args=[order.order_number]),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(order.payment_method, Order.PAYMENT_PIX)
+        self.assertEqual(order.status, Order.STATUS_AWAITING_PAYMENT)
+        self.assertEqual(Payment.objects.filter(order=order).count(), 1)
 
 
 @override_settings(
     STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage',
-    WHATSAPP_CHECKOUT_ONLY=False,
     PAYMENT_SANDBOX=False,
     PAYMENT_GATEWAY='mercadopago',
     SITE_URL='https://example.com',

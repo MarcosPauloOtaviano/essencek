@@ -4,7 +4,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.urls import reverse
 from django.utils.crypto import constant_time_compare
 from decimal import Decimal, InvalidOperation
 from cart.models import Cart
@@ -14,7 +13,7 @@ from products.models import Product, ProductVariant
 from payments.services import PaymentService
 from .models import Order, OrderItem
 from .forms import CheckoutForm
-from .services import build_order_whatsapp_url, order_queryset_for_user
+from .services import order_queryset_for_user
 
 
 CHECKOUT_TOKEN_SESSION_KEY = 'essencek_checkout_token'
@@ -63,14 +62,7 @@ def _selected_shipping_cost(request):
     return _session_decimal(request, 'shipping_cost') if request.session.get('shipping_service') else Decimal('0')
 
 
-def _whatsapp_redirect(order, auto_open=False):
-    url = reverse('orders:whatsapp', kwargs={'order_number': order.order_number})
-    return redirect(f'{url}?open=1' if auto_open else url)
-
-
-def _checkout_completion_redirect(order, auto_open=False):
-    if order.payment_method == Order.PAYMENT_WHATSAPP:
-        return _whatsapp_redirect(order, auto_open=auto_open)
+def _checkout_completion_redirect(order):
     return redirect('orders:success', order_number=order.order_number)
 
 
@@ -94,7 +86,7 @@ def checkout(request):
             internal_notes=f'{CHECKOUT_INTERNAL_PREFIX}{submitted_token}',
         ).first()
         if existing_order:
-            return _checkout_completion_redirect(existing_order, auto_open=True)
+            return _checkout_completion_redirect(existing_order)
 
     if not items:
         messages.warning(request, 'Seu carrinho está vazio.')
@@ -152,7 +144,7 @@ def checkout(request):
                                     request.session.pop(CHECKOUT_TOKEN_SESSION_KEY, None)
                                     request.session['last_checkout_order'] = concurrent_order.order_number
                                     request.session.modified = True
-                                    return _checkout_completion_redirect(concurrent_order, auto_open=True)
+                                    return _checkout_completion_redirect(concurrent_order)
                                 raise CheckoutValidationError(['Seu carrinho está vazio.'])
 
                             product_ids = {item.product_id for item in locked_items}
@@ -202,7 +194,6 @@ def checkout(request):
                                 if exchange_rate else subtotal_usd
                             )
 
-                            whatsapp_checkout_only = getattr(settings, 'WHATSAPP_CHECKOUT_ONLY', True)
                             order = Order.objects.create(
                                 customer=user,
                                 customer_name=data['customer_name'],
@@ -222,16 +213,10 @@ def checkout(request):
                                 total_usd=total_usd,
                                 exchange_rate=exchange_rate,
                                 shipping_service=shipping_service,
-                                payment_method=(
-                                    Order.PAYMENT_WHATSAPP
-                                    if whatsapp_checkout_only else data['payment_method']
-                                ),
+                                payment_method=data['payment_method'],
                                 customer_notes=data.get('customer_notes', ''),
                                 internal_notes=marker,
-                                status=(
-                                    Order.STATUS_AWAITING_CONTACT
-                                    if whatsapp_checkout_only else Order.STATUS_AWAITING_PAYMENT
-                                ),
+                                status=Order.STATUS_AWAITING_PAYMENT,
                             )
 
                             OrderItem.objects.bulk_create([
@@ -250,7 +235,7 @@ def checkout(request):
                                     is_pre_order=item.product.is_pre_order,
                                     item_status=(
                                         'pre_order' if item.product.is_pre_order
-                                        else ('awaiting' if whatsapp_checkout_only else 'ready')
+                                        else 'ready'
                                     ),
                                 )
                                 for item in locked_items
@@ -261,7 +246,7 @@ def checkout(request):
                     request.session.pop(CHECKOUT_TOKEN_SESSION_KEY, None)
                     request.session['last_checkout_order'] = order.order_number
                     request.session.modified = True
-                    return _checkout_completion_redirect(order, auto_open=True)
+                    return _checkout_completion_redirect(order)
                 except CheckoutValidationError as exc:
                     for error in exc.errors:
                         form.add_error(None, error)
@@ -277,23 +262,7 @@ def checkout(request):
         'selected_shipping_cost': selected_shipping_cost,
         'selected_shipping_service': request.session.get('shipping_service', ''),
         'checkout_total': cart.subtotal + selected_shipping_cost,
-        'whatsapp_checkout_only': getattr(settings, 'WHATSAPP_CHECKOUT_ONLY', True),
         'payment_is_simulated': getattr(settings, 'PAYMENT_SANDBOX', True),
-    })
-
-
-@login_required
-def order_whatsapp(request, order_number):
-    order = get_object_or_404(
-        order_queryset_for_user(request.user).prefetch_related('items'),
-        order_number=order_number,
-    )
-    whatsapp_url = build_order_whatsapp_url(order)
-    return render(request, 'checkout/whatsapp.html', {
-        'order': order,
-        'whatsapp_url': whatsapp_url,
-        'whatsapp_message': order.whatsapp_message,
-        'auto_open': request.GET.get('open') == '1',
     })
 
 
@@ -301,7 +270,8 @@ def order_whatsapp(request, order_number):
 def order_success(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
     if order.payment_method == Order.PAYMENT_WHATSAPP:
-        return _whatsapp_redirect(order)
+        messages.info(request, 'Escolha Pix ou cartão para concluir o pagamento deste pedido anterior.')
+        return redirect('order_detail', order_number=order.order_number)
     if order.payment_status != 'confirmed':
         payment_id = request.GET.get('payment_id', '')
         if not payment_id.isdigit():
