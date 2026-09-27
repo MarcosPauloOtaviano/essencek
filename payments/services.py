@@ -21,7 +21,7 @@ class PaymentService:
                 order=order, is_active=True,
                 status=Payment.STATUS_PENDING,
             ).order_by('-created_at').first()
-            if existing and existing.payment_link:
+            if existing and (existing.payment_link or existing.pix_code or existing.gateway_id):
                 return existing
 
         Payment.objects.filter(order=order, is_active=True).exclude(

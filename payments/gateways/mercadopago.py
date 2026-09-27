@@ -314,7 +314,7 @@ class MercadoPagoGateway(BasePaymentGateway):
             'post',
             '/v1/payments',
             json=payload,
-            idempotency_key=f'{order.order_number}-pix',
+            idempotency_key=f'{order.order_number}-pix-{payment.pk}',
         )
         transaction_data = (response.get('point_of_interaction') or {}).get('transaction_data') or {}
 

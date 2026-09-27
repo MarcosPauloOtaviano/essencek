@@ -52,11 +52,13 @@ class PaymentServiceTests(TestCase):
         order = self.create_order()
 
         payment = PaymentService().create_payment(order)
+        same_payment = PaymentService().create_payment(order)
 
         self.assertEqual(payment.gateway, 'sandbox')
         self.assertEqual(payment.gateway_status, 'simulated_pending')
         self.assertIn('PIX-SIMULADO', payment.pix_code)
         self.assertFalse(payment.payment_link)
+        self.assertEqual(same_payment.pk, payment.pk)
         self.assertEqual(Payment.objects.count(), 1)
 
     @override_settings(WHATSAPP_CHECKOUT_ONLY=True)
@@ -244,6 +246,31 @@ class MercadoPagoProductionTests(TestCase):
         self.assertEqual(
             payload['notification_url'],
             'https://example.com/pagamento/webhook/mercadopago/?token=callback-token',
+        )
+
+    def test_each_new_pix_attempt_has_its_own_idempotency_key(self):
+        gateway = MercadoPagoGateway()
+        response = {
+            'id': 123456,
+            'status': 'pending',
+            'external_reference': self.order.order_number,
+            'currency_id': 'BRL',
+            'transaction_amount': 99.90,
+            'live_mode': True,
+            'point_of_interaction': {
+                'transaction_data': {
+                    'qr_code': 'pix-code',
+                    'qr_code_base64': 'base64-image',
+                    'ticket_url': 'https://example.com/pix',
+                },
+            },
+        }
+        with patch.object(gateway, '_request', return_value=response) as request:
+            gateway._create_pix_payment(self.order, self.payment)
+
+        self.assertEqual(
+            request.call_args.kwargs['idempotency_key'],
+            f'{self.order.order_number}-pix-{self.payment.pk}',
         )
 
     def test_signed_webhook_confirms_payment(self):
