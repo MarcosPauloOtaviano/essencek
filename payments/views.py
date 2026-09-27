@@ -25,7 +25,10 @@ def _require_online_payment_method(request, order):
 @login_required
 def payment_pix(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
-    if order.payment_status == 'confirmed':
+    if order.payment_status == Order.PAYMENT_STATUS_CONFIRMED:
+        return redirect('order_detail', order_number=order.order_number)
+    if order.payment_status == Order.PAYMENT_STATUS_REFUNDED:
+        messages.info(request, 'Este pagamento foi estornado. Consulte os detalhes do pedido.')
         return redirect('order_detail', order_number=order.order_number)
     redirect_response = _require_online_payment_method(request, order)
     if redirect_response:
@@ -42,7 +45,10 @@ def payment_pix(request, order_number):
 @login_required
 def payment_link(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
-    if order.payment_status == 'confirmed':
+    if order.payment_status == Order.PAYMENT_STATUS_CONFIRMED:
+        return redirect('order_detail', order_number=order.order_number)
+    if order.payment_status == Order.PAYMENT_STATUS_REFUNDED:
+        messages.info(request, 'Este pagamento foi estornado. Consulte os detalhes do pedido.')
         return redirect('order_detail', order_number=order.order_number)
     redirect_response = _require_online_payment_method(request, order)
     if redirect_response:
@@ -60,18 +66,27 @@ def payment_link(request, order_number):
 @require_GET
 def payment_status(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
-    if order.payment_method != Order.PAYMENT_WHATSAPP and order.payment_status != 'confirmed':
+    if (
+        order.payment_method != Order.PAYMENT_WHATSAPP
+        and order.payment_status in (Order.PAYMENT_STATUS_PENDING, '')
+    ):
         payment_id = request.GET.get('payment_id', '')
         if not payment_id.isdigit():
             payment_id = ''
         PaymentService().sync_order_payment(order, payment_id=payment_id)
         order.refresh_from_db(fields=['payment_status', 'status', 'payment_confirmed_at'])
 
-    paid = order.payment_status == 'confirmed'
+    paid = order.payment_status == Order.PAYMENT_STATUS_CONFIRMED
+    refunded = order.payment_status == Order.PAYMENT_STATUS_REFUNDED
     return JsonResponse({
         'paid': paid,
+        'terminal': paid or refunded,
         'payment_status': order.payment_status,
-        'message': 'Pagamento confirmado.' if paid else 'Aguardando confirmação do pagamento.',
+        'message': (
+            'Pagamento confirmado.' if paid
+            else 'Pagamento estornado.' if refunded
+            else 'Aguardando confirmação do pagamento.'
+        ),
         'redirect_url': reverse('order_detail', args=[order.order_number]),
     })
 

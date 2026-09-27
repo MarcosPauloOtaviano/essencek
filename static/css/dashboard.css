@@ -218,6 +218,9 @@ body.dashboard-menu-open { overflow: hidden; }
 .status-dot.status-created { background: #fff8e1; color: #913700; }
 .status-dot.status-shipped, .status-dot.status-separating { background: #e3f2fd; color: #1565c0; }
 .status-dot.status-cancelled { background: #ffebee; color: #c62828; }
+.status-dot.payment-confirmed { background: #e8f5e9; color: #2e7d32; }
+.status-dot.payment-pending { background: #fff8e1; color: #913700; }
+.status-dot.payment-refunded { background: #ffebee; color: #c62828; }
 .stock-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
 .stock-ok { background: #e8f5e9; color: #2e7d32; }
 .stock-low { background: #fff8e1; color: #913700; }

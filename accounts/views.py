@@ -88,7 +88,10 @@ def order_detail(request, order_number):
     except Order.DoesNotExist:
         messages.error(request, 'Pedido não encontrado.')
         return redirect('my_orders')
-    if order.payment_method != Order.PAYMENT_WHATSAPP and order.payment_status != 'confirmed':
+    if (
+        order.payment_method != Order.PAYMENT_WHATSAPP
+        and order.payment_status in (Order.PAYMENT_STATUS_PENDING, '')
+    ):
         PaymentService().sync_order_payment(order)
         order.refresh_from_db()
     return render(request, 'accounts/order_detail.html', {

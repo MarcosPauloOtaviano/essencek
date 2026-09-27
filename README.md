@@ -197,7 +197,7 @@ O checkout oferece Pix e cartao e cria um unico pedido idempotente com uma fotog
 - `sandbox`: modo de teste. Cria pagamento simulado, nao cobra dinheiro e nao confirma pagamento automaticamente.
 - `mercadopago`: modo real para Pix, cartao/link de pagamento, parcelamento e webhook.
 
-Em producao, a confirmacao do Mercado Pago atualiza automaticamente o status do pedido. O estoque nao baixa na criacao do pedido: a baixa acontece uma unica vez apos a aprovacao do pagamento. O WhatsApp da loja e usado somente para suporte.
+Em producao, a confirmacao do Mercado Pago atualiza automaticamente o status do pedido, a data de aprovacao e os relatorios financeiros. O estoque nao baixa na criacao do pedido: a baixa acontece uma unica vez apos a aprovacao do pagamento. Se o gateway informar um estorno, o pedido deixa de compor a receita confirmada. O WhatsApp da loja e usado somente para suporte.
 
 ### Mercado Pago
 
@@ -230,6 +230,8 @@ Quando o cliente cria um pedido e nao paga (ex: gera Pix mas nao conclui), o ped
 - **Alterar forma de pagamento**: permite trocar de Pix para cartao (ou vice-versa) sem criar novo pedido.
 
 O sistema suporta multiplas tentativas de pagamento por pedido. Ao criar nova tentativa, as anteriores sao desativadas (`is_active=False`). Quando o webhook confirma pagamento aprovado, todas as outras tentativas pendentes sao canceladas e o estoque baixa uma unica vez.
+
+O dashboard e a pagina `/painel/relatorios/` usam `payment_status=confirmed` e `payment_confirmed_at` como fonte financeira. Status operacionais como "em separacao" ou "enviado" nunca sao contabilizados como receita sem pagamento confirmado.
 
 **Regras:**
 - O valor enviado ao Mercado Pago sempre vem do banco (nunca do frontend).

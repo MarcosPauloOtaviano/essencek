@@ -8,6 +8,9 @@
     {% if order.payment_status == 'confirmed' %}
     <h1>Pagamento confirmado!</h1>
     <p class="success-subtitle">Obrigada por comprar na Essence K Importados. Seu pedido já está sendo preparado.</p>
+    {% elif order.payment_status == 'refunded' %}
+    <h1>Pagamento estornado</h1>
+    <p class="success-subtitle">O status financeiro deste pedido foi atualizado.</p>
     {% else %}
     <h1>Pedido recebido!</h1>
     <p class="success-subtitle">Obrigada por comprar na Essence K Importados.</p>
@@ -45,6 +48,11 @@
       <i class="fas fa-check-circle"></i>
       <p><strong>Pagamento aprovado.</strong> Você pode acompanhar o andamento em Meus pedidos.</p>
     </div>
+    {% elif order.payment_status == 'refunded' %}
+    <div class="payment-pending-notice">
+      <i class="fas fa-undo-alt"></i>
+      <p><strong>Pagamento estornado.</strong> Consulte os detalhes em Meus pedidos.</p>
+    </div>
     {% elif order.payment_method == 'pix' %}
     <div class="next-step-card">
       <h3><i class="fas fa-qrcode"></i> Próximo passo: pagamento via Pix</h3>
@@ -58,7 +66,7 @@
     </div>
     {% endif %}
 
-    {% if order.payment_status != 'confirmed' %}
+    {% if order.payment_status == 'pending' or order.payment_status == '' %}
       {% include 'checkout/_payment_status_poll.html' %}
     {% endif %}
 

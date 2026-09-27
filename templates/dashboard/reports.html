@@ -6,12 +6,18 @@
   <span class="dash-date">{{ now|date:"MMMM/Y" }}</span>
 </div>
 
+<div class="dash-info-notice">
+  <i class="fas fa-sync-alt"></i>
+  Os indicadores financeiros usam a confirmação real do Mercado Pago. Quando um pagamento é aprovado ou estornado, o pedido e este relatório são atualizados automaticamente.
+</div>
+
 <div class="kpi-grid">
   <div class="kpi-card kpi-revenue">
     <div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div>
     <div class="kpi-body">
-      <span class="kpi-label">Faturamento do mês</span>
+      <span class="kpi-label">Receita confirmada no mês</span>
       <span class="kpi-value">R$ {{ revenue_month|floatformat:2 }}</span>
+      <span class="kpi-note">Somente pagamentos aprovados</span>
     </div>
   </div>
   <div class="kpi-card kpi-profit">
@@ -27,6 +33,13 @@
     <div class="kpi-body">
       <span class="kpi-label">Ticket médio</span>
       <span class="kpi-value">R$ {{ avg_ticket|floatformat:2 }}</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-paid">
+    <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Pagamentos confirmados no mês</span>
+      <span class="kpi-value">{{ paid_orders_month }}</span>
     </div>
   </div>
   <div class="kpi-card">
@@ -46,8 +59,17 @@
   <div class="kpi-card kpi-pending">
     <div class="kpi-icon"><i class="fas fa-clock"></i></div>
     <div class="kpi-body">
-      <span class="kpi-label">Pedidos pendentes</span>
+      <span class="kpi-label">Aguardando pagamento</span>
       <span class="kpi-value">{{ pending_orders }}</span>
+      <span class="kpi-note">R$ {{ pending_amount|floatformat:2 }} ainda não faturados</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-alert">
+    <div class="kpi-icon"><i class="fas fa-undo-alt"></i></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Pagamentos estornados</span>
+      <span class="kpi-value">{{ refunded_count }}</span>
+      <span class="kpi-note">R$ {{ refunded_amount|floatformat:2 }}</span>
     </div>
   </div>
   <div class="kpi-card">
@@ -61,11 +83,11 @@
 
 <div class="dash-charts-row">
   <div class="dash-chart-card">
-    <h2>Vendas por categoria</h2>
+    <h2>Vendas pagas por categoria no mês</h2>
     <canvas id="categoryChart" height="200"></canvas>
   </div>
   <div class="dash-chart-card">
-    <h2>Produtos mais vendidos</h2>
+    <h2>Produtos mais vendidos no mês</h2>
     <table class="dash-table">
       <thead><tr><th>Produto</th><th>Qtd</th><th>Receita</th></tr></thead>
       <tbody>
@@ -81,6 +103,29 @@
       </tbody>
     </table>
   </div>
+</div>
+
+<div class="dash-card">
+  <h2>Pagamentos dos pedidos</h2>
+  <small class="field-note">O status “Pago” é definido pela confirmação do Mercado Pago ou por confirmação manual autorizada no pedido.</small>
+  <table class="dash-table mt-1">
+    <thead><tr><th>Pedido</th><th>Cliente</th><th>Método</th><th>Pagamento</th><th>Valor</th><th>Confirmado / atualizado</th><th></th></tr></thead>
+    <tbody>
+      {% for order in recent_orders %}
+      <tr>
+        <td><strong>{{ order.order_number }}</strong></td>
+        <td>{{ order.customer_name }}</td>
+        <td>{{ order.get_payment_method_display }}</td>
+        <td><span class="status-dot payment-{{ order.payment_status }}">{{ order.payment_status_label }}</span></td>
+        <td>R$ {{ order.total|floatformat:2 }}</td>
+        <td>{% if order.payment_confirmed_at %}{{ order.payment_confirmed_at|date:"d/m/Y H:i" }}{% else %}{{ order.updated_at|date:"d/m/Y H:i" }}{% endif %}</td>
+        <td><a href="{% url 'dashboard:order_detail' order.pk %}" class="btn-dash btn-dash-sm">Ver pedido</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="dash-empty">Nenhum pedido registrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 <div class="dash-card">

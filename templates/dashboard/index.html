@@ -11,8 +11,9 @@
   <div class="kpi-card kpi-revenue">
     <div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div>
     <div class="kpi-body">
-      <span class="kpi-label">Faturamento do mês</span>
+      <span class="kpi-label">Receita paga no mês</span>
       <span class="kpi-value">R$ {{ monthly_revenue|floatformat:2 }}</span>
+      <span class="kpi-note">Somente pagamentos confirmados</span>
     </div>
   </div>
   <div class="kpi-card kpi-profit">
@@ -26,7 +27,7 @@
   <div class="kpi-card kpi-pending">
     <div class="kpi-icon"><i class="fas fa-clock"></i></div>
     <div class="kpi-body">
-      <span class="kpi-label">Aguardando confirmação</span>
+      <span class="kpi-label">Aguardando pagamento</span>
       <span class="kpi-value">{{ awaiting_payment }}</span>
     </div>
   </div>

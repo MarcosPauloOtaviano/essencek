@@ -32,6 +32,11 @@
         }, 1400);
         return;
       }
+      if (data.terminal) {
+        statusBox.className = 'payment-pending-notice';
+        statusBox.innerHTML = '<i class="fas fa-info-circle"></i><p><strong>' + data.message + '</strong> Consulte os detalhes do pedido.</p>';
+        return;
+      }
     } catch (error) {
       // A próxima tentativa também cobre instabilidades momentâneas de conexão.
     }

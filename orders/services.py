@@ -30,7 +30,7 @@ def confirm_order_payment(order, confirmed_at=None):
     confirmed_at = confirmed_at or timezone.now()
     with transaction.atomic():
         order = Order.objects.select_for_update().get(pk=order.pk)
-        if order.payment_status == 'confirmed':
+        if order.payment_status == Order.PAYMENT_STATUS_CONFIRMED:
             return False
 
         items = list(
@@ -60,7 +60,7 @@ def confirm_order_payment(order, confirmed_at=None):
                     f'Estoque insuficiente para {item.product_name}. Disponível: {available}.'
                 )
 
-        order.payment_status = 'confirmed'
+        order.payment_status = Order.PAYMENT_STATUS_CONFIRMED
         order.status = Order.STATUS_PAYMENT_CONFIRMED
         order.payment_confirmed_at = confirmed_at
         order.save(update_fields=['payment_status', 'status', 'payment_confirmed_at', 'updated_at'])

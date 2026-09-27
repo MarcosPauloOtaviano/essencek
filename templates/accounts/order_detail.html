@@ -74,7 +74,7 @@
               {% elif order.payment_status == 'pending' or order.payment_status == '' %}
                 <span class="badge badge-pre-order">Aguardando pagamento</span>
               {% else %}
-                <span class="badge">{{ order.payment_status }}</span>
+                <span class="badge">{{ order.payment_status_label }}</span>
               {% endif %}
             </p>
             <p><strong>Forma escolhida:</strong> {{ order.get_payment_method_display }}</p>
@@ -116,6 +116,11 @@
           <div class="payment-confirmed-notice">
             <i class="fas fa-check-circle"></i>
             <p>Pagamento confirmado. Seu pedido está sendo preparado.</p>
+          </div>
+          {% elif order.payment_status == 'refunded' %}
+          <div class="payment-pending-notice">
+            <i class="fas fa-undo-alt"></i>
+            <p>Pagamento estornado. O valor não faz mais parte do faturamento da loja.</p>
           </div>
           {% endif %}
           {% endif %}

@@ -6,15 +6,6 @@ from orders.models import Order, OrderItem, PreOrderRequest
 from products.models import Product
 
 
-CONFIRMED_STATUSES = [
-    Order.STATUS_PAYMENT_CONFIRMED,
-    Order.STATUS_SEPARATING,
-    Order.STATUS_PARTIAL_SHIPPED,
-    Order.STATUS_SHIPPED,
-    Order.STATUS_COMPLETED,
-]
-
-
 def _gross_profit_for_orders(orders_qs):
     paid_items = OrderItem.objects.filter(
         order__in=orders_qs,
@@ -46,23 +37,17 @@ def get_dashboard_summary(now):
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     monthly_orders = Order.objects.filter(
-        created_at__gte=start_of_month,
-        status__in=[
-            Order.STATUS_PAYMENT_CONFIRMED, Order.STATUS_SEPARATING,
-            Order.STATUS_SHIPPED, Order.STATUS_COMPLETED,
-        ],
+        payment_status=Order.PAYMENT_STATUS_CONFIRMED,
+        payment_confirmed_at__gte=start_of_month,
     )
     monthly_revenue = monthly_orders.aggregate(total=Sum('total'))['total'] or 0
     gross_profit = _gross_profit_for_orders(monthly_orders)
 
     awaiting_payment = Order.objects.filter(
-        status__in=[Order.STATUS_AWAITING_CONTACT, Order.STATUS_AWAITING_PAYMENT],
-    ).count()
+        payment_status__in=[Order.PAYMENT_STATUS_PENDING, ''],
+    ).exclude(status=Order.STATUS_CANCELLED).count()
     paid_orders = Order.objects.filter(
-        status__in=[
-            Order.STATUS_PAYMENT_CONFIRMED, Order.STATUS_SEPARATING,
-            Order.STATUS_SHIPPED, Order.STATUS_COMPLETED,
-        ],
+        payment_status=Order.PAYMENT_STATUS_CONFIRMED,
     ).count()
 
     active_products = Product.objects.filter(is_active=True).count()
@@ -74,8 +59,11 @@ def get_dashboard_summary(now):
 
     six_months_ago = now - timedelta(days=180)
     monthly_sales = (
-        Order.objects.filter(created_at__gte=six_months_ago, payment_status='confirmed')
-        .annotate(month=TruncMonth('created_at'))
+        Order.objects.filter(
+            payment_confirmed_at__gte=six_months_ago,
+            payment_status=Order.PAYMENT_STATUS_CONFIRMED,
+        )
+        .annotate(month=TruncMonth('payment_confirmed_at'))
         .values('month')
         .annotate(revenue=Sum('total'), count=Count('id'))
         .order_by('month')
@@ -84,7 +72,7 @@ def get_dashboard_summary(now):
     chart_revenue = [float(m['revenue']) for m in monthly_sales]
 
     top_products = (
-        OrderItem.objects.filter(order__payment_status='confirmed')
+        OrderItem.objects.filter(order__payment_status=Order.PAYMENT_STATUS_CONFIRMED)
         .values('product_name')
         .annotate(total_sold=Sum('quantity'))
         .order_by('-total_sold')[:5]
@@ -116,8 +104,8 @@ def get_reports_data(now):
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     monthly_orders = Order.objects.filter(
-        created_at__gte=start_of_month,
-        status__in=CONFIRMED_STATUSES,
+        payment_status=Order.PAYMENT_STATUS_CONFIRMED,
+        payment_confirmed_at__gte=start_of_month,
     )
 
     revenue_month = monthly_orders.aggregate(total=Sum('total'))['total'] or 0
@@ -125,7 +113,7 @@ def get_reports_data(now):
     gross_profit = _gross_profit_for_orders(monthly_orders)
 
     top_products = (
-        OrderItem.objects.filter(order__status__in=CONFIRMED_STATUSES)
+        OrderItem.objects.filter(order__in=monthly_orders)
         .values('product_name')
         .annotate(qty=Sum('quantity'), revenue=Sum(F('unit_price') * F('quantity')))
         .order_by('-qty')[:10]
@@ -133,7 +121,7 @@ def get_reports_data(now):
 
     sales_by_category = (
         OrderItem.objects.filter(
-            order__status__in=CONFIRMED_STATUSES,
+            order__in=monthly_orders,
             product__isnull=False,
         )
         .values('product__category__name')
@@ -152,9 +140,17 @@ def get_reports_data(now):
         )
     ).order_by('-margin')[:10]
 
-    pending_orders = Order.objects.filter(
-        status__in=[Order.STATUS_AWAITING_CONTACT, Order.STATUS_AWAITING_PAYMENT],
-    ).count()
+    pending_payments = Order.objects.filter(
+        payment_status__in=[Order.PAYMENT_STATUS_PENDING, ''],
+    ).exclude(status=Order.STATUS_CANCELLED)
+    pending_orders = pending_payments.count()
+    pending_amount = pending_payments.aggregate(total=Sum('total'))['total'] or 0
+
+    refunded_orders = Order.objects.filter(
+        payment_status=Order.PAYMENT_STATUS_REFUNDED,
+    )
+    refunded_count = refunded_orders.count()
+    refunded_amount = refunded_orders.aggregate(total=Sum('total'))['total'] or 0
     open_pre_orders = PreOrderRequest.objects.exclude(
         status__in=['delivered', 'cancelled'],
     ).count()
@@ -166,12 +162,17 @@ def get_reports_data(now):
         'revenue_month': revenue_month,
         'gross_profit': gross_profit,
         'avg_ticket': avg_ticket,
+        'paid_orders_month': monthly_orders.count(),
         'stock_value': stock_value,
         'potential_value': potential_value,
         'top_products': top_products,
         'products_margin': products_margin,
         'pending_orders': pending_orders,
+        'pending_amount': pending_amount,
+        'refunded_count': refunded_count,
+        'refunded_amount': refunded_amount,
         'open_pre_orders': open_pre_orders,
+        'recent_orders': Order.objects.select_related('customer').order_by('-updated_at')[:20],
         'chart_cat_labels': chart_cat_labels,
         'chart_cat_data': chart_cat_data,
     }

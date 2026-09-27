@@ -48,6 +48,14 @@ class Order(models.Model):
         (PAYMENT_WHATSAPP, 'Pagamento não definido (pedido anterior)'),
         *ONLINE_PAYMENT_CHOICES,
     ]
+    PAYMENT_STATUS_PENDING = 'pending'
+    PAYMENT_STATUS_CONFIRMED = 'confirmed'
+    PAYMENT_STATUS_REFUNDED = 'refunded'
+    PAYMENT_STATUS_CHOICES = [
+        (PAYMENT_STATUS_PENDING, 'Aguardando pagamento'),
+        (PAYMENT_STATUS_CONFIRMED, 'Pago'),
+        (PAYMENT_STATUS_REFUNDED, 'Estornado'),
+    ]
 
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
                                   related_name='orders', verbose_name='Cliente')
@@ -80,7 +88,7 @@ class Order(models.Model):
     payment_method = models.CharField('Forma de pagamento', max_length=20,
                                        choices=PAYMENT_CHOICES, default=PAYMENT_PIX)
     payment_status = models.CharField('Status do pagamento', max_length=50,
-                                       default='pending')
+                                       default=PAYMENT_STATUS_PENDING)
     payment_link = models.URLField('Link de pagamento', blank=True)
     gateway_payment_id = models.CharField('ID pagamento gateway', max_length=100, blank=True)
 
@@ -119,7 +127,7 @@ class Order(models.Model):
             self.payment_method != self.PAYMENT_WHATSAPP
             and
             self.status in self.RETRYABLE_STATUSES
-            and self.payment_status in ('pending', '')
+            and self.payment_status in (self.PAYMENT_STATUS_PENDING, '')
         )
 
     @property
@@ -131,8 +139,13 @@ class Order(models.Model):
                 self.STATUS_AWAITING_CONTACT,
                 self.STATUS_AWAITING_PAYMENT,
             }
-            and self.payment_status in ('pending', '')
+            and self.payment_status in (self.PAYMENT_STATUS_PENDING, '')
         )
+
+    @property
+    def payment_status_label(self):
+        labels = dict(self.PAYMENT_STATUS_CHOICES)
+        return labels.get(self.payment_status, self.payment_status or 'Não informado')
 
     @property
     def active_payment(self):

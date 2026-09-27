@@ -12,6 +12,12 @@
       <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
+    <select name="payment_status" class="dash-select" aria-label="Filtrar por status do pagamento">
+      <option value="">Todos os pagamentos</option>
+      {% for val, label in payment_status_choices %}
+      <option value="{{ val }}" {% if selected_payment_status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
     <button type="submit" class="btn-dash">Filtrar</button>
     <a href="{% url 'dashboard:orders' %}" class="btn-dash btn-dash-ghost">Limpar</a>
   </form>
@@ -28,7 +34,10 @@
         <td>{{ order.customer_name }}</td>
         <td>{{ order.customer_whatsapp }}</td>
         <td><strong>{{ order.total|brl }}</strong>{% if order.display_total_usd %}<br><small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}</td>
-        <td>{{ order.get_payment_method_display }}</td>
+        <td>
+          {{ order.get_payment_method_display }}<br>
+          <span class="status-dot payment-{{ order.payment_status }}">{{ order.payment_status_label }}</span>
+        </td>
         <td><span class="status-dot status-{{ order.status }}">{{ order.get_status_display }}</span></td>
         <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
         <td>

@@ -255,9 +255,13 @@ def image_delete(request, pk):
 def order_list(request):
     orders = Order.objects.select_related('customer').order_by('-created_at')
     status = request.GET.get('status', '')
+    payment_status = request.GET.get('payment_status', '')
     q = request.GET.get('q', '')
     if status:
         orders = orders.filter(status=status)
+    valid_payment_statuses = {value for value, _ in Order.PAYMENT_STATUS_CHOICES}
+    if payment_status in valid_payment_statuses:
+        orders = orders.filter(payment_status=payment_status)
     if q:
         orders = orders.filter(
             Q(order_number__icontains=q) |
@@ -268,6 +272,8 @@ def order_list(request):
         'orders': orders,
         'status_choices': Order.STATUS_CHOICES,
         'selected_status': status,
+        'payment_status_choices': Order.PAYMENT_STATUS_CHOICES,
+        'selected_payment_status': payment_status,
         'q': q,
     })
 

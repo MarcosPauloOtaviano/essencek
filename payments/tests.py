@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import User
 from orders.models import Order
@@ -316,6 +317,29 @@ class MercadoPagoProductionTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.order.payment_status, 'confirmed')
+
+    def test_refund_webhook_removes_order_from_confirmed_revenue(self):
+        self.order.payment_status = Order.PAYMENT_STATUS_CONFIRMED
+        self.order.status = Order.STATUS_COMPLETED
+        self.order.payment_confirmed_at = timezone.now()
+        self.order.save(update_fields=[
+            'payment_status', 'status', 'payment_confirmed_at', 'updated_at',
+        ])
+        self.payment.status = Payment.STATUS_APPROVED
+        self.payment.save(update_fields=['status', 'updated_at'])
+        gateway = MercadoPagoGateway()
+
+        applied = gateway._apply_payment_data(
+            self.order,
+            self.payment_data(status='refunded'),
+        )
+
+        self.order.refresh_from_db()
+        self.payment.refresh_from_db()
+        self.assertTrue(applied)
+        self.assertEqual(self.order.payment_status, Order.PAYMENT_STATUS_REFUNDED)
+        self.assertEqual(self.order.status, Order.STATUS_COMPLETED)
+        self.assertEqual(self.payment.status, Payment.STATUS_REFUNDED)
 
     def test_invalid_webhook_signature_is_rejected(self):
         response = self.client.post(

@@ -141,6 +141,9 @@ class MercadoPagoGateway(BasePaymentGateway):
             elif gateway_status == 'refunded':
                 payment.status = Payment.STATUS_REFUNDED
                 payment.save()
+                if locked_order.payment_status == Order.PAYMENT_STATUS_CONFIRMED:
+                    locked_order.payment_status = Order.PAYMENT_STATUS_REFUNDED
+                    locked_order.save(update_fields=['payment_status', 'updated_at'])
             else:
                 payment.status = Payment.STATUS_PENDING
                 payment.save()
@@ -165,9 +168,9 @@ class MercadoPagoGateway(BasePaymentGateway):
         marker = '[Pagamento aprovado: verificar estoque antes da separação.]'
         with transaction.atomic():
             locked_order = Order.objects.select_for_update().get(pk=order.pk)
-            if locked_order.payment_status == 'confirmed':
+            if locked_order.payment_status == Order.PAYMENT_STATUS_CONFIRMED:
                 return
-            locked_order.payment_status = 'confirmed'
+            locked_order.payment_status = Order.PAYMENT_STATUS_CONFIRMED
             locked_order.status = Order.STATUS_PARTIAL_CONFIRMED
             locked_order.payment_confirmed_at = timezone.now()
             if marker not in locked_order.internal_notes:

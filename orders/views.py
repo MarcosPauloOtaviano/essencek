@@ -272,7 +272,7 @@ def order_success(request, order_number):
     if order.payment_method == Order.PAYMENT_WHATSAPP:
         messages.info(request, 'Escolha Pix ou cartão para concluir o pagamento deste pedido anterior.')
         return redirect('order_detail', order_number=order.order_number)
-    if order.payment_status != 'confirmed':
+    if order.payment_status in (Order.PAYMENT_STATUS_PENDING, ''):
         payment_id = request.GET.get('payment_id', '')
         if not payment_id.isdigit():
             payment_id = ''
