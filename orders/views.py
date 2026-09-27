@@ -11,6 +11,7 @@ from cart.models import Cart
 from cart.utils import cart_signature, clear_shipping_selection, get_cart
 from core.models import ExchangeRate
 from products.models import Product, ProductVariant
+from payments.services import PaymentService
 from .models import Order, OrderItem
 from .forms import CheckoutForm
 from .services import build_order_whatsapp_url, order_queryset_for_user
@@ -301,4 +302,10 @@ def order_success(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
     if order.payment_method == Order.PAYMENT_WHATSAPP:
         return _whatsapp_redirect(order)
+    if order.payment_status != 'confirmed':
+        payment_id = request.GET.get('payment_id', '')
+        if not payment_id.isdigit():
+            payment_id = ''
+        PaymentService().sync_order_payment(order, payment_id=payment_id)
+        order.refresh_from_db()
     return render(request, 'checkout/success.html', {'order': order})

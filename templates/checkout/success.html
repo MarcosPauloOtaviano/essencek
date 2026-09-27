@@ -5,8 +5,13 @@
 <div class="container">
   <div class="success-page">
     <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+    {% if order.payment_status == 'confirmed' %}
+    <h1>Pagamento confirmado!</h1>
+    <p class="success-subtitle">Obrigada por comprar na Essence K Importados. Seu pedido já está sendo preparado.</p>
+    {% else %}
     <h1>Pedido recebido!</h1>
     <p class="success-subtitle">Obrigada por comprar na Essence K Importados.</p>
+    {% endif %}
     <div class="order-confirmation-card">
       <div class="order-number">Pedido <strong>{{ order.order_number }}</strong></div>
       <div class="order-items-summary">
@@ -35,7 +40,12 @@
       </div>
     </div>
 
-    {% if order.payment_method == 'pix' %}
+    {% if order.payment_status == 'confirmed' %}
+    <div class="payment-confirmed-notice">
+      <i class="fas fa-check-circle"></i>
+      <p><strong>Pagamento aprovado.</strong> Você pode acompanhar o andamento em Meus pedidos.</p>
+    </div>
+    {% elif order.payment_method == 'pix' %}
     <div class="next-step-card">
       <h3><i class="fas fa-qrcode"></i> Próximo passo: pagamento via Pix</h3>
       <p>Acesse o link abaixo para obter o QR code ou chave Pix e confirmar seu pagamento.</p>
@@ -46,6 +56,10 @@
       <h3><i class="fas fa-credit-card"></i> Próximo passo: pagamento com cartão</h3>
       <a href="{% url 'payment_link' order.order_number %}" class="btn btn-primary">Ir para pagamento</a>
     </div>
+    {% endif %}
+
+    {% if order.payment_status != 'confirmed' %}
+      {% include 'checkout/_payment_status_poll.html' %}
     {% endif %}
 
     <div class="success-actions">

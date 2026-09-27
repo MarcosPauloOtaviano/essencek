@@ -55,6 +55,15 @@ class PaymentService:
             return 400
         return MercadoPagoGateway().process_webhook(request, request.body)
 
+    def sync_order_payment(self, order, payment_id=''):
+        if self.sandbox or self.gateway_name != 'mercadopago':
+            return False
+        try:
+            return MercadoPagoGateway().sync_order_payment(order, payment_id=payment_id)
+        except (PaymentGatewayConfigurationError, PaymentGatewayTemporaryError) as exc:
+            logger.error('Payment sync failed for order %s: %s', order.order_number, exc)
+            return False
+
     def _gateway(self):
         if self.gateway_name == 'mercadopago':
             return MercadoPagoGateway()

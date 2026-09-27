@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
+from payments.services import PaymentService
 from .forms import RegisterForm, LoginForm, ProfileForm
 from orders.models import Order
 
@@ -87,6 +88,9 @@ def order_detail(request, order_number):
     except Order.DoesNotExist:
         messages.error(request, 'Pedido não encontrado.')
         return redirect('my_orders')
+    if order.payment_method != Order.PAYMENT_WHATSAPP and order.payment_status != 'confirmed':
+        PaymentService().sync_order_payment(order)
+        order.refresh_from_db()
     return render(request, 'accounts/order_detail.html', {
         'order': order,
         'active_payment': order.active_payment,

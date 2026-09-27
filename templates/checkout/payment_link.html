@@ -18,8 +18,11 @@
       {% if payment.payment_link %}
         <a href="{{ payment.payment_link }}" class="btn btn-primary btn-large" target="_blank" rel="noopener">Ir para pagamento seguro</a>
       {% endif %}
-      <p class="text-muted">Após o pagamento, você receberá a confirmação por e-mail e o status do pedido será atualizado.</p>
+      <p class="text-muted">Após o pagamento, volte para esta página. O status do pedido será atualizado automaticamente.</p>
     </div>
+    {% if not payment_is_simulated and payment.gateway_status != 'configuration_error' %}
+      {% include 'checkout/_payment_status_poll.html' %}
+    {% endif %}
     <div class="success-actions">
       <a href="{% url 'my_orders' %}" class="btn btn-outline">Ver meus pedidos</a>
     </div>

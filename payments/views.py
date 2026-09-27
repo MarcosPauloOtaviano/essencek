@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.http import HttpResponse
+from django.views.decorators.http import require_GET, require_POST
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings as django_settings
+from django.urls import reverse
 
 from orders.models import Order
 from orders.services import order_queryset_for_user
@@ -21,6 +22,8 @@ def _whatsapp_checkout_only():
 @login_required
 def payment_pix(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
+    if order.payment_status == 'confirmed':
+        return redirect('order_detail', order_number=order.order_number)
     if _whatsapp_checkout_only():
         messages.info(request, 'A finalização está sendo feita pelo WhatsApp.')
         return redirect('orders:whatsapp', order_number=order.order_number)
@@ -36,6 +39,8 @@ def payment_pix(request, order_number):
 @login_required
 def payment_link(request, order_number):
     order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
+    if order.payment_status == 'confirmed':
+        return redirect('order_detail', order_number=order.order_number)
     if _whatsapp_checkout_only():
         messages.info(request, 'A finalização está sendo feita pelo WhatsApp.')
         return redirect('orders:whatsapp', order_number=order.order_number)
@@ -45,6 +50,26 @@ def payment_link(request, order_number):
         'order': order,
         'payment': payment,
         'payment_is_simulated': getattr(django_settings, 'PAYMENT_SANDBOX', True),
+    })
+
+
+@login_required
+@require_GET
+def payment_status(request, order_number):
+    order = get_object_or_404(order_queryset_for_user(request.user), order_number=order_number)
+    if order.payment_method != Order.PAYMENT_WHATSAPP and order.payment_status != 'confirmed':
+        payment_id = request.GET.get('payment_id', '')
+        if not payment_id.isdigit():
+            payment_id = ''
+        PaymentService().sync_order_payment(order, payment_id=payment_id)
+        order.refresh_from_db(fields=['payment_status', 'status', 'payment_confirmed_at'])
+
+    paid = order.payment_status == 'confirmed'
+    return JsonResponse({
+        'paid': paid,
+        'payment_status': order.payment_status,
+        'message': 'Pagamento confirmado.' if paid else 'Aguardando confirmação do pagamento.',
+        'redirect_url': reverse('order_detail', args=[order.order_number]),
     })
 
 

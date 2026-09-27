@@ -1,0 +1,43 @@
+<div class="payment-pending-notice" id="paymentLiveStatus" role="status" aria-live="polite">
+  <i class="fas fa-clock"></i>
+  <p><strong>Aguardando confirmação.</strong> Esta página será atualizada automaticamente assim que o Mercado Pago aprovar o pagamento.</p>
+</div>
+<script>
+(function () {
+  const statusBox = document.getElementById('paymentLiveStatus');
+  if (!statusBox) return;
+
+  const statusUrl = new URL("{% url 'payment_status' order.order_number %}", window.location.origin);
+  const returnedPaymentId = new URLSearchParams(window.location.search).get('payment_id') || '';
+  if (/^\d+$/.test(returnedPaymentId)) statusUrl.searchParams.set('payment_id', returnedPaymentId);
+
+  let attempts = 0;
+  const maxAttempts = 36;
+
+  async function checkPayment() {
+    attempts += 1;
+    try {
+      const response = await fetch(statusUrl.toString(), {
+        credentials: 'same-origin',
+        headers: {'Accept': 'application/json'},
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('status unavailable');
+      const data = await response.json();
+      if (data.paid) {
+        statusBox.className = 'payment-confirmed-notice';
+        statusBox.innerHTML = '<i class="fas fa-check-circle"></i><p><strong>Pagamento confirmado!</strong> Seu pedido já está sendo preparado.</p>';
+        window.setTimeout(function () {
+          window.location.assign(data.redirect_url);
+        }, 1400);
+        return;
+      }
+    } catch (error) {
+      // A próxima tentativa também cobre instabilidades momentâneas de conexão.
+    }
+    if (attempts < maxAttempts) window.setTimeout(checkPayment, 5000);
+  }
+
+  window.setTimeout(checkPayment, 2500);
+})();
+</script>

@@ -22,6 +22,8 @@ ALLOWED_HOSTS = [
     'www.essencekimportado.com',
     'essencekimportados.com.br',
     'www.essencekimportados.com.br',
+    'essencek.com.br',
+    'www.essencek.com.br',
     'localhost',
     '127.0.0.1',
 ]
@@ -34,6 +36,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.essencekimportado.com',
     'https://essencekimportados.com.br',
     'https://www.essencekimportados.com.br',
+    'https://essencek.com.br',
+    'https://www.essencek.com.br',
 ]
 if _vercel_url:
     CSRF_TRUSTED_ORIGINS.append(f'https://{_vercel_url}')
@@ -43,6 +47,8 @@ CANONICAL_REDIRECT_HOSTS = [
     'www.essencekimportados.com.br',
     'essencekimportado.com',
     'www.essencekimportado.com',
+    'essencek.com.br',
+    'www.essencek.com.br',
 ]
 MIDDLEWARE = ['core.middleware.CanonicalHostRedirectMiddleware', *MIDDLEWARE]
 
@@ -105,12 +111,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 COSMOS_API_TOKEN = config('COSMOS_API_TOKEN', default='')
 
-PAYMENT_SANDBOX = True
+PAYMENT_SANDBOX = config('PAYMENT_SANDBOX', default=True, cast=bool)
 PAYMENT_GATEWAY = config('PAYMENT_GATEWAY', default='sandbox')
-MP_ACCESS_TOKEN = ''
-MP_PUBLIC_KEY = ''
-MP_WEBHOOK_SECRET = ''
-MP_USE_SANDBOX_LINK = True
+MP_ACCESS_TOKEN = config('MP_ACCESS_TOKEN', default='')
+MP_PUBLIC_KEY = config('MP_PUBLIC_KEY', default='')
+MP_WEBHOOK_SECRET = config('MP_WEBHOOK_SECRET', default='')
+MP_USE_SANDBOX_LINK = config('MP_USE_SANDBOX_LINK', default=True, cast=bool)
 MP_MAX_INSTALLMENTS = config('MP_MAX_INSTALLMENTS', default=12, cast=int)
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'

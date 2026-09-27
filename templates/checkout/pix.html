@@ -56,6 +56,9 @@
         </div>
       {% endif %}
     </div>
+    {% if not payment_is_simulated and payment.gateway_status != 'configuration_error' %}
+      {% include 'checkout/_payment_status_poll.html' %}
+    {% endif %}
     <div class="success-actions">
       <a href="{% url 'my_orders' %}" class="btn btn-outline">Acompanhar pedido</a>
     </div>
