@@ -77,3 +77,30 @@ an emergency action, not the normal operating state. Keep additive columns.
 
 No security score, certification, zero-risk guarantee or uninterrupted-availability
 guarantee is implied by this hardening. Keep dependencies and keys maintained.
+
+## Deployment verification — 2026-09-27/28
+
+- Full encrypted PostgreSQL backup restored successfully in isolation; forward,
+  reverse and forward data migrations preserved the customer identities. The
+  rehearsal included synthetic order/preorder phone snapshots only in the local DB.
+- All 131 tests passed on PostgreSQL, including concurrent counter updates,
+  payment reconciliation/reporting and old/new session signatures. The standalone
+  SQLite run skips the PostgreSQL-only concurrency test. Development uses ordinary
+  static-file storage so a fresh checkout does not require a production manifest.
+- Production migrations through accounts 0007, core 0008 and orders 0009 were
+  confirmed applied. Raw legacy identity columns are empty; decryption and HMAC
+  lookups were checked without logging identities. No live purchase was performed.
+- The deployed runtime's session signature and rate-limit HMAC were verified with
+  the newly configured keys. The previous signing key's 13-hour grace period ended;
+  permanent configuration uses the new key. Recovery material remains outside Git.
+- Public home/catalog/product/images/login/cart/health checks passed. Health checks
+  database connectivity and is not cached. Browser inspection found no console
+  warnings/errors on the home page. These are bounded checks, not a guarantee of
+  continuous availability or an end-to-end live payment certification.
+- Dependency audit reported no known vulnerabilities in the pinned requirements
+  at verification time. Bandit identified two medium findings in reverse migration
+  SQL: manually reviewed as trusted model/constant identifiers quoted by Django,
+  with data values parameterized; there is no user-controlled SQL interpolation.
+- Alert notification delivery remains pending: no Sentry DSN has been configured,
+  and the existing Vercel Hobby plan does not meet the documented alert entitlement.
+  No paid subscription or third-party account was created automatically.
