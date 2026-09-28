@@ -1,12 +1,5 @@
 from .base import *
 
-# Development and isolated tests must not require a production collectstatic
-# manifest. Production imports base directly and keeps hashed WhiteNoise assets.
-STORAGES = {
-    **STORAGES,
-    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
-}
-
 DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '.trycloudflare.com']  # nosec B104
 CSRF_TRUSTED_ORIGINS = ['https://*.trycloudflare.com']

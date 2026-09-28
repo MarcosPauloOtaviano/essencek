@@ -176,3 +176,14 @@ class MonitoringPrivacyTests(SimpleTestCase):
         for forbidden in ['52998224725', 'x@example.com', 'APP_USR', 'secret']:
             self.assertNotIn(forbidden, serialized)
         self.assertIn('checkout', serialized)
+
+
+class AssetBuildSettingsTests(SimpleTestCase):
+    def test_manage_default_settings_keep_production_manifest_generation(self):
+        # Vercel collectstatic can use manage.py's development default even
+        # though requests use vercel.py. Both must agree on hashed assets.
+        from paraguashopping.settings import development
+        self.assertEqual(
+            development.STORAGES['staticfiles']['BACKEND'],
+            'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        )

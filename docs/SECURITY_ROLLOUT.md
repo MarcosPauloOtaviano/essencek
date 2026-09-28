@@ -85,8 +85,11 @@ guarantee is implied by this hardening. Keep dependencies and keys maintained.
   rehearsal included synthetic order/preorder phone snapshots only in the local DB.
 - All 131 tests passed on PostgreSQL, including concurrent counter updates,
   payment reconciliation/reporting and old/new session signatures. The standalone
-  SQLite run skips the PostgreSQL-only concurrency test. Development uses ordinary
-  static-file storage so a fresh checkout does not require a production manifest.
+  SQLite run skips the PostgreSQL-only concurrency test. Run isolated tests with
+  `python manage.py test --settings=paraguashopping.settings.test`; only that module
+  uses ordinary static-file storage. Keep development/build settings on the same
+  manifest-generating backend as production: Vercel's automatic collectstatic can
+  use the manage.py default settings module.
 - Production migrations through accounts 0007, core 0008 and orders 0009 were
   confirmed applied. Raw legacy identity columns are empty; decryption and HMAC
   lookups were checked without logging identities. No live purchase was performed.
@@ -104,3 +107,9 @@ guarantee is implied by this hardening. Keep dependencies and keys maintained.
 - Alert notification delivery remains pending: no Sentry DSN has been configured,
   and the existing Vercel Hobby plan does not meet the documented alert entitlement.
   No paid subscription or third-party account was created automatically.
+- The follow-up Git build at commit 90d5fcd exposed an asset-build regression:
+  switching development static storage meant the automatic build did not generate
+  the manifest required at runtime. Home/catalog returned 500, while health stayed
+  200. The already-hardened 0f51627 deployment was immediately promoted again and
+  home/catalog returned 200. No data migration was reversed. Test-only settings
+  now live in a separate module; check rendered pages and assets, not health alone.
