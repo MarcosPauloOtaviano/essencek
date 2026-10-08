@@ -53,16 +53,15 @@
         <td>
           <strong>{{ product.name }}</strong>
           {% if product.display_brand %}<br><small class="text-muted">{{ product.display_brand }}</small>{% endif %}
+          {% if product.is_decanter %}<br><small class="text-muted">Decanter{% if product.decanter_volume_ml %} {{ product.decanter_volume_ml }} ml{% endif %}{% if product.decanter_of %} de {{ product.decanter_of.name }}{% endif %}</small>{% endif %}
         </td>
         <td>{{ product.category.name|default:"—" }}</td>
         <td>
           {% if product.is_on_sale and product.sale_price_brl %}
             <span class="price-sale-dash">{{ product.display_current_price_brl|brl }}</span><br>
             <small class="text-muted line-through">{{ product.price_brl|brl }}</small><br>
-            {% if product.display_current_price_usd %}<small class="text-muted">≈ {{ product.display_current_price_usd|usd }}</small>{% endif %}
           {% else %}
             <strong>{{ product.price_brl|brl }}</strong><br>
-            {% if product.display_price_usd %}<small class="text-muted">≈ {{ product.display_price_usd|usd }}</small>{% endif %}
           {% endif %}
         </td>
         <td>

@@ -61,7 +61,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'display_brand', 'category', 'price', 'sale_price',
                     'stock', 'status', 'gtin', 'is_active', 'is_featured', 'is_on_sale']
     list_editable = ['is_active', 'is_featured', 'is_on_sale', 'status', 'stock']
-    list_filter = ['category', 'brand_fk', 'status', 'is_active', 'is_featured', 'is_on_sale', 'is_pre_order', 'is_fractioned']
+    list_filter = ['category', 'brand_fk', 'product_kind', 'status', 'is_active', 'is_featured', 'is_on_sale', 'is_pre_order']
     search_fields = ['name', 'brand', 'brand_fk__name', 'description', 'gtin', 'variants__gtin']
     prepopulated_fields = {'slug': ('name',)}
     inlines = [ProductImageInline, ProductVariantInline]
@@ -72,9 +72,8 @@ class ProductAdmin(admin.ModelAdmin):
         ('Preços em reais', {
             'fields': ('price', 'sale_price', 'cost_price')
         }),
-        ('Valores em dólar legados/referência', {
-            'fields': ('price_usd', 'sale_price_usd', 'cost_price_usd'),
-            'classes': ('collapse',),
+        ('Organização do catálogo', {
+            'fields': ('product_kind', 'decanter_of', 'decanter_volume_ml'),
         }),
         ('Estoque e status', {
             'fields': ('stock', 'status', 'is_active', 'is_featured', 'is_on_sale', 'is_pre_order', 'is_fractioned', 'has_variants', 'gtin')

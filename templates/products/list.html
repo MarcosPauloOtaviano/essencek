@@ -239,8 +239,8 @@
         <div class="empty-state">
           <i class="fas {% if collection %}fa-box-open{% else %}fa-search{% endif %}"></i>
           {% if collection %}
-          <h2>{{ collection.title }} esta em preparacao</h2>
-          <p>{% if collection.description %}{{ collection.description }}{% else %}Esta colecao e valida, mas ainda nao possui produtos disponiveis no catalogo.{% endif %}</p>
+          <h2>{{ collection.title }} sem produtos no momento</h2>
+          <p>{% if collection.description %}{{ collection.description }}{% else %}Cadastre os produtos desta coleção no painel para que eles apareçam aqui.{% endif %}</p>
           <a href="{% url 'products:list' %}" class="btn btn-primary">Ver todos os produtos</a>
           {% else %}
           <h2>Nenhum produto encontrado</h2>

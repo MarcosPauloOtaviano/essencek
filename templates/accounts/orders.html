@@ -26,7 +26,6 @@
                 <span class="order-item-product"><img src="{{ item.display_image_url }}" alt="{{ item.product_name }}" class="order-item-thumb">{{ item.product_name }}{% if item.display_variant_label %} · {{ item.display_variant_label }}{% endif %} × {{ item.quantity }}</span>
                 <span class="summary-money">
                   <strong>{{ item.subtotal|brl }}</strong>
-                  {% if item.display_subtotal_usd %}<small>≈ {{ item.display_subtotal_usd|usd }}</small>{% endif %}
                 </span>
               </div>
               {% endfor %}
@@ -35,7 +34,6 @@
               <span class="order-total">
                 Total:
                 <strong>{{ order.total|brl }}</strong>
-                {% if order.display_total_usd %}<small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}
               </span>
               <div class="order-actions">
                 {% if order.can_choose_online_payment %}

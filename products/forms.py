@@ -63,7 +63,7 @@ class ProductForm(forms.ModelForm):
         fields = [
             'name', 'brand_fk', 'category', 'short_description', 'description',
             'price', 'sale_price', 'cost_price',
-            'price_usd', 'sale_price_usd', 'cost_price_usd',
+            'product_kind', 'decanter_of', 'decanter_volume_ml',
             'stock', 'status', 'is_active', 'is_featured', 'is_on_sale', 'is_pre_order',
             'is_fractioned', 'has_variants', 'gtin',
             'weight', 'height', 'width', 'length',
@@ -73,6 +73,8 @@ class ProductForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 5}),
             'short_description': forms.TextInput(attrs={'placeholder': 'Breve descrição para o card'}),
             'internal_notes': forms.Textarea(attrs={'rows': 3}),
+            'is_fractioned': forms.HiddenInput(),
+            'has_variants': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -81,18 +83,27 @@ class ProductForm(forms.ModelForm):
         self.fields['price'].required = True
         self.fields['sale_price'].required = False
         self.fields['cost_price'].required = False
-        self.fields['price_usd'].required = False
-        self.fields['sale_price_usd'].required = False
-        self.fields['cost_price_usd'].required = False
+        self.fields['product_kind'].required = False
         self.fields['stock'].required = False
         for field_name in ('weight', 'height', 'width', 'length'):
             self.fields[field_name].required = False
         self.fields['price'].label = 'Preço de venda em reais'
         self.fields['sale_price'].label = 'Preço promocional em reais'
         self.fields['cost_price'].label = 'Preço de custo em reais'
-        self.fields['price_usd'].label = 'Preço USD legado'
-        self.fields['sale_price_usd'].label = 'Preço promocional USD legado'
-        self.fields['cost_price_usd'].label = 'Custo USD legado'
+        self.fields['product_kind'].label = 'Tipo de produto'
+        self.fields['product_kind'].help_text = (
+            'Cadastre o frasco original e cada decanter como produtos separados. '
+            'Assim cada um tem sua própria foto, quantidade e preço.'
+        )
+        self.fields['decanter_of'].required = False
+        self.fields['decanter_of'].queryset = Product.objects.filter(
+            product_kind=Product.KIND_STANDARD,
+        ).exclude(pk=self.instance.pk).order_by('name')
+        self.fields['decanter_of'].label = 'Perfume principal relacionado'
+        self.fields['decanter_of'].help_text = 'Opcional: aparecerá no frasco original como “Ver opção de decanter”.'
+        self.fields['decanter_volume_ml'].required = False
+        self.fields['decanter_volume_ml'].label = 'Volume do decanter (ml)'
+        self.fields['decanter_volume_ml'].help_text = 'Informe somente para produtos do tipo decanter.'
 
     def clean(self):
         cleaned = super().clean()
@@ -112,11 +123,7 @@ class ProductForm(forms.ModelForm):
 
         if price is None or price <= 0:
             self.add_error('price', 'Informe o preço de venda em reais maior que zero.')
-        for field_name in (
-            'sale_price', 'cost_price',
-            'price_usd', 'sale_price_usd', 'cost_price_usd',
-            'weight', 'height', 'width', 'length',
-        ):
+        for field_name in ('sale_price', 'cost_price', 'decanter_volume_ml', 'weight', 'height', 'width', 'length'):
             value = cleaned.get(field_name)
             if value is not None and value < 0:
                 self.add_error(field_name, 'Informe um valor igual ou maior que zero.')
@@ -124,6 +131,22 @@ class ProductForm(forms.ModelForm):
             self.add_error('sale_price', 'Informe o preço promocional em reais.')
         if price and sale_price and sale_price >= price:
             self.add_error('sale_price', 'O preço promocional deve ser menor que o preço de venda.')
+
+        product_kind = cleaned.get('product_kind') or Product.KIND_STANDARD
+        decanter_of = cleaned.get('decanter_of')
+        decanter_volume_ml = cleaned.get('decanter_volume_ml')
+        if product_kind == Product.KIND_DECANTER:
+            if not decanter_volume_ml or decanter_volume_ml <= 0:
+                self.add_error('decanter_volume_ml', 'Informe o volume do decanter em ml.')
+            if decanter_of and decanter_of.is_decanter:
+                self.add_error('decanter_of', 'Relacione o decanter a um perfume principal, não a outro decanter.')
+            # Decanters are standalone catalog products. Legacy variants are not
+            # used for them, which prevents their price from replacing the frasco.
+            cleaned['is_fractioned'] = False
+            cleaned['has_variants'] = False
+        else:
+            cleaned['decanter_of'] = None
+            cleaned['decanter_volume_ml'] = None
         if not is_pre_order and status != Product.STATUS_OUT_OF_STOCK and stock is not None and stock <= 0:
             self.add_error('stock', 'Produtos de pronta entrega precisam ter estoque ou status esgotado.')
         return cleaned
@@ -259,15 +282,11 @@ class ProductVariantForm(forms.ModelForm):
         fields = [
             'name', 'volume_ml', 'color', 'size',
             'price', 'promotional_price', 'cost_price',
-            'price_usd', 'promotional_price_usd', 'cost_price_usd',
             'stock', 'sku', 'gtin', 'is_active', 'order',
         ]
         widgets = {
             'color': forms.HiddenInput(),
             'size': forms.HiddenInput(),
-            'price_usd': forms.HiddenInput(),
-            'promotional_price_usd': forms.HiddenInput(),
-            'cost_price_usd': forms.HiddenInput(),
             'order': forms.HiddenInput(),
         }
 
@@ -276,7 +295,6 @@ class ProductVariantForm(forms.ModelForm):
         for field_name in (
             'name', 'volume_ml', 'color', 'size',
             'price', 'promotional_price', 'cost_price',
-            'price_usd', 'promotional_price_usd', 'cost_price_usd',
             'stock', 'sku', 'gtin', 'order',
         ):
             self.fields[field_name].required = False
@@ -289,7 +307,6 @@ class ProductVariantForm(forms.ModelForm):
             for field_name in (
                 'name', 'volume_ml', 'color', 'size',
                 'price', 'promotional_price', 'cost_price',
-                'price_usd', 'promotional_price_usd', 'cost_price_usd',
                 'sku', 'gtin',
             )
         )
@@ -311,7 +328,6 @@ class ProductVariantForm(forms.ModelForm):
             self.add_error('promotional_price', 'O preço promocional deve ser menor que o preço de venda.')
         for field_name in (
             'promotional_price', 'cost_price',
-            'price_usd', 'promotional_price_usd', 'cost_price_usd',
         ):
             value = cleaned.get(field_name)
             if value is not None and value < 0:

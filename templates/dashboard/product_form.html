@@ -137,18 +137,39 @@
         </div>
       </div>
 
-      <!-- Perfume type & Variants -->
-      <div class="dash-card" id="variantsCard">
-        <h2><i class="fas fa-flask"></i> Tipo de perfume e variações</h2>
+      <!-- Catalog type and decanter relation -->
+      <div class="dash-card" id="catalogTypeCard">
+        <h2><i class="fas fa-flask"></i> Organização do catálogo</h2>
+        {{ form.is_fractioned }}
+        {{ form.has_variants }}
         <div class="form-row">
           <div class="form-group">
-            <label class="toggle-label">
-              {% render_field form.is_fractioned id="id_is_fractioned" %}
-              Perfume fracionado / decanter
-            </label>
-            <small class="field-note">Marque para perfumes vendidos em diferentes volumes/ml.</small>
+            <label for="{{ form.product_kind.id_for_label }}">{{ form.product_kind.label }}</label>
+            {% render_field form.product_kind class="dash-select" id="id_product_kind" %}
+            <small class="field-note">O frasco original e cada decanter são produtos independentes, com preço, foto e estoque próprios.</small>
+            {% if form.product_kind.errors %}<span class="field-error">{{ form.product_kind.errors.0 }}</span>{% endif %}
           </div>
         </div>
+        <div id="decanterFields" class="form-row" style="display:none">
+          <div class="form-group">
+            <label for="{{ form.decanter_of.id_for_label }}">{{ form.decanter_of.label }}</label>
+            {% render_field form.decanter_of class="dash-select" %}
+            <small class="field-note">Ao relacionar, o frasco original exibirá automaticamente um link para este decanter.</small>
+            {% if form.decanter_of.errors %}<span class="field-error">{{ form.decanter_of.errors.0 }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ form.decanter_volume_ml.id_for_label }}">{{ form.decanter_volume_ml.label }} *</label>
+            {% render_field form.decanter_volume_ml class="dash-input" min="1" placeholder="5" %}
+            {% if form.decanter_volume_ml.errors %}<span class="field-error">{{ form.decanter_volume_ml.errors.0 }}</span>{% endif %}
+            <small class="field-note">Ex.: 5, 10 ou 30 ml.</small>
+          </div>
+        </div>
+      </div>
+
+      {% if show_legacy_variants %}
+      <div class="dash-card" id="variantsCard">
+        <h2><i class="fas fa-vials"></i> Variações antigas</h2>
+        <p class="field-note">Este produto ainda possui variações legadas. Para novos decanters, crie um produto separado no tipo acima.</p>
 
         <div id="variantFormsetArea">
           <h3 style="margin:16px 0 8px;font-size:0.95rem;color:#555">
@@ -229,9 +250,6 @@
               {{ vform.order }}
               {{ vform.color }}
               {{ vform.size }}
-              {{ vform.price_usd }}
-              {{ vform.promotional_price_usd }}
-              {{ vform.cost_price_usd }}
             </div>
             {% endfor %}
           </div>
@@ -241,6 +259,7 @@
           </button>
         </div>
       </div>
+      {% endif %}
 
       <div class="dash-card">
         <h2>Observações internas</h2>
@@ -367,6 +386,22 @@
 
 {% block extra_js %}
 <script>
+// Keep the catalog type explicit: decanters are standalone products.
+(function() {
+  var kind = document.getElementById('id_product_kind');
+  var fields = document.getElementById('decanterFields');
+  if (!kind || !fields) return;
+  function syncDecanterFields() {
+    var isDecanter = kind.value === 'decanter';
+    fields.style.display = isDecanter ? 'grid' : 'none';
+    fields.querySelectorAll('select, input').forEach(function(el) {
+      el.disabled = !isDecanter;
+    });
+  }
+  kind.addEventListener('change', syncDecanterFields);
+  syncDecanterFields();
+})();
+
 // Image preview
 document.getElementById('imageInput')?.addEventListener('change', function() {
   const preview = document.getElementById('imagePreview');
@@ -702,9 +737,6 @@ function highlightRequiredFields() {
       <input type="hidden" name="variants-${idx}-order" value="${idx}">
       <input type="hidden" name="variants-${idx}-color" value="">
       <input type="hidden" name="variants-${idx}-size" value="">
-      <input type="hidden" name="variants-${idx}-price_usd" value="">
-      <input type="hidden" name="variants-${idx}-promotional_price_usd" value="">
-      <input type="hidden" name="variants-${idx}-cost_price_usd" value="">
     </div>`;
     container.insertAdjacentHTML('beforeend', html);
     totalForms.value = idx + 1;

@@ -8,7 +8,6 @@
     <p>
       Pedido <strong>{{ order.order_number }}</strong> —
       Total: <strong>{{ order.total|brl }}</strong>
-      {% if order.display_total_usd %}<span class="text-muted">≈ {{ order.display_total_usd|usd }}</span>{% endif %}
     </p>
     <div class="pix-card">
       {% if payment_is_simulated %}

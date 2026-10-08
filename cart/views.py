@@ -198,10 +198,8 @@ def cart_update(request, item_id):
         return JsonResponse({
             'success': True,
             'subtotal': float(item.subtotal) if quantity > 0 else 0,
-            'subtotal_usd': float(item.subtotal_usd) if quantity > 0 and item.subtotal_usd is not None else None,
             'cart_count': cart.total_items,
             'cart_subtotal': float(cart.subtotal),
-            'cart_subtotal_usd': float(cart.subtotal_usd) if cart.subtotal_usd is not None else None,
         })
     return redirect('cart:detail')
 

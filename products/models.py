@@ -185,6 +185,13 @@ class HomeCollection(models.Model):
 
 
 class Product(models.Model):
+    KIND_STANDARD = 'standard'
+    KIND_DECANTER = 'decanter'
+    PRODUCT_KIND_CHOICES = [
+        (KIND_STANDARD, 'Produto principal / frasco'),
+        (KIND_DECANTER, 'Decanter'),
+    ]
+
     STATUS_AVAILABLE = 'available'
     STATUS_LOW_STOCK = 'low_stock'
     STATUS_PRE_ORDER = 'pre_order'
@@ -216,6 +223,17 @@ class Product(models.Model):
     sale_price_usd = models.DecimalField('Preço promo USD', max_digits=10, decimal_places=2, null=True, blank=True)
     cost_price_usd = models.DecimalField('Custo USD', max_digits=10, decimal_places=2, null=True, blank=True)
     gtin = models.CharField('GTIN/EAN', max_length=20, blank=True, null=True, unique=True)
+    product_kind = models.CharField(
+        'Tipo de catálogo', max_length=20, choices=PRODUCT_KIND_CHOICES,
+        default=KIND_STANDARD, db_index=True,
+    )
+    decanter_of = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='decanter_products', verbose_name='Perfume principal relacionado',
+    )
+    decanter_volume_ml = models.PositiveIntegerField(
+        'Volume do decanter (ml)', null=True, blank=True,
+    )
     is_fractioned = models.BooleanField('Perfume fracionado', default=False)
     has_variants = models.BooleanField('Tem variações', default=False)
 
@@ -262,6 +280,16 @@ class Product(models.Model):
 
     def get_absolute_url(self):
         return reverse('products:detail', kwargs={'slug': self.slug})
+
+    @property
+    def is_decanter(self):
+        return self.product_kind == self.KIND_DECANTER
+
+    @property
+    def catalog_type_label(self):
+        if self.is_decanter:
+            return f'Decanter {self.decanter_volume_ml} ml' if self.decanter_volume_ml else 'Decanter'
+        return 'Frasco original'
 
     @property
     def current_price(self):

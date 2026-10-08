@@ -33,7 +33,7 @@
         <td><strong>{{ order.order_number }}</strong></td>
         <td>{{ order.customer_name }}</td>
         <td>{{ order.customer_whatsapp }}</td>
-        <td><strong>{{ order.total|brl }}</strong>{% if order.display_total_usd %}<br><small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}</td>
+        <td><strong>{{ order.total|brl }}</strong></td>
         <td>
           {{ order.get_payment_method_display }}<br>
           <span class="status-dot payment-{{ order.payment_status }}">{{ order.payment_status_label }}</span>

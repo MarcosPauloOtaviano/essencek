@@ -163,9 +163,6 @@
               </span>
               <span class="summary-item-price">
                 <strong>{{ item.subtotal|brl }}</strong>
-                {% if item.subtotal_usd %}
-                  <small>≈ {{ item.subtotal_usd|usd }}</small>
-                {% endif %}
               </span>
             </div>
             {% endfor %}
@@ -175,7 +172,6 @@
             <span>Subtotal</span>
             <span class="summary-money">
               <strong>{{ cart.subtotal|brl }}</strong>
-              {% if cart.subtotal_usd %}<small>≈ {{ cart.subtotal_usd|usd }}</small>{% endif %}
             </span>
           </div>
           <div class="summary-line" id="checkoutShippingLine">
@@ -188,7 +184,6 @@
             <span>Total</span>
             <span class="summary-money">
               <strong id="checkoutTotal">{{ checkout_total|brl }}</strong>
-              {% if cart.subtotal_usd %}<small>≈ {{ cart.subtotal_usd|usd }}</small>{% endif %}
             </span>
           </div>
           <div class="lgpd-notice">

@@ -428,7 +428,7 @@ class CatalogNavigationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Decanter 5 ml')
         self.assertContains(response, 'Decanter 10 ml')
-        self.assertContains(response, 'Decanter esta em preparacao')
+        self.assertContains(response, 'Decanter sem produtos no momento')
         self.assertContains(response, reverse('category_landing', args=['decanter-5ml']))
         self.assertContains(response, reverse('category_landing', args=['decanter-10ml']))
 
@@ -762,6 +762,46 @@ class ProductAvailabilityTests(TestCase):
         )
 
         self.assertTrue(product.can_add_to_cart())
+
+
+class DecanterCatalogTests(TestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name='Perfumes', slug='perfumes-teste')
+        self.parent = Product.objects.create(
+            name='Rose Seduction Vip', category=self.category, price='259.00', stock=3,
+            status=Product.STATUS_AVAILABLE,
+        )
+
+    def test_decanter_form_requires_volume_and_accepts_parent_link(self):
+        data = {
+            'name': 'Rose Seduction Vip Decanter',
+            'category': str(self.category.pk),
+            'price': '45.00',
+            'stock': '2',
+            'status': Product.STATUS_AVAILABLE,
+            'product_kind': Product.KIND_DECANTER,
+            'decanter_of': str(self.parent.pk),
+            'decanter_volume_ml': '5',
+        }
+        form = ProductForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+        decanter = form.save()
+        self.assertTrue(decanter.is_decanter)
+        self.assertEqual(decanter.decanter_of, self.parent)
+        self.assertEqual(decanter.decanter_volume_ml, 5)
+
+    def test_parent_detail_links_to_standalone_decanter_without_usd_text(self):
+        Product.objects.create(
+            name='Rose Seduction Vip — Decanter 5 ml', category=self.category,
+            price='45.00', stock=2, status=Product.STATUS_AVAILABLE,
+            product_kind=Product.KIND_DECANTER, decanter_of=self.parent,
+            decanter_volume_ml=5,
+        )
+        response = self.client.get(self.parent.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Também disponível em decanter')
+        self.assertContains(response, 'Decanter 5 ml')
+        self.assertNotContains(response, 'US$')
 
 
 class ProductImageDownloadSecurityTests(TestCase):

@@ -27,18 +27,15 @@
       {% if product.short_description %}
         <p class="product-short-desc">{{ product.short_description|truncatechars:80 }}</p>
       {% endif %}
+      {% if product.is_decanter %}
+        <span class="product-type-label">Decanter{% if product.decanter_volume_ml %} {{ product.decanter_volume_ml }} ml{% endif %}</span>
+      {% endif %}
       <div class="product-price">
         {% if product.is_on_sale and product.sale_price %}
           <span class="price-original">{{ product.price|brl }}</span>
           <span class="price-sale">{{ product.sale_price|brl }}</span>
-          {% if product.display_sale_price_usd %}
-            <span class="price-brl">≈ {{ product.display_sale_price_usd|usd }} no câmbio do dia</span>
-          {% endif %}
         {% else %}
           <span class="price-current">{{ product.price|brl }}</span>
-          {% if product.display_price_usd %}
-            <span class="price-brl">≈ {{ product.display_price_usd|usd }} no câmbio do dia</span>
-          {% endif %}
         {% endif %}
       </div>
     </div>

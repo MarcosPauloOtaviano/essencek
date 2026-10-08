@@ -20,17 +20,17 @@
             <td><span class="order-item-product"><img src="{{ item.display_image_url }}" alt="" class="order-item-thumb">{{ item.product_name }}</span>{% if item.display_variant_label %}<br><small>{{ item.display_variant_label }}</small>{% endif %}{% if item.product_brand %}<br><small>{{ item.product_brand }}</small>{% endif %}</td>
             <td>{% if item.is_pre_order %}<span class="badge badge-pre-order">Encomenda</span>{% else %}<span class="badge badge-available">Pronta entrega</span>{% endif %}</td>
             <td>{{ item.quantity }}</td>
-            <td><strong>{{ item.unit_price|brl }}</strong>{% if item.display_unit_price_usd %}<br><small>≈ {{ item.display_unit_price_usd|usd }}</small>{% endif %}</td>
-            <td><strong>{{ item.subtotal|brl }}</strong>{% if item.display_subtotal_usd %}<br><small>≈ {{ item.display_subtotal_usd|usd }}</small>{% endif %}</td>
+            <td><strong>{{ item.unit_price|brl }}</strong></td>
+            <td><strong>{{ item.subtotal|brl }}</strong></td>
             <td>{{ item.get_item_status_display }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
       <div class="order-totals-dash">
-        <div class="order-total-row"><span>Subtotal</span><span><strong>{{ order.subtotal|brl }}</strong>{% if order.display_subtotal_usd %}<br><small>≈ {{ order.display_subtotal_usd|usd }}</small>{% endif %}</span></div>
+        <div class="order-total-row"><span>Subtotal</span><span><strong>{{ order.subtotal|brl }}</strong></span></div>
         <div class="order-total-row"><span>Frete</span><span>{{ order.shipping_cost|brl }}</span></div>
-        <div class="order-total-row order-total-final"><span>Total</span><span><strong>{{ order.total|brl }}</strong>{% if order.display_total_usd %}<br><small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}</span></div>
+        <div class="order-total-row order-total-final"><span>Total</span><span><strong>{{ order.total|brl }}</strong></span></div>
       </div>
     </div>
 

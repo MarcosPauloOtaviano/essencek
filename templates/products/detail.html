@@ -41,6 +41,14 @@
       {% if product.category %}
         <span class="product-detail-category">{{ product.category.name }}</span>
       {% endif %}
+      {% if product.is_decanter %}
+        <span class="product-detail-category">Decanter{% if product.decanter_volume_ml %} {{ product.decanter_volume_ml }} ml{% endif %}</span>
+        {% if product.decanter_of %}
+          <p class="product-related-link"><i class="fas fa-flask"></i>
+            <a href="{{ product.decanter_of.get_absolute_url }}">Ver frasco original de {{ product.decanter_of.name }}</a>
+          </p>
+        {% endif %}
+      {% endif %}
 
       <!-- Status Badge -->
       <div class="product-detail-status">
@@ -57,9 +65,6 @@
       <div class="product-detail-price">
         {% if variants and first_variant %}
           <span class="price-now" id="variantPriceBrl">{{ first_variant.price_brl|brl }}</span>
-          {% if first_variant.current_price_usd %}
-            <span class="price-brl" id="variantPriceUsd">≈ {{ first_variant.current_price_usd|usd }} no câmbio do dia</span>
-          {% endif %}
           {% if first_variant.promotional_price %}
             <span class="price-save">Preço promocional para {{ first_variant.name }}</span>
           {% endif %}
@@ -67,16 +72,26 @@
           <span class="price-was">De {{ product.price|brl }}</span>
           <span class="price-now">{{ product.sale_price|brl }}</span>
           <span class="price-save">Você economiza {{ product.discount_amount|brl }}</span>
-          {% if product.display_sale_price_usd %}
-            <span class="price-brl">≈ {{ product.display_sale_price_usd|usd }} no câmbio do dia</span>
-          {% endif %}
         {% else %}
           <span class="price-now">{{ product.price|brl }}</span>
-          {% if product.display_price_usd %}
-            <span class="price-brl">≈ {{ product.display_price_usd|usd }} no câmbio do dia</span>
-          {% endif %}
         {% endif %}
       </div>
+
+      {% if not product.is_decanter and decanter_products %}
+      <div class="decanter-options" aria-labelledby="decanter-options-title">
+        <h2 id="decanter-options-title">Também disponível em decanter</h2>
+        <p>Escolha o mesmo perfume em um frasco menor:</p>
+        <div class="decanter-option-list">
+          {% for decanter in decanter_products %}
+            <a class="decanter-option" href="{{ decanter.get_absolute_url }}">
+              <span><strong>Decanter{% if decanter.decanter_volume_ml %} {{ decanter.decanter_volume_ml }} ml{% endif %}</strong><small>{{ decanter.get_status_display }}</small></span>
+              <strong>{{ decanter.current_price|brl }}</strong>
+              <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
 
       {% if product.short_description %}
         <p class="product-short-desc">{{ product.short_description }}</p>
@@ -104,7 +119,6 @@
                 <label class="variant-option {% if not product.is_pre_order and variant.stock <= 0 %}variant-option-disabled{% endif %}">
                   <input type="radio" name="variant_id" value="{{ variant.pk }}"
                          data-brl="{{ variant.price_brl|brl }}"
-                         data-usd="{% if variant.current_price_usd %}{{ variant.current_price_usd|usd }}{% endif %}"
                          data-stock="{{ variant.stock }}"
                          data-max="99"
                          {% if first_variant and variant.pk == first_variant.pk %}checked{% endif %}
@@ -114,8 +128,6 @@
                   <strong>{{ variant.price_brl|brl }}</strong>
                   {% if product.is_pre_order %}
                     <small>Sob encomenda, sujeito a confirmação</small>
-                  {% elif variant.current_price_usd %}
-                    <small>≈ {{ variant.current_price_usd|usd }} · {{ variant.stock }} un.</small>
                   {% else %}
                     <small>{{ variant.stock }} un.</small>
                   {% endif %}
@@ -149,7 +161,6 @@
                 <label class="variant-option {% if variant.stock <= 0 %}variant-option-disabled{% endif %}">
                   <input type="radio" name="variant_id" value="{{ variant.pk }}"
                          data-brl="{{ variant.price_brl|brl }}"
-                         data-usd="{% if variant.current_price_usd %}{{ variant.current_price_usd|usd }}{% endif %}"
                          data-stock="{{ variant.stock }}"
                          data-max="{{ variant.stock }}"
                          {% if first_variant and variant.pk == first_variant.pk %}checked{% endif %}
@@ -157,7 +168,7 @@
                          onchange="selectVariant(this)">
                   <span>{{ variant.name }}</span>
                   <strong>{{ variant.price_brl|brl }}</strong>
-                  {% if variant.current_price_usd %}<small>≈ {{ variant.current_price_usd|usd }} · {{ variant.stock }} un.</small>{% else %}<small>{{ variant.stock }} un.</small>{% endif %}
+                  <small>{{ variant.stock }} un.</small>
                 </label>
                 {% endfor %}
               </div>
@@ -285,11 +296,9 @@ function changeQty(delta) {
 
 function selectVariant(input) {
   const priceBrl = document.getElementById('variantPriceBrl');
-  const priceUsd = document.getElementById('variantPriceUsd');
   const qty = document.getElementById('qty');
   const buyNowVariant = document.getElementById('buyNowVariantId');
   if (priceBrl) priceBrl.textContent = input.dataset.brl;
-  if (priceUsd) priceUsd.textContent = input.dataset.usd ? `≈ ${input.dataset.usd} no câmbio do dia` : '';
   if (qty) {
     qty.max = input.dataset.max || '99';
     qty.value = Math.min(parseInt(qty.value || '1'), parseInt(qty.max || '99'));

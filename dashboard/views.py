@@ -29,7 +29,9 @@ from .services import get_dashboard_summary, get_reports_data
 logger = logging.getLogger('products.gtin')
 
 
-def _post_requests_variants(post_data):
+def _post_requests_variants(post_data, product=None):
+    if product and product.product_kind == Product.KIND_DECANTER:
+        return False
     return str(post_data.get('is_fractioned', '')).lower() in {'1', 'true', 'on', 'yes'}
 
 
@@ -85,7 +87,7 @@ def dashboard_home(request):
 @staff_member_required(login_url='/conta/entrar/')
 def product_list(request):
     products = (
-        Product.objects.select_related('category', 'brand_fk')
+        Product.objects.select_related('category', 'brand_fk', 'decanter_of')
         .prefetch_related('images', 'variants')
         .order_by('-created_at')
     )
@@ -164,6 +166,7 @@ def product_add(request):
             form,
             variant_formset if request.method == 'POST' and _post_requests_variants(request.POST) else None,
         ) if request.method == 'POST' else [],
+        'show_legacy_variants': False,
     })
 
 
@@ -172,7 +175,7 @@ def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
-        validate_variants = _post_requests_variants(request.POST)
+        validate_variants = _post_requests_variants(request.POST, product)
         variant_formset = ProductVariantFormSet(
             request.POST if validate_variants else None,
             instance=product,
@@ -218,8 +221,9 @@ def product_edit(request, pk):
         'title': f'Editar: {product.name}',
         'form_error_summary': _collect_form_errors(
             form,
-            variant_formset if request.method == 'POST' and _post_requests_variants(request.POST) else None,
+            variant_formset if request.method == 'POST' and _post_requests_variants(request.POST, product) else None,
         ) if request.method == 'POST' else [],
+        'show_legacy_variants': bool(product.is_fractioned and product.has_variants),
     })
 
 

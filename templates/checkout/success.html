@@ -26,7 +26,6 @@
           </span>
           <span class="summary-money">
             <strong>{{ item.subtotal|brl }}</strong>
-            {% if item.display_subtotal_usd %}<small>≈ {{ item.display_subtotal_usd|usd }}</small>{% endif %}
           </span>
         </div>
         {% endfor %}
@@ -35,7 +34,6 @@
         <span>Total</span>
         <span class="summary-money">
           <strong>{{ order.total|brl }}</strong>
-          {% if order.display_total_usd %}<small>≈ {{ order.display_total_usd|usd }}</small>{% endif %}
         </span>
       </div>
       <div class="confirmation-payment">

@@ -86,7 +86,7 @@ def product_list(request, category_key='', quick_filter=''):
     products = (
         Product.objects.filter(is_active=True)
         .select_related('category', 'brand_fk')
-        .prefetch_related('images', 'variants')
+        .prefetch_related('images', 'variants', 'decanter_products')
     )
 
     query = request.GET.get('q', '').strip()[:100]
@@ -294,6 +294,7 @@ def product_detail(request, slug):
     product = get_object_or_404(
         Product.objects.select_related('category', 'brand_fk').prefetch_related(
             'images',
+            'decanter_products__images',
             Prefetch(
                 'variants',
                 queryset=ProductVariant.objects.filter(is_active=True).order_by(
@@ -314,9 +315,17 @@ def product_detail(request, slug):
     )
     related = (
         Product.objects.filter(category=product.category, is_active=True)
+        .filter(product_kind=product.product_kind)
         .select_related('category', 'brand_fk')
         .prefetch_related('images', 'variants')
         .exclude(pk=product.pk)[:4]
+    )
+
+    decanter_products = list(
+        product.decanter_products.filter(is_active=True)
+        .select_related('category', 'brand_fk')
+        .prefetch_related('images')
+        .order_by('is_pre_order', 'decanter_volume_ml', 'name')
     )
 
     return render(request, 'products/detail.html', {
@@ -326,4 +335,5 @@ def product_detail(request, slug):
         'first_variant': first_variant,
         'product_available': product.can_add_to_cart(),
         'related': related,
+        'decanter_products': decanter_products,
     })

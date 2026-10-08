@@ -2,6 +2,7 @@ from django.db.models import Count, F, Prefetch, Q
 from django.templatetags.static import static
 from django.urls import reverse
 from urllib.parse import urlencode
+import re
 
 from .models import HomeCollection, Product, Category
 
@@ -100,6 +101,18 @@ def collection_category_ids(collection, categories=None):
     return _category_ids_with_descendants(linked_ids, categories)
 
 
+def _decanter_collection_volume(collection):
+    route = (getattr(collection, 'route_slug', '') or '').casefold()
+    match = re.search(r'^decanter-(\d+)ml$', route)
+    return int(match.group(1)) if match else None
+
+
+def _is_decanter_collection(collection):
+    return (getattr(collection, 'route_slug', '') or '').casefold() == 'decanter' or (
+        _decanter_collection_volume(collection) is not None
+    )
+
+
 def collection_product_queryset(collection, categories=None):
     products = Product.objects.filter(is_active=True)
     if collection.kind == HomeCollection.KIND_OFFERS:
@@ -108,6 +121,13 @@ def collection_product_queryset(collection, categories=None):
         return products.filter(is_featured=True)
     if collection.kind == HomeCollection.KIND_AVAILABLE:
         return products.filter(status=Product.STATUS_AVAILABLE)
+
+    if _is_decanter_collection(collection):
+        products = products.filter(product_kind=Product.KIND_DECANTER)
+        volume = _decanter_collection_volume(collection)
+        if volume is not None:
+            products = products.filter(decanter_volume_ml=volume)
+        return products
 
     category_ids = collection_category_ids(collection, categories)
     return products.filter(category_id__in=category_ids) if category_ids else products.none()
@@ -126,6 +146,14 @@ def _collection_cover_url(collection):
             image_url = image_url_if_exists(category.image)
             if image_url:
                 return image_url
+
+    # A decanter collection can be populated before its optional category
+    # cover is configured. Use the first real product image instead of the
+    # generic "catalogue in preparation" visual.
+    if _is_decanter_collection(collection):
+        product = collection_product_queryset(collection).prefetch_related('images').first()
+        if product and product.main_image:
+            return product.main_image.display_url
 
     return static('img/defaults/default-perfumes.jpg')
 
@@ -154,11 +182,14 @@ def build_collection_cards(collections, categories=None):
     for collection in collections:
         children = _prefetched_related(collection, 'children')
         category_ids = collection_category_ids(collection, categories)
-        collection.product_count = (
-            static_counts.get(collection.kind)
-            if collection.kind in static_counts
-            else sum(category_counts.get(category_id, 0) for category_id in category_ids)
-        )
+        if _is_decanter_collection(collection):
+            collection.product_count = collection_product_queryset(collection).count()
+        else:
+            collection.product_count = (
+                static_counts.get(collection.kind)
+                if collection.kind in static_counts
+                else sum(category_counts.get(category_id, 0) for category_id in category_ids)
+            )
         collection.subcollection_count = len(children)
         collection.cover_image_url = _collection_cover_url(collection)
         collection.is_catalog_empty = collection.product_count == 0
@@ -169,7 +200,7 @@ def build_collection_cards(collections, categories=None):
                 's' if collection.product_count != 1 else ''
             )
         else:
-            collection.card_meta = 'Catalogo em preparacao'
+            collection.card_meta = 'Nenhum produto cadastrado'
 
     return collections
 
@@ -314,6 +345,10 @@ def category_ids_for_group(categories, group_slug):
 
 
 def count_group_products(categories, group_slug):
+    if canonical_category_group(group_slug) == 'decanter':
+        return Product.objects.filter(
+            is_active=True, product_kind=Product.KIND_DECANTER,
+        ).count()
     ids = set(category_ids_for_group(categories, group_slug))
     return sum(
         getattr(cat, 'active_product_count', 0) or 0
